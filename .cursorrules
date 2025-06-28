@@ -1,0 +1,75 @@
+# Clerica Project Cursor Rules
+
+## プロジェクト概要
+- TypeScript + Electron アプリケーション
+- Biome を使用した linting と formatting
+- npm スクリプトによるビルド管理
+
+## 必須チェック項目
+変更後は必ず以下を実行してください：
+
+### 1. ビルド確認
+```bash
+npm run build
+```
+- TypeScript コンパイルエラーがないことを確認
+- dist/ ディレクトリに正常にファイルが生成されることを確認
+
+### 2. Linting 確認
+```bash
+npm run lint
+```
+- Biome linting エラーがないことを確認
+- 警告があれば適切に対処
+
+### 3. フォーマット確認
+```bash
+npm run format
+```
+- コードが Biome のフォーマットルールに従っていることを確認
+- 必要に応じて `npm run lint:fix` も実行
+
+### 4. 統合チェック
+```bash
+npm run check
+```
+- linting と formatting の両方を一度にチェック
+
+## コード品質ルール
+
+### TypeScript
+- strict モードを有効に保つ
+- `any` 型の使用を避ける（biome.json で warn 設定）
+- 未使用変数は削除する
+- 適切な型注釈を使用する
+
+### コードスタイル
+- インデント: スペース2個
+- 行幅: 100文字
+- セミコロン: 必須
+- クォート: シングルクォート
+- trailing commas: ES5
+
+### Electron 固有
+- main プロセスと renderer プロセスの分離を維持
+- preload スクリプトでの適切なセキュリティ設定
+- IPC 通信の適切な実装
+
+## ファイル変更時の自動実行
+以下のファイルを変更した場合は、必ず上記のチェックを実行：
+
+- `src/**/*.ts` - TypeScript ソースファイル
+- `renderer/**/*` - Renderer プロセスファイル
+- `package.json` - 依存関係変更時
+- `biome.json` - 設定変更時
+- `tsconfig.json` - TypeScript 設定変更時
+
+## エラー対処
+- ビルドエラー: TypeScript コンパイルエラーを修正
+- Lint エラー: Biome の指摘に従って修正
+- フォーマットエラー: `npm run format` で自動修正
+
+## 注意事項
+- 変更前に必ず現在の状態でビルドが通ることを確認
+- 大きな変更の場合は段階的にコミット
+- 外部ライブラリの追加時は依存関係の影響を確認 
