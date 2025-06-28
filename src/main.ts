@@ -1,5 +1,5 @@
-import { app, BrowserWindow, ipcMain, dialog, IpcMainEvent } from 'electron';
-import * as path from 'path';
+import { app, BrowserWindow, ipcMain, dialog, type IpcMainEvent } from 'electron';
+import * as path from 'node:path';
 
 // メインプロセスウィンドウの参照を保持
 let mainWindow: BrowserWindow | null = null;

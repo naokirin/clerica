@@ -9,7 +9,12 @@
     "build": "tsc",
     "watch": "tsc --watch",
     "build:electron": "electron-builder",
-    "dist": "npm run build && electron-builder --publish=never"
+    "dist": "npm run build && electron-builder --publish=never",
+    "lint": "biome lint .",
+    "lint:fix": "biome lint --write .",
+    "format": "biome format --write .",
+    "check": "biome check .",
+    "check:fix": "biome check --write ."
   },
   "keywords": [
     "electron",
@@ -20,6 +25,7 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
+    "@biomejs/biome": "^2.0.6",
     "@types/node": "^24.0.0",
     "electron": "^37.0.0",
     "electron-builder": "^26.0.17",
