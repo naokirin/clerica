@@ -71,6 +71,14 @@ typings/
 # Nuxt.js build / generate output
 .nuxt
 
+# SvelteKit
+.svelte-kit
+test-results/
+vite.config.js.timestamp-*
+/packages/create-svelte/template/CHANGELOG.md
+/packages/package/test/**/package
+/documentation/types.js
+
 # vuepress build output
 .vuepress/dist
 
@@ -113,7 +121,8 @@ out/
 build/
 release/
 target
-src-tauri/target
+/src-tauri/target
+/src-tauri/gen
 
 # macOS
 .DS_Store
