@@ -16,10 +16,14 @@ async fn main() {
         .setup(|app| {
             let app_handle = app.handle().clone();
             
-            // データベース初期化
+            // データベース初期化を遅延実行
             tauri::async_runtime::spawn(async move {
-                let pool = app_handle.state::<SqlitePool>();
-                database::init_database(&pool).await;
+                // プラグインが完全に初期化されるまで少し待つ
+                tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+                
+                if let Some(pool) = app_handle.try_state::<SqlitePool>() {
+                    database::init_database(&pool).await;
+                }
             });
             
             Ok(())

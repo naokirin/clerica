@@ -107,11 +107,13 @@ lib-cov
 # Stores VSCode versions used for testing VSCode extensions
 .vscode-test
 
-# Electron specific
+# generated files
 dist/
 out/
 build/
 release/
+target
+src-tauri/target
 
 # macOS
 .DS_Store

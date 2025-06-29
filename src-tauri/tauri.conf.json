@@ -48,9 +48,6 @@
         "**"
       ]
     },
-    "path": {
-      "all": true
-    },
     "dialog": {
       "all": true
     }

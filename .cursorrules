@@ -1,75 +1,87 @@
 # Clerica Project Cursor Rules
 
 ## プロジェクト概要
-- TypeScript + Electron アプリケーション
-- Biome を使用した linting と formatting
-- npm スクリプトによるビルド管理
+- Rust + Tauri アプリケーション（Mac向けファイル整理・検索ツール）
+- SQLite データベース（SQLx）
+- React + TypeScript フロントエンド
+- ファイル監視・タグ管理・検索機能
 
 ## 必須チェック項目
 変更後は必ず以下を実行してください：
 
-### 1. ビルド確認
+### 1. Rust ビルド確認
+```bash
+cd src-tauri && cargo build
+```
+- Rust コンパイルエラーがないことを確認
+- 依存関係が正常に解決されることを確認
+
+### 2. フロントエンドビルド確認
 ```bash
 npm run build
 ```
 - TypeScript コンパイルエラーがないことを確認
 - dist/ ディレクトリに正常にファイルが生成されることを確認
 
-### 2. Linting 確認
+### 3. Tauri ビルド確認
 ```bash
-npm run lint
+cd src-tauri && cargo tauri build
 ```
-- Biome linting エラーがないことを確認
-- 警告があれば適切に対処
+- Tauri アプリケーションが正常にビルドされることを確認
+- バックエンドとフロントエンドの統合が正常に動作することを確認
 
-### 3. フォーマット確認
+### 4. 開発サーバー確認
 ```bash
-npm run format
+npm run dev
+cd src-tauri && cargo tauri dev
 ```
-- コードが Biome のフォーマットルールに従っていることを確認
-- 必要に応じて `npm run lint:fix` も実行
-
-### 4. 統合チェック
-```bash
-npm run check
-```
-- linting と formatting の両方を一度にチェック
+- 開発環境でアプリケーションが正常に起動することを確認
 
 ## コード品質ルール
 
-### TypeScript
+### Rust
+- `cargo clippy` でコード品質を確認
+- エラーハンドリングを適切に実装
+- 非同期処理（tokio）を適切に使用
+- SQLx クエリの安全性を確保
+
+### TypeScript/React
 - strict モードを有効に保つ
-- `any` 型の使用を避ける（biome.json で warn 設定）
-- 未使用変数は削除する
-- 適切な型注釈を使用する
+- 適切な型注釈を使用
+- React Hooks のルールに従う
+- Tauri API の適切な使用
 
-### コードスタイル
-- インデント: スペース2個
-- 行幅: 100文字
-- セミコロン: 必須
-- クォート: シングルクォート
-- trailing commas: ES5
-
-### Electron 固有
-- main プロセスと renderer プロセスの分離を維持
-- preload スクリプトでの適切なセキュリティ設定
-- IPC 通信の適切な実装
+### データベース
+- SQLite マイグレーションの管理
+- インデックスの適切な設定
+- 外部キー制約の維持
+- トランザクションの適切な使用
 
 ## ファイル変更時の自動実行
 以下のファイルを変更した場合は、必ず上記のチェックを実行：
 
-- `src/**/*.ts` - TypeScript ソースファイル
-- `renderer/**/*` - Renderer プロセスファイル
-- `package.json` - 依存関係変更時
-- `biome.json` - 設定変更時
-- `tsconfig.json` - TypeScript 設定変更時
+- `src-tauri/src/**/*.rs` - Rust バックエンドファイル
+- `src-tauri/migrations/**/*.sql` - データベースマイグレーション
+- `src/**/*.tsx` - React コンポーネント
+- `src/**/*.ts` - TypeScript ファイル
+- `Cargo.toml` - Rust 依存関係変更時
+- `package.json` - フロントエンド依存関係変更時
+- `src-tauri/tauri.conf.json` - Tauri 設定変更時
 
 ## エラー対処
-- ビルドエラー: TypeScript コンパイルエラーを修正
-- Lint エラー: Biome の指摘に従って修正
-- フォーマットエラー: `npm run format` で自動修正
+- Rust ビルドエラー: コンパイルエラーを修正
+- TypeScript エラー: 型エラーを修正
+- Tauri エラー: 設定やAPI使用法を確認
+- データベースエラー: マイグレーションとスキーマを確認
+
+## 開発フロー
+1. 機能開発時は `cargo tauri dev` で開発サーバー起動
+2. 変更後は `cargo build` でバックエンド確認
+3. フロントエンド変更後は `npm run build` で確認
+4. 最終確認は `cargo tauri build` で統合ビルド
 
 ## 注意事項
-- 変更前に必ず現在の状態でビルドが通ることを確認
-- 大きな変更の場合は段階的にコミット
+- ファイル監視機能の実装時はパフォーマンスに注意
+- SQLite クエリの最適化を心がける
+- Tauri のセキュリティ設定を適切に管理
 - 外部ライブラリの追加時は依存関係の影響を確認 

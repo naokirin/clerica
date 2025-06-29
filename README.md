@@ -1,86 +1,138 @@
-# Clerica - Electronアプリケーション
+# Clerica
 
-Clericaは、モダンなUIを持つElectronデスクトップアプリケーションです。
+Mac向けファイル整理・検索ツール
 
-## 機能
-TBD
+## 概要
 
-## セットアップ
+Clericaは、複数のディレクトリにまたがる大量のファイルを一元管理し、柔軟なタグ分類と高速検索を提供するデスクトップアプリケーションです。
+
+## 主な機能
+
+- **複数ディレクトリ管理**: 任意の複数ディレクトリを管理対象として登録
+- **タグ分類**: ファイルごとに自由なタグを付与・編集・削除
+- **高速検索**: ファイル名による部分一致・ファジー検索
+- **ファイル監視**: リアルタイムでのファイル変更追跡
+- **ファイル操作**: 削除・移動・Finder連携
+
+## 技術スタック
+
+- **バックエンド**: Rust + Tauri
+- **フロントエンド**: React + TypeScript
+- **データベース**: SQLite (SQLx)
+- **ファイル監視**: notify-rs
+- **検索エンジン**: Fuse.js
+
+## 開発環境のセットアップ
 
 ### 前提条件
 
-- Node.js (v16以上)
+- Rust 1.70以上
+- Node.js 18以上
 - npm または yarn
 
 ### インストール
 
-1. 依存関係をインストール:
+1. リポジトリをクローン
 ```bash
+git clone <repository-url>
+cd clerica
+```
+
+2. 依存関係をインストール
+```bash
+# フロントエンド依存関係
 npm install
+
+# Rust依存関係（初回のみ）
+cargo build
 ```
 
-2. アプリケーションを起動:
+3. 開発サーバーを起動
 ```bash
-npm start
-```
-
-3. 開発モードで起動（DevTools付き）:
-```bash
+# フロントエンド開発サーバー
 npm run dev
+
+# 別ターミナルでTauri開発サーバー
+cargo tauri dev
 ```
 
 ## ビルド
 
-### 配布用パッケージの作成
-
+### 開発ビルド
 ```bash
+cargo build
 npm run build
 ```
 
-### 実行可能ファイルの作成
-
+### 本番ビルド
 ```bash
-npm run dist
+cargo tauri build
 ```
 
 ## プロジェクト構造
 
 ```
 clerica/
-├── main.js              # メインプロセス
-├── preload.js           # プリロードスクリプト
-├── package.json         # プロジェクト設定
-├── renderer/            # レンダラープロセス
-│   ├── index.html       # メインHTML
-│   ├── styles.css       # スタイルシート
-│   └── renderer.js      # レンダラーJavaScript
-└── README.md           # このファイル
+├── src-tauri/           # Rust バックエンド
+│   ├── src/
+│   │   ├── main.rs      # エントリーポイント
+│   │   ├── database.rs  # データベース操作
+│   │   ├── file_manager.rs # ファイル管理
+│   │   ├── search.rs    # 検索機能
+│   │   └── watcher.rs   # ファイル監視
+│   ├── migrations/      # データベースマイグレーション
+│   ├── Cargo.toml       # Rust依存関係
+│   └── tauri.conf.json  # Tauri設定
+├── src/                 # React フロントエンド
+│   ├── App.tsx          # メインコンポーネント
+│   ├── main.tsx         # エントリーポイント
+│   └── index.css        # スタイル
+├── package.json         # フロントエンド依存関係
+├── vite.config.ts       # Vite設定
+└── README.md
 ```
 
-## キーボードショートカット
+## データベーススキーマ
 
-- `Cmd/Ctrl + Q`: アプリケーションを終了
-- `Cmd/Ctrl + R`: ページをリロード
+### テーブル構成
 
-## 技術スタック
+- **directories**: 管理対象ディレクトリ
+- **files**: ファイル情報
+- **tags**: タグ定義
+- **file_tags**: ファイルとタグの関連（多対多）
 
-- **Electron**: デスクトップアプリケーションフレームワーク
-- **HTML5/CSS3**: モダンなUI
-- **Vanilla JavaScript**: 軽量な実装
-- **Electron Builder**: パッケージングツール
+### 主要なインデックス
 
-## セキュリティ
+- ファイル名検索用インデックス
+- タグ検索用インデックス
+- 更新日時ソート用インデックス
 
-- Context Isolation を有効化
-- Node Integration を無効化
-- プリロードスクリプトによる安全なAPI公開
+## 開発ガイドライン
+
+### コード品質
+
+- Rust: `cargo clippy` でコード品質を確認
+- TypeScript: strict モードを有効に保つ
+- データベース: 適切なインデックスとトランザクションを使用
+
+### テスト
+
+```bash
+# Rust テスト
+cargo test
+
+# フロントエンドテスト（実装予定）
+npm test
+```
 
 ## ライセンス
 
-MIT License
+MIT License - 詳細は [LICENSE](LICENSE) ファイルを参照してください。
 
-## 開発
+## 貢献
 
-### 開発モード
-
-開発モードでは、DevToolsが自動的に開き、デバッグが容易になります。
+1. このリポジトリをフォーク
+2. 機能ブランチを作成 (`git checkout -b feature/amazing-feature`)
+3. 変更をコミット (`git commit -m 'Add some amazing feature'`)
+4. ブランチにプッシュ (`git push origin feature/amazing-feature`)
+5. プルリクエストを作成
