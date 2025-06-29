@@ -1,8 +1,8 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { invoke } from "@tauri-apps/api/core";
-  import { open } from "@tauri-apps/plugin-dialog";
-  import { FolderPlus, Search, Tag, FileText } from "lucide-svelte";
+  import { open, confirm } from "@tauri-apps/plugin-dialog";
+  import { FolderPlus, Search, Tag, FileText, X } from "lucide-svelte";
   import "../lib/App.css";
 
   interface Directory {
@@ -142,6 +142,25 @@
       console.error("Failed to select directory:", error);
     }
   };
+
+  const removeDirectory = async (directoryId: string, directoryName: string) => {
+    const confirmed = await confirm(`「${directoryName}」を登録から削除しますか？\nファイルは削除されません。`, { title: '確認', kind: 'warning' });
+    if (confirmed) {
+      try {
+        await invoke('remove_directory', { id: directoryId });
+        // データを再読み込み
+        await loadData();
+        // 選択されたディレクトリが削除された場合はクリア
+        if (selectedDirectoryId === directoryId) {
+          selectedDirectoryId = null;
+          files = [];
+        }
+      } catch (error) {
+        console.error("Failed to remove directory:", error);
+        alert("ディレクトリの削除に失敗しました。");
+      }
+    }
+  };
 </script>
 
 <div class="app">
@@ -162,13 +181,27 @@
           {#each directories as dir (dir.id)}
             <div 
               class="directory-item {selectedDirectoryId === dir.id ? 'selected' : ''}"
-              onclick={() => selectDirectory(dir.id)}
-              onkeydown={(e) => e.key === 'Enter' && selectDirectory(dir.id)}
-              role="button"
-              tabindex="0"
             >
-              {dir.name}
-              <div class="directory-path">{dir.path}</div>
+              <div 
+                class="directory-content"
+                onclick={() => selectDirectory(dir.id)}
+                onkeydown={(e) => e.key === 'Enter' && selectDirectory(dir.id)}
+                role="button"
+                tabindex="0"
+              >
+                <div class="directory-name">{dir.name}</div>
+                <div class="directory-path">{dir.path}</div>
+              </div>
+              <button 
+                class="remove-directory-btn"
+                onclick={(e) => {
+                  e.stopPropagation();
+                  removeDirectory(dir.id, dir.name);
+                }}
+                title="ディレクトリを登録から削除"
+              >
+                <X size={14} />
+              </button>
             </div>
           {/each}
         </div>
