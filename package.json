@@ -14,7 +14,10 @@
     "lint": "biome lint ./src",
     "lint:fix": "biome lint --write ./src",
     "format": "biome format ./src",
-    "format:write": "biome format --write ./src"
+    "format:write": "biome format --write ./src",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:run": "vitest run"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.0.0",
@@ -28,9 +31,14 @@
     "@sveltejs/kit": "^2.22.2",
     "@sveltejs/vite-plugin-svelte": "^5.0.0",
     "@tauri-apps/cli": "^2.6.2",
-    "biome": "^0.3.3",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/svelte": "^5.2.8",
+    "@vitest/ui": "^3.2.4",
+    "biome": "^0.2.2",
+    "jsdom": "^26.1.0",
     "svelte-check": "^4.0.0",
     "typescript": "^5.0.2",
-    "vite": "^6.0.0"
+    "vite": "^6.0.0",
+    "vitest": "^3.2.4"
   }
 }
