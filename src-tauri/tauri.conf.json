@@ -22,7 +22,9 @@
       }
     ],
     "security": {
-      "csp": null
+      "capabilities": [
+        "main-capability"
+      ]
     }
   },
   "bundle": {
@@ -47,9 +49,6 @@
       "scope": [
         "**"
       ]
-    },
-    "dialog": {
-      "all": true
     }
   }
 }

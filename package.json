@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
-    "build": "vite build",
+    "build": "(cd src-tauri && cargo build) && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
     "sync": "svelte-kit sync",
@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@tauri-apps/api": "^2.0.0",
+    "@tauri-apps/plugin-dialog": "^2.0.0",
     "@tauri-apps/plugin-sql": "^2.3.0",
     "fuse.js": "^7.0.0",
     "lucide-svelte": "^0.525.0",
@@ -34,7 +35,7 @@
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/svelte": "^5.2.8",
     "@vitest/ui": "^3.2.4",
-    "biome": "^0.2.2",
+    "biome": "^0.2.0",
     "jsdom": "^26.1.0",
     "svelte-check": "^4.0.0",
     "typescript": "^5.0.2",

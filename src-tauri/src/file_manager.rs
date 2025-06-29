@@ -134,4 +134,23 @@ pub async fn scan_directory(pool: &SqlitePool, directory_id: &str, path: &str) -
     }
     
     Ok(())
+}
+
+#[tauri::command]
+pub async fn get_directories(
+    pool: State<'_, SqlitePool>,
+) -> Result<Vec<Directory>, String> {
+    database::get_directories(&pool)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn get_files_by_directory(
+    pool: State<'_, SqlitePool>,
+    directory_id: String,
+) -> Result<Vec<File>, String> {
+    database::get_files_by_directory(&pool, &directory_id)
+        .await
+        .map_err(|e| e.to_string())
 } 

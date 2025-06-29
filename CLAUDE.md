@@ -64,7 +64,7 @@ cd src-tauri && cargo test
 - 全てのTauriコマンドは`src-tauri/src/main.rs`で登録
 
 ### Frontend State Management
-- React Hooks（useState, useEffect）でローカル状態管理
+- SvelteKitの$state等でローカル状態管理
 - Tauri APIを直接呼び出してバックエンドと通信
 - 検索結果はFuse.jsを使用してファジー検索を実装
 

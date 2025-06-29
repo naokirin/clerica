@@ -88,6 +88,19 @@
   background-color: #f3f4f6;
 }
 
+.directory-item.selected {
+  background-color: #e0f2fe;
+  border-left: 3px solid #3b82f6;
+  padding-left: 0.75rem;
+}
+
+.directory-path {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+  opacity: 0.8;
+}
+
 .tag-item {
   border-left: 3px solid;
   padding-left: 0.75rem;

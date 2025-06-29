@@ -18,6 +18,9 @@ export default defineConfig({
     minify: !process.env.TAURI_DEBUG ? 'esbuild' : false,
     // produce sourcemaps for debug builds
     sourcemap: !!process.env.TAURI_DEBUG,
+    rollupOptions: {
+      external: ['@tauri-apps/plugin-dialog']
+    }
   },
   test: {
     include: ['src/**/*.{test,spec}.{js,ts}'],
