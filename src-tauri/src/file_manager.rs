@@ -1,0 +1,137 @@
+use crate::database::{self, Directory, File};
+use sqlx::SqlitePool;
+use tauri::State;
+use uuid::Uuid;
+use chrono::{DateTime, Utc};
+use walkdir::WalkDir;
+use std::fs;
+use std::os::unix::fs::MetadataExt;
+
+#[tauri::command]
+pub async fn add_directory(
+    pool: State<'_, SqlitePool>,
+    path: String,
+    name: String,
+) -> Result<Directory, String> {
+    database::add_directory(&pool, &path, &name)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn remove_directory(
+    pool: State<'_, SqlitePool>,
+    id: String,
+) -> Result<(), String> {
+    database::remove_directory(&pool, &id)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn get_files(
+    pool: State<'_, SqlitePool>,
+    directory_id: String,
+) -> Result<Vec<File>, String> {
+    database::get_files_by_directory(&pool, &directory_id)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn get_file_info(
+    _pool: State<'_, SqlitePool>,
+    _file_id: String,
+) -> Result<File, String> {
+    // 実装予定
+    Err("Not implemented".to_string())
+}
+
+#[tauri::command]
+pub async fn update_file_tags(
+    pool: State<'_, SqlitePool>,
+    file_id: String,
+    tag_ids: Vec<String>,
+) -> Result<(), String> {
+    // 既存のタグを削除
+    let current_tags = database::get_file_tags(&pool, &file_id)
+        .await
+        .map_err(|e| e.to_string())?;
+    
+    for tag in current_tags {
+        database::remove_file_tag(&pool, &file_id, &tag.id)
+            .await
+            .map_err(|e| e.to_string())?;
+    }
+    
+    // 新しいタグを追加
+    for tag_id in tag_ids {
+        database::add_file_tag(&pool, &file_id, &tag_id)
+            .await
+            .map_err(|e| e.to_string())?;
+    }
+    
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn delete_file(
+    _pool: State<'_, SqlitePool>,
+    _file_id: String,
+) -> Result<(), String> {
+    // 実装予定
+    Err("Not implemented".to_string())
+}
+
+#[tauri::command]
+pub async fn move_file(
+    _pool: State<'_, SqlitePool>,
+    _file_id: String,
+    _new_path: String,
+) -> Result<(), String> {
+    // 実装予定
+    Err("Not implemented".to_string())
+}
+
+pub async fn scan_directory(pool: &SqlitePool, directory_id: &str, path: &str) -> Result<(), String> {
+    let walker = WalkDir::new(path)
+        .follow_links(false)
+        .into_iter()
+        .filter_map(|e| e.ok());
+    
+    for entry in walker {
+        let path = entry.path();
+        if let Ok(metadata) = fs::metadata(path) {
+            let file = File {
+                id: Uuid::new_v4().to_string(),
+                path: path.to_string_lossy().to_string(),
+                name: path.file_name()
+                    .and_then(|n| n.to_str())
+                    .unwrap_or("unknown")
+                    .to_string(),
+                directory_id: directory_id.to_string(),
+                size: metadata.len() as i64,
+                file_type: path.extension()
+                    .and_then(|ext| ext.to_str())
+                    .map(|s| s.to_string()),
+                created_at: metadata.created()
+                    .ok()
+                    .map(|t| DateTime::from(t)),
+                modified_at: metadata.modified()
+                    .ok()
+                    .map(|t| DateTime::from(t)),
+                birth_time: None, // macOS固有の実装が必要
+                inode: Some(metadata.ino() as i64),
+                is_directory: metadata.is_dir(),
+                created_at_db: Utc::now(),
+                updated_at_db: Utc::now(),
+            };
+            
+            database::add_file(pool, &file)
+                .await
+                .map_err(|e| e.to_string())?;
+        }
+    }
+    
+    Ok(())
+} 
