@@ -2,7 +2,7 @@
   import { onMount } from "svelte";
   import { invoke } from "@tauri-apps/api/core";
   import { open, confirm } from "@tauri-apps/plugin-dialog";
-  import { FolderPlus, Search, Tag, FileText, X, RefreshCw } from "lucide-svelte";
+  import { FolderPlus, Search, Tag, FileText, X, RefreshCw, Trash2, Loader2 } from "lucide-svelte";
   import "../lib/App.css";
 
   interface Directory {
@@ -60,6 +60,9 @@
   
   // ディレクトリフィルタリング状態
   let selectedDirectoryId: string | "all" = $state("all");
+  
+  // 削除処理中の状態管理
+  let isDeleting = $state(false);
   
   // ページネーション状態
   let currentPage = $state(1);
@@ -319,6 +322,25 @@
     } catch (error) {
       console.error("Failed to reveal in Finder:", error);
       alert(`Finderで表示できませんでした: ${error}`);
+    }
+  };
+
+  const deleteFile = async (filePath: string, fileName: string) => {
+    const confirmed = await confirm(`「${fileName}」をゴミ箱に移動しますか？`, { title: '確認', kind: 'warning' });
+    if (confirmed) {
+      isDeleting = true;
+      try {
+        await invoke("delete_file", { filePath });
+        // ファイル一覧を再読み込み
+        await loadData();
+        // モーダルを閉じる
+        closeFileDetails();
+      } catch (error) {
+        console.error("Failed to delete file:", error);
+        alert(`ファイルをゴミ箱に移動できませんでした: ${error}`);
+      } finally {
+        isDeleting = false;
+      }
     }
   };
 
@@ -1043,7 +1065,7 @@
 
   <!-- ファイル詳細モーダル -->
   {#if selectedFile}
-    <div class="modal-overlay" onclick={closeFileDetails}>
+    <div class="modal-overlay" onclick={isDeleting ? undefined : closeFileDetails}>
       <div class="modal-content" onclick={(e) => e.stopPropagation()}>
         <div class="modal-header">
           <h3>ファイル詳細</h3>
@@ -1052,6 +1074,7 @@
               class="action-button open-button" 
               onclick={() => openFile(selectedFile!.path)}
               title="ファイルを開く"
+              disabled={isDeleting}
             >
               📂 開く
             </button>
@@ -1059,10 +1082,29 @@
               class="action-button finder-button" 
               onclick={() => revealInFinder(selectedFile!.path)}
               title="Finderで表示"
+              disabled={isDeleting}
             >
               🔍 Finder
             </button>
-            <button class="close-button" onclick={closeFileDetails}>
+            <button 
+              class="action-button delete-button" 
+              onclick={() => deleteFile(selectedFile!.path, selectedFile!.name)}
+              title={isDeleting ? "削除中..." : "ゴミ箱に移動"}
+              disabled={isDeleting}
+            >
+              {#if isDeleting}
+                <Loader2 size={16} class="animate-spin" />
+                削除中...
+              {:else}
+                <Trash2 size={16} />
+                削除
+              {/if}
+            </button>
+            <button 
+              class="close-button" 
+              onclick={closeFileDetails}
+              disabled={isDeleting}
+            >
               <X size={20} />
             </button>
           </div>

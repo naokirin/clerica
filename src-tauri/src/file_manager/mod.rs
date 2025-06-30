@@ -91,11 +91,42 @@ pub async fn update_file_tags(
 
 #[tauri::command]
 pub async fn delete_file(
-    _pool: State<'_, SqlitePool>,
-    _file_id: String,
+    pool: State<'_, SqlitePool>,
+    file_path: String,
 ) -> Result<(), String> {
-    // 実装予定
-    Err("Not implemented".to_string())
+    // ファイルパスの存在確認
+    if !std::path::Path::new(&file_path).exists() {
+        return Err("ファイルが見つかりません".to_string());
+    }
+
+    // macOSでファイルをゴミ箱に移動
+    let result = Command::new("osascript")
+        .arg("-e")
+        .arg(format!(
+            "tell application \"Finder\" to move POSIX file \"{}\" to trash",
+            file_path
+        ))
+        .output();
+    
+    match result {
+        Ok(output) => {
+            if output.status.success() {
+                // データベースからファイル情報を削除
+                let db = Database;
+                sqlx::query("DELETE FROM files WHERE path = ?")
+                    .bind(&file_path)
+                    .execute(pool.inner())
+                    .await
+                    .map_err(|e| format!("データベース更新エラー: {e}"))?;
+                
+                Ok(())
+            } else {
+                let error_message = String::from_utf8_lossy(&output.stderr);
+                Err(format!("ファイルをゴミ箱に移動できませんでした: {error_message}"))
+            }
+        }
+        Err(e) => Err(format!("コマンド実行エラー: {e}")),
+    }
 }
 
 #[tauri::command]

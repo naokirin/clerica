@@ -477,6 +477,47 @@
   border-color: #2563eb;
 }
 
+.delete-button {
+  background-color: #ef4444;
+  color: white;
+  border-color: #ef4444;
+}
+
+.delete-button:hover:not(:disabled) {
+  background-color: #dc2626;
+  border-color: #dc2626;
+}
+
+/* ボタンの無効状態 */
+.action-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: #f3f4f6 !important;
+  color: #9ca3af !important;
+  border-color: #d1d5db !important;
+}
+
+.close-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: #f3f4f6 !important;
+  color: #9ca3af !important;
+}
+
+/* スピンアニメーション */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
 .modal-header h3 {
   margin: 0;
   font-size: 1.25rem;
