@@ -57,6 +57,107 @@
   let searchResults: SearchResult[] = $state([]);
   let activeTab: "files" | "search" | "tags" = $state("files");
   let selectedFile: File | null = $state(null);
+  
+  // ページネーション状態
+  let currentPage = $state(1);
+  let itemsPerPage = 25;
+  let totalFiles = $state(0);
+  let totalPages = $state(0);
+  let paginatedFiles: File[] = $state([]);
+  
+  // 検索結果のページネーション状態
+  let searchCurrentPage = $state(1);
+  let searchTotalPages = $state(0);
+  let paginatedSearchResults: SearchResult[] = $state([]);
+  
+  // 検索結果のフィルタリング状態
+  let searchSelectedCategory: FileCategory = $state("all");
+  let filteredSearchResults: SearchResult[] = $state([]);
+  let searchCategoryCounts: Record<FileCategory, number> = $state({
+    all: 0,
+    image: 0,
+    audio: 0,
+    video: 0,
+    document: 0,
+    archive: 0,
+    other: 0
+  });
+  
+  // ファイル種別フィルタリング状態
+  let selectedCategory: FileCategory = $state("all");
+  let filteredFiles: File[] = $state([]);
+  let categoryCounts: Record<FileCategory, number> = $state({
+    all: 0,
+    image: 0,
+    audio: 0,
+    video: 0,
+    document: 0,
+    archive: 0,
+    other: 0
+  });
+
+  // ファイル種別の定義
+  type FileCategory = "all" | "image" | "audio" | "video" | "document" | "archive" | "other";
+  
+  interface FileCategoryInfo {
+    key: FileCategory;
+    label: string;
+    icon: string;
+    mimeTypes: string[];
+    extensions: string[];
+  }
+
+  const fileCategories: FileCategoryInfo[] = [
+    {
+      key: "all",
+      label: "すべて",
+      icon: "📁",
+      mimeTypes: [],
+      extensions: []
+    },
+    {
+      key: "image",
+      label: "画像",
+      icon: "🖼️",
+      mimeTypes: ["image/"],
+      extensions: ["jpg", "jpeg", "png", "gif", "bmp", "webp", "svg", "ico", "tiff", "raw"]
+    },
+    {
+      key: "audio",
+      label: "音声",
+      icon: "🎵",
+      mimeTypes: ["audio/"],
+      extensions: ["mp3", "wav", "ogg", "flac", "aac", "m4a", "wma", "opus"]
+    },
+    {
+      key: "video",
+      label: "動画",
+      icon: "🎬",
+      mimeTypes: ["video/"],
+      extensions: ["mp4", "avi", "mov", "wmv", "flv", "webm", "mkv", "m4v", "3gp"]
+    },
+    {
+      key: "document",
+      label: "ドキュメント",
+      icon: "📄",
+      mimeTypes: ["application/pdf", "application/msword", "application/vnd.", "text/"],
+      extensions: ["pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt", "md", "html", "htm", "css", "js", "json", "xml", "csv", "rtf"]
+    },
+    {
+      key: "archive",
+      label: "圧縮ファイル",
+      icon: "📦",
+      mimeTypes: ["application/zip", "application/x-rar", "application/x-7z", "application/x-tar", "application/gzip"],
+      extensions: ["zip", "rar", "7z", "tar", "gz", "bz2", "xz", "lzma"]
+    },
+    {
+      key: "other",
+      label: "その他",
+      icon: "📄",
+      mimeTypes: [],
+      extensions: []
+    }
+  ];
 
   onMount(() => {
     loadData();
@@ -75,6 +176,12 @@
       // ファイルの読み込み
       const filesData = await invoke("get_files");
       files = filesData as File[];
+      
+      // カテゴリ別ファイル数を計算
+      updateCategoryCounts();
+      
+      // フィルタリングを適用
+      filterFilesByCategory();
     } catch (error) {
       console.error("Failed to load data:", error);
     }
@@ -119,6 +226,12 @@
         tag_ids: selectedTags 
       });
       searchResults = results as SearchResult[];
+      
+      // 検索結果のカテゴリ別ファイル数を計算
+      updateSearchCategoryCounts();
+      
+      // 検索結果のフィルタリングを適用
+      filterSearchResultsByCategory();
     } catch (error) {
       console.error("Failed to search files:", error);
     }
@@ -185,6 +298,200 @@
 
   const closeFileDetails = () => {
     selectedFile = null;
+  };
+
+  // ページネーション関数
+  const updatePagination = () => {
+    totalFiles = filteredFiles.length;
+    totalPages = Math.ceil(totalFiles / itemsPerPage);
+    
+    // 現在のページが無効な場合は最初のページに戻る
+    if (currentPage > totalPages && totalPages > 0) {
+      currentPage = 1;
+    }
+    
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    paginatedFiles = filteredFiles.slice(startIndex, endIndex);
+  };
+
+  const goToPage = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      currentPage = page;
+      updatePagination();
+    }
+  };
+
+  const goToPreviousPage = () => {
+    if (currentPage > 1) {
+      currentPage--;
+      updatePagination();
+    }
+  };
+
+  const goToNextPage = () => {
+    if (currentPage < totalPages) {
+      currentPage++;
+      updatePagination();
+    }
+  };
+
+  const goToFirstPage = () => {
+    currentPage = 1;
+    updatePagination();
+  };
+
+  const goToLastPage = () => {
+    currentPage = totalPages;
+    updatePagination();
+  };
+
+  // 検索結果のページネーション関数
+  const updateSearchPagination = () => {
+    searchTotalPages = Math.ceil(filteredSearchResults.length / itemsPerPage);
+    
+    if (searchCurrentPage > searchTotalPages && searchTotalPages > 0) {
+      searchCurrentPage = 1;
+    }
+    
+    const startIndex = (searchCurrentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    paginatedSearchResults = filteredSearchResults.slice(startIndex, endIndex);
+  };
+
+  const goToSearchPage = (page: number) => {
+    if (page >= 1 && page <= searchTotalPages) {
+      searchCurrentPage = page;
+      updateSearchPagination();
+    }
+  };
+
+  const goToSearchPreviousPage = () => {
+    if (searchCurrentPage > 1) {
+      searchCurrentPage--;
+      updateSearchPagination();
+    }
+  };
+
+  const goToSearchNextPage = () => {
+    if (searchCurrentPage < searchTotalPages) {
+      searchCurrentPage++;
+      updateSearchPagination();
+    }
+  };
+
+  const goToSearchFirstPage = () => {
+    searchCurrentPage = 1;
+    updateSearchPagination();
+  };
+
+  const goToSearchLastPage = () => {
+    searchCurrentPage = searchTotalPages;
+    updateSearchPagination();
+  };
+
+  // ファイル種別判定関数
+  const getFileCategory = (file: File): FileCategory => {
+    if (file.is_directory) return "other";
+    
+    const mimeType = file.mime_type?.toLowerCase() || "";
+    const extension = file.file_type?.toLowerCase() || "";
+    
+    for (const category of fileCategories) {
+      if (category.key === "all" || category.key === "other") continue;
+      
+      // MIMEタイプでチェック
+      for (const mime of category.mimeTypes) {
+        if (mimeType.startsWith(mime.toLowerCase())) {
+          return category.key;
+        }
+      }
+      
+      // 拡張子でチェック
+      if (category.extensions.includes(extension)) {
+        return category.key;
+      }
+    }
+    
+    return "other";
+  };
+
+  // カテゴリ別ファイル数を計算
+  const updateCategoryCounts = () => {
+    const counts: Record<FileCategory, number> = {
+      all: files.length,
+      image: 0,
+      audio: 0,
+      video: 0,
+      document: 0,
+      archive: 0,
+      other: 0
+    };
+
+    files.forEach(file => {
+      const category = getFileCategory(file);
+      counts[category]++;
+    });
+
+    categoryCounts = counts;
+  };
+
+  // ファイルをフィルタリング
+  const filterFilesByCategory = () => {
+    if (selectedCategory === "all") {
+      filteredFiles = [...files];
+    } else {
+      filteredFiles = files.filter(file => getFileCategory(file) === selectedCategory);
+    }
+    
+    // フィルタリング後にページネーションを更新
+    currentPage = 1;
+    updatePagination();
+  };
+
+  // カテゴリ選択
+  const selectCategory = (category: FileCategory) => {
+    selectedCategory = category;
+    filterFilesByCategory();
+  };
+
+  // 検索結果のカテゴリ別ファイル数を計算
+  const updateSearchCategoryCounts = () => {
+    const counts: Record<FileCategory, number> = {
+      all: searchResults.length,
+      image: 0,
+      audio: 0,
+      video: 0,
+      document: 0,
+      archive: 0,
+      other: 0
+    };
+
+    searchResults.forEach(result => {
+      const category = getFileCategory(result.file);
+      counts[category]++;
+    });
+
+    searchCategoryCounts = counts;
+  };
+
+  // 検索結果をフィルタリング
+  const filterSearchResultsByCategory = () => {
+    if (searchSelectedCategory === "all") {
+      filteredSearchResults = [...searchResults];
+    } else {
+      filteredSearchResults = searchResults.filter(result => getFileCategory(result.file) === searchSelectedCategory);
+    }
+    
+    // フィルタリング後にページネーションを更新
+    searchCurrentPage = 1;
+    updateSearchPagination();
+  };
+
+  // 検索結果のカテゴリ選択
+  const selectSearchCategory = (category: FileCategory) => {
+    searchSelectedCategory = category;
+    filterSearchResultsByCategory();
   };
 </script>
 
@@ -274,9 +581,87 @@
       <div class="content-area">
         {#if activeTab === "files"}
           <div class="files-view">
-            <h2>ファイル一覧</h2>
+            <div class="files-header">
+              <h2>ファイル一覧</h2>
+              <div class="files-stats">
+                <span class="total-files">
+                  {selectedCategory === "all" ? "合計" : fileCategories.find(c => c.key === selectedCategory)?.label}: 
+                  {totalFiles.toLocaleString()} ファイル
+                </span>
+                {#if totalPages > 1}
+                  <span class="page-info">
+                    ページ {currentPage} / {totalPages} 
+                    ({((currentPage - 1) * itemsPerPage + 1).toLocaleString()} - {Math.min(currentPage * itemsPerPage, totalFiles).toLocaleString()})
+                  </span>
+                {/if}
+              </div>
+            </div>
+
+            <!-- ファイル種別フィルター -->
+            <div class="file-category-filters">
+              {#each fileCategories as category (category.key)}
+                <button
+                  class="category-filter-btn {selectedCategory === category.key ? 'active' : ''}"
+                  onclick={() => selectCategory(category.key)}
+                  disabled={category.key !== "all" && categoryCounts[category.key] === 0}
+                >
+                  <span class="category-icon">{category.icon}</span>
+                  <span class="category-label">{category.label}</span>
+                  <span class="category-count">({categoryCounts[category.key].toLocaleString()})</span>
+                </button>
+              {/each}
+            </div>
+
+            {#if totalPages > 1}
+              <div class="pagination-controls">
+                <button 
+                  class="pagination-btn" 
+                  onclick={goToFirstPage} 
+                  disabled={currentPage === 1}
+                >
+                  ≪
+                </button>
+                <button 
+                  class="pagination-btn" 
+                  onclick={goToPreviousPage} 
+                  disabled={currentPage === 1}
+                >
+                  ‹
+                </button>
+                
+                {#each Array.from({length: Math.min(7, totalPages)}, (_, i) => {
+                  let start = Math.max(1, currentPage - 3);
+                  let end = Math.min(totalPages, start + 6);
+                  start = Math.max(1, end - 6);
+                  return start + i;
+                }).filter(page => page <= totalPages) as page}
+                  <button 
+                    class="pagination-btn {currentPage === page ? 'active' : ''}" 
+                    onclick={() => goToPage(page)}
+                  >
+                    {page}
+                  </button>
+                {/each}
+                
+                <button 
+                  class="pagination-btn" 
+                  onclick={goToNextPage} 
+                  disabled={currentPage === totalPages}
+                >
+                  ›
+                </button>
+                <button 
+                  class="pagination-btn" 
+                  onclick={goToLastPage} 
+                  disabled={currentPage === totalPages}
+                >
+                  ≫
+                </button>
+              </div>
+            {/if}
+
             <div class="file-list">
-              {#each files as file (file.id)}
+              {#each paginatedFiles as file (file.id)}
                 <div class="file-item" onclick={() => selectFile(file)}>
                   <div class="file-icon">
                     {#if file.is_directory}
@@ -321,18 +706,83 @@
                   </div>
                 </div>
               {/each}
-              {#if files.length === 0}
+              {#if paginatedFiles.length === 0 && totalFiles === 0}
                 <div class="no-files">
                   ディレクトリを追加してファイルをスキャンしてください
                 </div>
               {/if}
             </div>
+
+            {#if totalPages > 1}
+              <div class="pagination-controls pagination-bottom">
+                <button 
+                  class="pagination-btn" 
+                  onclick={goToFirstPage} 
+                  disabled={currentPage === 1}
+                >
+                  ≪
+                </button>
+                <button 
+                  class="pagination-btn" 
+                  onclick={goToPreviousPage} 
+                  disabled={currentPage === 1}
+                >
+                  ‹
+                </button>
+                
+                {#each Array.from({length: Math.min(7, totalPages)}, (_, i) => {
+                  let start = Math.max(1, currentPage - 3);
+                  let end = Math.min(totalPages, start + 6);
+                  start = Math.max(1, end - 6);
+                  return start + i;
+                }).filter(page => page <= totalPages) as page}
+                  <button 
+                    class="pagination-btn {currentPage === page ? 'active' : ''}" 
+                    onclick={() => goToPage(page)}
+                  >
+                    {page}
+                  </button>
+                {/each}
+                
+                <button 
+                  class="pagination-btn" 
+                  onclick={goToNextPage} 
+                  disabled={currentPage === totalPages}
+                >
+                  ›
+                </button>
+                <button 
+                  class="pagination-btn" 
+                  onclick={goToLastPage} 
+                  disabled={currentPage === totalPages}
+                >
+                  ≫
+                </button>
+              </div>
+            {/if}
           </div>
         {/if}
 
         {#if activeTab === "search"}
           <div class="search-view">
-            <h2>ファイル検索</h2>
+            <div class="search-header">
+              <h2>ファイル検索</h2>
+              {#if searchResults.length > 0}
+                <div class="search-stats">
+                  <span class="total-results">
+                    {searchSelectedCategory === "all" ? "検索結果" : fileCategories.find(c => c.key === searchSelectedCategory)?.label}: 
+                    {filteredSearchResults.length.toLocaleString()} 件
+                  </span>
+                  {#if searchTotalPages > 1}
+                    <span class="page-info">
+                      ページ {searchCurrentPage} / {searchTotalPages} 
+                      ({((searchCurrentPage - 1) * itemsPerPage + 1).toLocaleString()} - {Math.min(searchCurrentPage * itemsPerPage, filteredSearchResults.length).toLocaleString()})
+                    </span>
+                  {/if}
+                </div>
+              {/if}
+            </div>
+
             <div class="search-controls">
               <input
                 type="text"
@@ -345,23 +795,174 @@
                 検索
               </button>
             </div>
+
+            <!-- 検索結果のファイル種別フィルター -->
+            {#if searchResults.length > 0}
+              <div class="file-category-filters">
+                {#each fileCategories as category (category.key)}
+                  <button
+                    class="category-filter-btn {searchSelectedCategory === category.key ? 'active' : ''}"
+                    onclick={() => selectSearchCategory(category.key)}
+                    disabled={category.key !== "all" && searchCategoryCounts[category.key] === 0}
+                  >
+                    <span class="category-icon">{category.icon}</span>
+                    <span class="category-label">{category.label}</span>
+                    <span class="category-count">({searchCategoryCounts[category.key].toLocaleString()})</span>
+                  </button>
+                {/each}
+              </div>
+            {/if}
+
+            {#if searchTotalPages > 1}
+              <div class="pagination-controls">
+                <button 
+                  class="pagination-btn" 
+                  onclick={goToSearchFirstPage} 
+                  disabled={searchCurrentPage === 1}
+                >
+                  ≪
+                </button>
+                <button 
+                  class="pagination-btn" 
+                  onclick={goToSearchPreviousPage} 
+                  disabled={searchCurrentPage === 1}
+                >
+                  ‹
+                </button>
+                
+                {#each Array.from({length: Math.min(7, searchTotalPages)}, (_, i) => {
+                  let start = Math.max(1, searchCurrentPage - 3);
+                  let end = Math.min(searchTotalPages, start + 6);
+                  start = Math.max(1, end - 6);
+                  return start + i;
+                }).filter(page => page <= searchTotalPages) as page}
+                  <button 
+                    class="pagination-btn {searchCurrentPage === page ? 'active' : ''}" 
+                    onclick={() => goToSearchPage(page)}
+                  >
+                    {page}
+                  </button>
+                {/each}
+                
+                <button 
+                  class="pagination-btn" 
+                  onclick={goToSearchNextPage} 
+                  disabled={searchCurrentPage === searchTotalPages}
+                >
+                  ›
+                </button>
+                <button 
+                  class="pagination-btn" 
+                  onclick={goToSearchLastPage} 
+                  disabled={searchCurrentPage === searchTotalPages}
+                >
+                  ≫
+                </button>
+              </div>
+            {/if}
+
             <div class="search-results">
-              {#each searchResults as result (result.file.id)}
-                <div class="search-result-item">
-                  <div class="result-file-name">{result.file.name}</div>
-                  <div class="result-tags">
-                    {#each result.tags as tag (tag.id)}
-                      <span
-                        class="result-tag"
-                        style="background-color: {tag.color}"
-                      >
-                        {tag.name}
-                      </span>
-                    {/each}
+              {#each paginatedSearchResults as result (result.file.id)}
+                <div class="search-result-item" onclick={() => selectFile(result.file)}>
+                  <div class="file-icon">
+                    {#if result.file.is_directory}
+                      📁
+                    {:else if result.file.mime_type?.startsWith('image/')}
+                      🖼️
+                    {:else if result.file.mime_type?.startsWith('video/')}
+                      🎬
+                    {:else if result.file.mime_type?.startsWith('audio/')}
+                      🎵
+                    {:else if result.file.mime_type?.includes('pdf')}
+                      📄
+                    {:else if result.file.mime_type?.includes('text')}
+                      📝
+                    {:else}
+                      📄
+                    {/if}
+                  </div>
+                  <div class="search-result-details">
+                    <div class="result-file-name">{result.file.name}</div>
+                    <div class="file-info">
+                      {#if !result.file.is_directory}
+                        {formatFileSize(result.file.file_size || result.file.size)} 
+                        {#if result.file.mime_type}
+                          • {result.file.mime_type}
+                        {:else if result.file.file_type}
+                          • {result.file.file_type}
+                        {/if}
+                      {:else}
+                        ディレクトリ
+                      {/if}
+                    </div>
+                    <div class="file-path">{result.file.path}</div>
+                    <div class="result-tags">
+                      {#each result.tags as tag (tag.id)}
+                        <span
+                          class="result-tag"
+                          style="background-color: {tag.color}"
+                        >
+                          {tag.name}
+                        </span>
+                      {/each}
+                    </div>
                   </div>
                 </div>
               {/each}
+              {#if searchResults.length === 0 && searchQuery}
+                <div class="no-results">
+                  検索結果が見つかりませんでした
+                </div>
+              {/if}
             </div>
+
+            {#if searchTotalPages > 1}
+              <div class="pagination-controls pagination-bottom">
+                <button 
+                  class="pagination-btn" 
+                  onclick={goToSearchFirstPage} 
+                  disabled={searchCurrentPage === 1}
+                >
+                  ≪
+                </button>
+                <button 
+                  class="pagination-btn" 
+                  onclick={goToSearchPreviousPage} 
+                  disabled={searchCurrentPage === 1}
+                >
+                  ‹
+                </button>
+                
+                {#each Array.from({length: Math.min(7, searchTotalPages)}, (_, i) => {
+                  let start = Math.max(1, searchCurrentPage - 3);
+                  let end = Math.min(searchTotalPages, start + 6);
+                  start = Math.max(1, end - 6);
+                  return start + i;
+                }).filter(page => page <= searchTotalPages) as page}
+                  <button 
+                    class="pagination-btn {searchCurrentPage === page ? 'active' : ''}" 
+                    onclick={() => goToSearchPage(page)}
+                  >
+                    {page}
+                  </button>
+                {/each}
+                
+                <button 
+                  class="pagination-btn" 
+                  onclick={goToSearchNextPage} 
+                  disabled={searchCurrentPage === searchTotalPages}
+                >
+                  ›
+                </button>
+                <button 
+                  class="pagination-btn" 
+                  onclick={goToSearchLastPage} 
+                  disabled={searchCurrentPage === searchTotalPages}
+                >
+                  ≫
+                </button>
+              </div>
+            {/if}
           </div>
         {/if}
 
