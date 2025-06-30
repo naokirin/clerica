@@ -1,4 +1,4 @@
-use crate::database::{self, File};
+use crate::database::{Database, DatabaseTrait, File};
 use sqlx::SqlitePool;
 use notify::{Watcher, RecursiveMode, Event, EventKind};
 use tauri::State;
@@ -88,7 +88,8 @@ pub async fn handle_file_event(
                         updated_at_db: Utc::now(),
                     };
                     
-                    database::add_file(pool, &file)
+                    let db = Database;
+                    db.add_file(pool, &file)
                         .await
                         .map_err(|e| e.to_string())?;
                 }
@@ -104,4 +105,96 @@ pub async fn handle_file_event(
     }
     
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use notify::{Event, EventKind, event::CreateKind};
+    use std::path::PathBuf;
+    use sqlx::SqlitePool;
+    use tauri::State;
+
+    #[test]
+    fn test_file_watcher_creation() {
+        let result = FileWatcher::new();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_file_watcher_watch_directory() {
+        let mut watcher = FileWatcher::new().unwrap();
+        
+        // 存在しないディレクトリをwatch
+        let result = watcher.watch_directory("/nonexistent/path");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_file_watcher_unwatch_directory() {
+        let mut watcher = FileWatcher::new().unwrap();
+        
+        // 存在しないディレクトリをunwatch
+        let result = watcher.unwatch_directory("/nonexistent/path");
+        assert!(result.is_err());
+    }
+
+    // Note: Tauriコマンドのテストは実際のTauri環境でのみ可能
+
+    #[tokio::test]
+    async fn test_handle_file_event_create() {
+        let pool = SqlitePool::connect(":memory:").await.unwrap();
+        
+        let event = Event {
+            kind: EventKind::Create(CreateKind::File),
+            paths: vec![PathBuf::from("/test/file.txt")],
+            attrs: Default::default(),
+        };
+        
+        let result = handle_file_event(&pool, event).await;
+        // メタデータ取得に失敗するためエラーは発生しない（pathが存在しないため）
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_handle_file_event_remove() {
+        let pool = SqlitePool::connect(":memory:").await.unwrap();
+        
+        let event = Event {
+            kind: EventKind::Remove(notify::event::RemoveKind::File),
+            paths: vec![PathBuf::from("/test/file.txt")],
+            attrs: Default::default(),
+        };
+        
+        let result = handle_file_event(&pool, event).await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_handle_file_event_modify() {
+        let pool = SqlitePool::connect(":memory:").await.unwrap();
+        
+        let event = Event {
+            kind: EventKind::Modify(notify::event::ModifyKind::Data(notify::event::DataChange::Content)),
+            paths: vec![PathBuf::from("/test/file.txt")],
+            attrs: Default::default(),
+        };
+        
+        let result = handle_file_event(&pool, event).await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_handle_file_event_other() {
+        let pool = SqlitePool::connect(":memory:").await.unwrap();
+        
+        let event = Event {
+            kind: EventKind::Access(notify::event::AccessKind::Read),
+            paths: vec![PathBuf::from("/test/file.txt")],
+            attrs: Default::default(),
+        };
+        
+        let result = handle_file_event(&pool, event).await;
+        assert!(result.is_ok());
+    }
 } 

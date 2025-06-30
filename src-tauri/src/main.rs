@@ -55,7 +55,8 @@ async fn main() {
     println!("マイグレーションが完了しました。");
 
     // データベース初期化（テーブル作成など）
-    if let Err(e) = database::init_database(&pool).await {
+    let db = database::Database;
+    if let Err(e) = database::DatabaseTrait::init_database(&db, &pool).await {
         eprintln!("データベース初期化エラー: {}", e);
         std::process::exit(1);
     }

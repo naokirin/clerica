@@ -1,4 +1,4 @@
-use crate::database::{self, Directory, File};
+use crate::database::{Database, DatabaseTrait, Directory, File};
 use sqlx::SqlitePool;
 use tauri::State;
 use uuid::Uuid;
@@ -7,13 +7,17 @@ use walkdir::WalkDir;
 use std::fs;
 use std::os::unix::fs::MetadataExt;
 
+#[cfg(test)]
+mod tests;
+
 #[tauri::command]
 pub async fn add_directory(
     pool: State<'_, SqlitePool>,
     path: String,
     name: String,
 ) -> Result<Directory, String> {
-    database::add_directory(&pool, &path, &name)
+    let db = Database;
+    db.add_directory(&pool, &path, &name)
         .await
         .map_err(|e| e.to_string())
 }
@@ -23,7 +27,8 @@ pub async fn remove_directory(
     pool: State<'_, SqlitePool>,
     id: String,
 ) -> Result<(), String> {
-    database::remove_directory(&pool, &id)
+    let db = Database;
+    db.remove_directory(&pool, &id)
         .await
         .map_err(|e| e.to_string())
 }
@@ -33,7 +38,8 @@ pub async fn get_files(
     pool: State<'_, SqlitePool>,
     directory_id: String,
 ) -> Result<Vec<File>, String> {
-    database::get_files_by_directory(&pool, &directory_id)
+    let db = Database;
+    db.get_files_by_directory(&pool, &directory_id)
         .await
         .map_err(|e| e.to_string())
 }
@@ -53,20 +59,21 @@ pub async fn update_file_tags(
     file_id: String,
     tag_ids: Vec<String>,
 ) -> Result<(), String> {
+    let db = Database;
     // 既存のタグを削除
-    let current_tags = database::get_file_tags(&pool, &file_id)
+    let current_tags = db.get_file_tags(&pool, &file_id)
         .await
         .map_err(|e| e.to_string())?;
     
     for tag in current_tags {
-        database::remove_file_tag(&pool, &file_id, &tag.id)
+        db.remove_file_tag(&pool, &file_id, &tag.id)
             .await
             .map_err(|e| e.to_string())?;
     }
     
     // 新しいタグを追加
     for tag_id in tag_ids {
-        database::add_file_tag(&pool, &file_id, &tag_id)
+        db.add_file_tag(&pool, &file_id, &tag_id)
             .await
             .map_err(|e| e.to_string())?;
     }
@@ -127,7 +134,8 @@ pub async fn scan_directory(pool: &SqlitePool, directory_id: &str, path: &str) -
                 updated_at_db: Utc::now(),
             };
             
-            database::add_file(pool, &file)
+            let db = Database;
+            db.add_file(pool, &file)
                 .await
                 .map_err(|e| e.to_string())?;
         }
@@ -140,7 +148,8 @@ pub async fn scan_directory(pool: &SqlitePool, directory_id: &str, path: &str) -
 pub async fn get_directories(
     pool: State<'_, SqlitePool>,
 ) -> Result<Vec<Directory>, String> {
-    database::get_directories(&pool)
+    let db = Database;
+    db.get_directories(&pool)
         .await
         .map_err(|e| e.to_string())
 }
@@ -150,7 +159,8 @@ pub async fn get_files_by_directory(
     pool: State<'_, SqlitePool>,
     directory_id: String,
 ) -> Result<Vec<File>, String> {
-    database::get_files_by_directory(&pool, &directory_id)
+    let db = Database;
+    db.get_files_by_directory(&pool, &directory_id)
         .await
         .map_err(|e| e.to_string())
-} 
+}

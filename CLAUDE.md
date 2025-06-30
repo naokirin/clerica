@@ -53,7 +53,7 @@ cd src-tauri && cargo tauri build
 cd src-tauri && cargo clippy
 
 # Rustテスト
-cd src-tauri && cargo test
+cd src-tauri && cargo llvm-cov
 ```
 
 ## Key Technical Details
@@ -91,6 +91,7 @@ cd src-tauri && cargo test
 - Rustは`cargo clippy`でコード品質確認
 - SQLクエリの安全性確保（SQLx使用）
 - 適切なエラーハンドリング実装
+- テストのカバレッジは90%以上を目指す
 
 ### Performance Considerations
 - ファイル監視機能のパフォーマンスに注意

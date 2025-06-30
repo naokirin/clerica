@@ -19,6 +19,11 @@ notify = "8.0"
 walkdir = "2.4"
 tauri = { version = "2", features = [] }
 
+[dev-dependencies]
+mockall = "0.13"
+tempfile = "3.8"
+tokio-test = "0.4"
+
 [dependencies.tauri-plugin-sql]
 features = ["sqlite"]
 version = "2.0.0"

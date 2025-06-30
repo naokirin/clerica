@@ -1,8 +1,11 @@
-use crate::database::{self, File, Tag};
+use crate::database::{Database, DatabaseTrait, File, Tag};
 use sqlx::{SqlitePool, Row};
 use tauri::State;
 use uuid::Uuid;
 use chrono::Utc;
+
+#[cfg(test)]
+mod tests;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct SearchResult {
@@ -118,7 +121,8 @@ pub async fn search_files(
 
 #[tauri::command]
 pub async fn get_tags(pool: State<'_, SqlitePool>) -> Result<Vec<Tag>, String> {
-    database::get_all_tags(&pool)
+    let db = Database;
+    db.get_all_tags(&pool)
         .await
         .map_err(|e| e.to_string())
 }
@@ -129,7 +133,8 @@ pub async fn create_tag(
     name: String,
     color: String,
 ) -> Result<Tag, String> {
-    database::create_tag(&pool, &name, &color)
+    let db = Database;
+    db.create_tag(&pool, &name, &color)
         .await
         .map_err(|e| e.to_string())
 }
@@ -146,4 +151,4 @@ pub async fn delete_tag(
         .map_err(|e| e.to_string())?;
     
     Ok(())
-} 
+}
