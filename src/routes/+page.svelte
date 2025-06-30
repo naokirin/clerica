@@ -58,6 +58,9 @@
   let activeTab: "files" | "search" | "tags" = $state("files");
   let selectedFile: File | null = $state(null);
   
+  // ディレクトリフィルタリング状態
+  let selectedDirectoryId: string | "all" = $state("all");
+  
   // ページネーション状態
   let currentPage = $state(1);
   let itemsPerPage = 25;
@@ -435,10 +438,11 @@
     return "other";
   };
 
-  // カテゴリ別ファイル数を計算
+  // カテゴリ別ファイル数を計算（ディレクトリフィルタリング考慮）
   const updateCategoryCounts = () => {
+    const directoryFilteredFiles = filterFilesByDirectory();
     const counts: Record<FileCategory, number> = {
-      all: files.length,
+      all: directoryFilteredFiles.length,
       image: 0,
       audio: 0,
       video: 0,
@@ -447,7 +451,7 @@
       other: 0
     };
 
-    files.forEach(file => {
+    directoryFilteredFiles.forEach(file => {
       const category = getFileCategory(file);
       counts[category]++;
     });
@@ -455,17 +459,41 @@
     categoryCounts = counts;
   };
 
-  // ファイルをフィルタリング
-  const filterFilesByCategory = () => {
-    if (selectedCategory === "all") {
-      filteredFiles = [...files];
+  // ディレクトリでファイルをフィルタリング
+  const filterFilesByDirectory = () => {
+    let directoryFilteredFiles: File[];
+    if (selectedDirectoryId === "all") {
+      directoryFilteredFiles = [...files];
     } else {
-      filteredFiles = files.filter(file => getFileCategory(file) === selectedCategory);
+      directoryFilteredFiles = files.filter(file => file.directory_id === selectedDirectoryId);
+    }
+    return directoryFilteredFiles;
+  };
+
+  // ファイルをフィルタリング（ディレクトリ＋カテゴリ）
+  const filterFilesByCategory = () => {
+    // まずディレクトリでフィルタリング
+    const directoryFilteredFiles = filterFilesByDirectory();
+    
+    // 次にカテゴリでフィルタリング
+    if (selectedCategory === "all") {
+      filteredFiles = directoryFilteredFiles;
+    } else {
+      filteredFiles = directoryFilteredFiles.filter(file => getFileCategory(file) === selectedCategory);
     }
     
     // フィルタリング後にページネーションを更新
     currentPage = 1;
     updatePagination();
+  };
+
+  // ディレクトリ選択
+  const selectDirectory = (directoryId: string | "all") => {
+    selectedDirectoryId = directoryId;
+    // カテゴリ数を再計算
+    updateCategoryCounts();
+    // フィルタリングを適用
+    filterFilesByCategory();
   };
 
   // カテゴリ選択
@@ -529,8 +557,16 @@
           ディレクトリを追加
         </button>
         <div class="directory-list">
+          <!-- すべてのファイルオプション -->
+          <div class="directory-item {selectedDirectoryId === 'all' ? 'selected' : ''}" onclick={() => selectDirectory('all')}>
+            <div class="directory-content">
+              <div class="directory-name">すべてのファイル</div>
+              <div class="directory-path">全ディレクトリのファイルを表示</div>
+            </div>
+          </div>
+          
           {#each directories as dir (dir.id)}
-            <div class="directory-item">
+            <div class="directory-item {selectedDirectoryId === dir.id ? 'selected' : ''}" onclick={() => selectDirectory(dir.id)}>
               <div class="directory-content">
                 <div class="directory-name">{dir.name}</div>
                 <div class="directory-path">{dir.path}</div>
@@ -538,14 +574,14 @@
               <div class="directory-actions">
                 <button 
                   class="rescan-directory-btn"
-                  onclick={() => rescanDirectory(dir.id)}
+                  onclick={(e) => { e.stopPropagation(); rescanDirectory(dir.id); }}
                   title="ディレクトリを再スキャン"
                 >
                   <RefreshCw size={14} />
                 </button>
                 <button 
                   class="remove-directory-btn"
-                  onclick={() => removeDirectory(dir.id, dir.name)}
+                  onclick={(e) => { e.stopPropagation(); removeDirectory(dir.id, dir.name); }}
                   title="ディレクトリを登録から削除"
                 >
                   <X size={14} />

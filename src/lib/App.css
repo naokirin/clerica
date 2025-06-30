@@ -83,7 +83,53 @@
 
 .directory-content {
   padding: 0.5rem;
+  padding-right: 4rem;
   cursor: pointer;
+}
+
+.directory-actions {
+  position: absolute;
+  top: 50%;
+  right: 0.5rem;
+  transform: translateY(-50%);
+  display: flex;
+  gap: 0.25rem;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.directory-item:hover .directory-actions {
+  opacity: 1;
+}
+
+.rescan-directory-btn,
+.remove-directory-btn {
+  padding: 0.25rem;
+  border: none;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.rescan-directory-btn {
+  background-color: #10b981;
+  color: white;
+}
+
+.rescan-directory-btn:hover {
+  background-color: #059669;
+}
+
+.remove-directory-btn {
+  background-color: #ef4444;
+  color: white;
+}
+
+.remove-directory-btn:hover {
+  background-color: #dc2626;
 }
 
 .tag-item {
@@ -121,30 +167,6 @@
   opacity: 0.8;
 }
 
-.remove-directory-btn {
-  position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
-  padding: 0.25rem;
-  background-color: #ef4444;
-  color: white;
-  border: none;
-  border-radius: 0.25rem;
-  cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.directory-item:hover .remove-directory-btn {
-  opacity: 1;
-}
-
-.remove-directory-btn:hover {
-  background-color: #dc2626;
-}
 
 .tag-item {
   border-left: 3px solid;
