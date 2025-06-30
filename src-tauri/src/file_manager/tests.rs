@@ -74,6 +74,13 @@ mod tests {
             is_directory: false,
             created_at_db: Utc::now(),
             updated_at_db: Utc::now(),
+            file_size: Some(1024),
+            mime_type: Some("text/plain".to_string()),
+            permissions: Some("644".to_string()),
+            owner_uid: Some(1000),
+            group_gid: Some(1000),
+            hard_links: Some(1),
+            device_id: Some(12345),
         }
     }
 

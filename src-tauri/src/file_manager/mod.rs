@@ -6,6 +6,7 @@ use chrono::{DateTime, Utc};
 use walkdir::WalkDir;
 use std::fs;
 use std::os::unix::fs::MetadataExt;
+use std::os::unix::fs::PermissionsExt;
 
 #[cfg(test)]
 mod tests;
@@ -106,6 +107,90 @@ pub async fn move_file(
     Err("Not implemented".to_string())
 }
 
+fn infer_mime_type(path: &std::path::Path) -> Option<String> {
+    path.extension()
+        .and_then(|ext| ext.to_str())
+        .map(|ext| {
+            match ext.to_lowercase().as_str() {
+                // 画像
+                "jpg" | "jpeg" => "image/jpeg",
+                "png" => "image/png",
+                "gif" => "image/gif",
+                "bmp" => "image/bmp",
+                "webp" => "image/webp",
+                "svg" => "image/svg+xml",
+                "ico" => "image/x-icon",
+                
+                // 動画
+                "mp4" => "video/mp4",
+                "avi" => "video/x-msvideo",
+                "mov" => "video/quicktime",
+                "wmv" => "video/x-ms-wmv",
+                "flv" => "video/x-flv",
+                "webm" => "video/webm",
+                "mkv" => "video/x-matroska",
+                
+                // 音声
+                "mp3" => "audio/mpeg",
+                "wav" => "audio/wav",
+                "ogg" => "audio/ogg",
+                "flac" => "audio/flac",
+                "aac" => "audio/aac",
+                "m4a" => "audio/mp4",
+                
+                // ドキュメント
+                "pdf" => "application/pdf",
+                "doc" => "application/msword",
+                "docx" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                "xls" => "application/vnd.ms-excel",
+                "xlsx" => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                "ppt" => "application/vnd.ms-powerpoint",
+                "pptx" => "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                
+                // テキスト
+                "txt" => "text/plain",
+                "md" => "text/markdown",
+                "html" | "htm" => "text/html",
+                "css" => "text/css",
+                "js" => "text/javascript",
+                "json" => "application/json",
+                "xml" => "text/xml",
+                "csv" => "text/csv",
+                
+                // プログラミング
+                "rs" => "text/x-rust",
+                "py" => "text/x-python",
+                "java" => "text/x-java-source",
+                "c" => "text/x-c",
+                "cpp" | "cc" | "cxx" => "text/x-c++",
+                "h" | "hpp" => "text/x-c-header",
+                "go" => "text/x-go",
+                "php" => "text/x-php",
+                "rb" => "text/x-ruby",
+                "swift" => "text/x-swift",
+                "kt" => "text/x-kotlin",
+                "scala" => "text/x-scala",
+                
+                // アーカイブ
+                "zip" => "application/zip",
+                "rar" => "application/x-rar-compressed",
+                "7z" => "application/x-7z-compressed",
+                "tar" => "application/x-tar",
+                "gz" => "application/gzip",
+                "bz2" => "application/x-bzip2",
+                
+                // その他
+                "exe" => "application/x-msdownload",
+                "dmg" => "application/x-apple-diskimage",
+                "deb" => "application/vnd.debian.binary-package",
+                "rpm" => "application/x-rpm",
+                
+                _ => "application/octet-stream",
+            }
+        })
+        .map(String::from)
+}
+
 pub async fn scan_directory(pool: &SqlitePool, directory_id: &str, path: &str) -> Result<(), String> {
     let walker = WalkDir::new(path)
         .follow_links(false)
@@ -115,6 +200,12 @@ pub async fn scan_directory(pool: &SqlitePool, directory_id: &str, path: &str) -
     for entry in walker {
         let path = entry.path();
         if let Ok(metadata) = fs::metadata(path) {
+            // MIMEタイプの推定
+            let mime_type = infer_mime_type(path);
+            
+            // ファイルパーミッション（8進数）
+            let permissions = format!("{:o}", metadata.permissions().mode() & 0o777);
+            
             let file = File {
                 id: Uuid::new_v4().to_string(),
                 path: path.to_string_lossy().to_string(),
@@ -138,6 +229,13 @@ pub async fn scan_directory(pool: &SqlitePool, directory_id: &str, path: &str) -
                 is_directory: metadata.is_dir(),
                 created_at_db: Utc::now(),
                 updated_at_db: Utc::now(),
+                file_size: Some(metadata.len() as i64),
+                mime_type,
+                permissions: Some(permissions),
+                owner_uid: Some(metadata.uid() as i64),
+                group_gid: Some(metadata.gid() as i64),
+                hard_links: Some(metadata.nlink() as i64),
+                device_id: Some(metadata.dev() as i64),
             };
             
             let db = Database;

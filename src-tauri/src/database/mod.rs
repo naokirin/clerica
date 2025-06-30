@@ -26,6 +26,13 @@ pub struct File {
     pub is_directory: bool,
     pub created_at_db: DateTime<Utc>,
     pub updated_at_db: DateTime<Utc>,
+    pub file_size: Option<i64>,
+    pub mime_type: Option<String>,
+    pub permissions: Option<String>,
+    pub owner_uid: Option<i64>,
+    pub group_gid: Option<i64>,
+    pub hard_links: Option<i64>,
+    pub device_id: Option<i64>,
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone, PartialEq)]
@@ -117,7 +124,7 @@ impl DatabaseTrait for Database {
 
     async fn add_file(&self, pool: &SqlitePool, file: &File) -> Result<(), sqlx::Error> {
         sqlx::query(
-            "INSERT OR REPLACE INTO files (id, path, name, directory_id, size, file_type, created_at, modified_at, birth_time, inode, is_directory, created_at_db, updated_at_db) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+            "INSERT OR REPLACE INTO files (id, path, name, directory_id, size, file_type, created_at, modified_at, birth_time, inode, is_directory, created_at_db, updated_at_db, file_size, mime_type, permissions, owner_uid, group_gid, hard_links, device_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
         )
         .bind(&file.id)
         .bind(&file.path)
@@ -132,6 +139,13 @@ impl DatabaseTrait for Database {
         .bind(file.is_directory)
         .bind(file.created_at_db)
         .bind(file.updated_at_db)
+        .bind(file.file_size)
+        .bind(&file.mime_type)
+        .bind(&file.permissions)
+        .bind(file.owner_uid)
+        .bind(file.group_gid)
+        .bind(file.hard_links)
+        .bind(file.device_id)
         .execute(pool)
         .await?;
         
@@ -160,6 +174,13 @@ impl DatabaseTrait for Database {
                 is_directory: row.get("is_directory"),
                 created_at_db: row.get("created_at_db"),
                 updated_at_db: row.get("updated_at_db"),
+                file_size: row.get("file_size"),
+                mime_type: row.get("mime_type"),
+                permissions: row.get("permissions"),
+                owner_uid: row.get("owner_uid"),
+                group_gid: row.get("group_gid"),
+                hard_links: row.get("hard_links"),
+                device_id: row.get("device_id"),
             });
         }
         
@@ -187,6 +208,13 @@ impl DatabaseTrait for Database {
                 is_directory: row.get("is_directory"),
                 created_at_db: row.get("created_at_db"),
                 updated_at_db: row.get("updated_at_db"),
+                file_size: row.get("file_size"),
+                mime_type: row.get("mime_type"),
+                permissions: row.get("permissions"),
+                owner_uid: row.get("owner_uid"),
+                group_gid: row.get("group_gid"),
+                hard_links: row.get("hard_links"),
+                device_id: row.get("device_id"),
             });
         }
         
@@ -314,6 +342,13 @@ mod tests {
                 is_directory BOOLEAN NOT NULL DEFAULT 0,
                 created_at_db TIMESTAMP NOT NULL,
                 updated_at_db TIMESTAMP NOT NULL,
+                file_size INTEGER,
+                mime_type TEXT,
+                permissions TEXT,
+                owner_uid INTEGER,
+                group_gid INTEGER,
+                hard_links INTEGER,
+                device_id INTEGER,
                 FOREIGN KEY (directory_id) REFERENCES directories (id) ON DELETE CASCADE
             )"
         )
@@ -413,6 +448,13 @@ mod tests {
             is_directory: false,
             created_at_db: Utc::now(),
             updated_at_db: Utc::now(),
+            file_size: Some(1024),
+            mime_type: Some("text/plain".to_string()),
+            permissions: Some("644".to_string()),
+            owner_uid: Some(1000),
+            group_gid: Some(1000),
+            hard_links: Some(1),
+            device_id: Some(12345),
         };
         
         db.add_file(&pool, &file).await.unwrap();
@@ -466,6 +508,13 @@ mod tests {
             is_directory: false,
             created_at_db: Utc::now(),
             updated_at_db: Utc::now(),
+            file_size: Some(1024),
+            mime_type: Some("text/plain".to_string()),
+            permissions: Some("644".to_string()),
+            owner_uid: Some(1000),
+            group_gid: Some(1000),
+            hard_links: Some(1),
+            device_id: Some(12345),
         };
         
         let file2 = File {
@@ -482,6 +531,13 @@ mod tests {
             is_directory: false,
             created_at_db: Utc::now(),
             updated_at_db: Utc::now(),
+            file_size: Some(1024),
+            mime_type: Some("text/plain".to_string()),
+            permissions: Some("644".to_string()),
+            owner_uid: Some(1000),
+            group_gid: Some(1000),
+            hard_links: Some(1),
+            device_id: Some(12345),
         };
         
         db.add_file(&pool, &file1).await.unwrap();
@@ -527,6 +583,13 @@ mod tests {
             is_directory: false,
             created_at_db: Utc::now(),
             updated_at_db: Utc::now(),
+            file_size: Some(1024),
+            mime_type: Some("text/plain".to_string()),
+            permissions: Some("644".to_string()),
+            owner_uid: Some(1000),
+            group_gid: Some(1000),
+            hard_links: Some(1),
+            device_id: Some(12345),
         };
         
         let file2 = File {
@@ -543,6 +606,13 @@ mod tests {
             is_directory: false,
             created_at_db: Utc::now(),
             updated_at_db: Utc::now(),
+            file_size: Some(1024),
+            mime_type: Some("text/plain".to_string()),
+            permissions: Some("644".to_string()),
+            owner_uid: Some(1000),
+            group_gid: Some(1000),
+            hard_links: Some(1),
+            device_id: Some(12345),
         };
         
         db.add_file(&pool, &file1).await.unwrap();
@@ -592,6 +662,13 @@ mod tests {
             is_directory: false,
             created_at_db: Utc::now(),
             updated_at_db: Utc::now(),
+            file_size: Some(1024),
+            mime_type: Some("text/plain".to_string()),
+            permissions: Some("644".to_string()),
+            owner_uid: Some(1000),
+            group_gid: Some(1000),
+            hard_links: Some(1),
+            device_id: Some(12345),
         };
         
         // ディレクトリファイル
@@ -609,6 +686,13 @@ mod tests {
             is_directory: true,
             created_at_db: Utc::now(),
             updated_at_db: Utc::now(),
+            file_size: Some(1024),
+            mime_type: Some("text/plain".to_string()),
+            permissions: Some("644".to_string()),
+            owner_uid: Some(1000),
+            group_gid: Some(1000),
+            hard_links: Some(1),
+            device_id: Some(12345),
         };
         
         db.add_file(&pool, &file).await.unwrap();
@@ -654,6 +738,13 @@ mod tests {
             is_directory: true,
             created_at_db: Utc::now(),
             updated_at_db: Utc::now(),
+            file_size: Some(1024),
+            mime_type: Some("text/plain".to_string()),
+            permissions: Some("644".to_string()),
+            owner_uid: Some(1000),
+            group_gid: Some(1000),
+            hard_links: Some(1),
+            device_id: Some(12345),
         };
         
         let result = db.add_file(&pool, &dir_file).await;
@@ -682,6 +773,13 @@ mod tests {
             is_directory: false,
             created_at_db: Utc::now(),
             updated_at_db: Utc::now(),
+            file_size: Some(1024),
+            mime_type: Some("text/plain".to_string()),
+            permissions: Some("644".to_string()),
+            owner_uid: Some(1000),
+            group_gid: Some(1000),
+            hard_links: Some(1),
+            device_id: Some(12345),
         };
         
         db.add_file(&pool, &file).await.unwrap();

@@ -86,6 +86,13 @@ pub async fn handle_file_event(
                         is_directory: metadata.is_dir(),
                         created_at_db: Utc::now(),
                         updated_at_db: Utc::now(),
+                        file_size: Some(metadata.len() as i64),
+                        mime_type: None, // TODO: MIME type inference
+                        permissions: None, // TODO: Add permissions
+                        owner_uid: None,
+                        group_gid: None,
+                        hard_links: None,
+                        device_id: None,
                     };
                     
                     let db = Database;

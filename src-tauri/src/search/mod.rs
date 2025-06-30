@@ -89,6 +89,13 @@ pub async fn search_files(
             is_directory: row.get("is_directory"),
             created_at_db: row.get("created_at_db"),
             updated_at_db: row.get("updated_at_db"),
+            file_size: row.get("file_size"),
+            mime_type: row.get("mime_type"),
+            permissions: row.get("permissions"),
+            owner_uid: row.get("owner_uid"),
+            group_gid: row.get("group_gid"),
+            hard_links: row.get("hard_links"),
+            device_id: row.get("device_id"),
         };
         
         let tag_names: Option<String> = row.get("tag_names");

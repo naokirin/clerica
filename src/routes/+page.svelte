@@ -27,6 +27,13 @@
     is_directory: boolean;
     created_at_db: string;
     updated_at_db: string;
+    file_size: number | null;
+    mime_type: string | null;
+    permissions: string | null;
+    owner_uid: number | null;
+    group_gid: number | null;
+    hard_links: number | null;
+    device_id: number | null;
   }
 
   interface Tag {
@@ -49,6 +56,7 @@
   let selectedTags: string[] = $state([]);
   let searchResults: SearchResult[] = $state([]);
   let activeTab: "files" | "search" | "tags" = $state("files");
+  let selectedFile: File | null = $state(null);
 
   onMount(() => {
     loadData();
@@ -156,6 +164,28 @@
       }
     }
   };
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const formatDate = (dateString: string | null): string => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleString('ja-JP');
+  };
+
+  const selectFile = (file: File) => {
+    selectedFile = file;
+  };
+
+  const closeFileDetails = () => {
+    selectedFile = null;
+  };
 </script>
 
 <div class="app">
@@ -247,10 +277,20 @@
             <h2>ファイル一覧</h2>
             <div class="file-list">
               {#each files as file (file.id)}
-                <div class="file-item">
+                <div class="file-item" onclick={() => selectFile(file)}>
                   <div class="file-icon">
                     {#if file.is_directory}
                       📁
+                    {:else if file.mime_type?.startsWith('image/')}
+                      🖼️
+                    {:else if file.mime_type?.startsWith('video/')}
+                      🎬
+                    {:else if file.mime_type?.startsWith('audio/')}
+                      🎵
+                    {:else if file.mime_type?.includes('pdf')}
+                      📄
+                    {:else if file.mime_type?.includes('text')}
+                      📝
                     {:else}
                       📄
                     {/if}
@@ -259,12 +299,25 @@
                     <div class="file-name">{file.name}</div>
                     <div class="file-info">
                       {#if !file.is_directory}
-                        {(file.size / 1024).toFixed(1)} KB • {file.file_type || "Unknown"}
+                        {formatFileSize(file.file_size || file.size)} 
+                        {#if file.mime_type}
+                          • {file.mime_type}
+                        {:else if file.file_type}
+                          • {file.file_type}
+                        {/if}
                       {:else}
                         ディレクトリ
                       {/if}
                     </div>
                     <div class="file-path">{file.path}</div>
+                    <div class="file-meta">
+                      {#if file.modified_at}
+                        更新: {formatDate(file.modified_at)}
+                      {/if}
+                      {#if file.permissions}
+                        • 権限: {file.permissions}
+                      {/if}
+                    </div>
                   </div>
                 </div>
               {/each}
@@ -331,4 +384,103 @@
       </div>
     </div>
   </div>
+
+  <!-- ファイル詳細モーダル -->
+  {#if selectedFile}
+    <div class="modal-overlay" onclick={closeFileDetails}>
+      <div class="modal-content" onclick={(e) => e.stopPropagation()}>
+        <div class="modal-header">
+          <h3>ファイル詳細</h3>
+          <button class="close-button" onclick={closeFileDetails}>
+            <X size={20} />
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="file-detail-section">
+            <h4>基本情報</h4>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="detail-label">ファイル名:</span>
+                <span class="detail-value">{selectedFile.name}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">パス:</span>
+                <span class="detail-value">{selectedFile.path}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">サイズ:</span>
+                <span class="detail-value">{formatFileSize(selectedFile.file_size || selectedFile.size)}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">種類:</span>
+                <span class="detail-value">{selectedFile.is_directory ? 'ディレクトリ' : (selectedFile.mime_type || selectedFile.file_type || 'Unknown')}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="file-detail-section">
+            <h4>日時情報</h4>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="detail-label">作成日時:</span>
+                <span class="detail-value">{formatDate(selectedFile.created_at)}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">更新日時:</span>
+                <span class="detail-value">{formatDate(selectedFile.modified_at)}</span>
+              </div>
+              {#if selectedFile.birth_time}
+                <div class="detail-item">
+                  <span class="detail-label">作成日時 (birth_time):</span>
+                  <span class="detail-value">{formatDate(selectedFile.birth_time)}</span>
+                </div>
+              {/if}
+            </div>
+          </div>
+
+          <div class="file-detail-section">
+            <h4>システム情報</h4>
+            <div class="detail-grid">
+              {#if selectedFile.permissions}
+                <div class="detail-item">
+                  <span class="detail-label">権限:</span>
+                  <span class="detail-value">{selectedFile.permissions}</span>
+                </div>
+              {/if}
+              {#if selectedFile.owner_uid !== null}
+                <div class="detail-item">
+                  <span class="detail-label">オーナー UID:</span>
+                  <span class="detail-value">{selectedFile.owner_uid}</span>
+                </div>
+              {/if}
+              {#if selectedFile.group_gid !== null}
+                <div class="detail-item">
+                  <span class="detail-label">グループ GID:</span>
+                  <span class="detail-value">{selectedFile.group_gid}</span>
+                </div>
+              {/if}
+              {#if selectedFile.inode !== null}
+                <div class="detail-item">
+                  <span class="detail-label">inode:</span>
+                  <span class="detail-value">{selectedFile.inode}</span>
+                </div>
+              {/if}
+              {#if selectedFile.hard_links !== null}
+                <div class="detail-item">
+                  <span class="detail-label">ハードリンク数:</span>
+                  <span class="detail-value">{selectedFile.hard_links}</span>
+                </div>
+              {/if}
+              {#if selectedFile.device_id !== null}
+                <div class="detail-item">
+                  <span class="detail-label">デバイス ID:</span>
+                  <span class="detail-value">{selectedFile.device_id}</span>
+                </div>
+              {/if}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  {/if}
 </div>
