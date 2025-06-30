@@ -138,7 +138,7 @@ mod tests {
         
         // 空ディレクトリでもディレクトリ自体のエントリが作成される
         let files = db.get_files_by_directory(&pool, &directory.id).await.unwrap();
-        assert!(files.len() >= 1); // 少なくとも1つのエントリ（ディレクトリ自体）
+        assert!(!files.is_empty()); // 少なくとも1つのエントリ（ディレクトリ自体）
     }
 
     #[tokio::test]
@@ -234,7 +234,7 @@ mod tests {
         scan_directory(&pool, &directory.id, temp_path.to_str().unwrap()).await.unwrap();
         
         let initial_files = db.get_files_by_directory(&pool, &directory.id).await.unwrap();
-        assert!(initial_files.len() >= 1);
+        assert!(!initial_files.is_empty());
         let file_names: Vec<String> = initial_files.iter().map(|f| f.name.clone()).collect();
         assert!(file_names.contains(&"initial.txt".to_string()));
         

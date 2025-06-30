@@ -300,6 +300,25 @@
     selectedFile = null;
   };
 
+  // ファイル操作関数
+  const openFile = async (filePath: string) => {
+    try {
+      await invoke("open_file", { filePath });
+    } catch (error) {
+      console.error("Failed to open file:", error);
+      alert(`ファイルを開けませんでした: ${error}`);
+    }
+  };
+
+  const revealInFinder = async (filePath: string) => {
+    try {
+      await invoke("reveal_in_finder", { filePath });
+    } catch (error) {
+      console.error("Failed to reveal in Finder:", error);
+      alert(`Finderで表示できませんでした: ${error}`);
+    }
+  };
+
   // ページネーション関数
   const updatePagination = () => {
     totalFiles = filteredFiles.length;
@@ -992,9 +1011,25 @@
       <div class="modal-content" onclick={(e) => e.stopPropagation()}>
         <div class="modal-header">
           <h3>ファイル詳細</h3>
-          <button class="close-button" onclick={closeFileDetails}>
-            <X size={20} />
-          </button>
+          <div class="modal-actions">
+            <button 
+              class="action-button open-button" 
+              onclick={() => openFile(selectedFile!.path)}
+              title="ファイルを開く"
+            >
+              📂 開く
+            </button>
+            <button 
+              class="action-button finder-button" 
+              onclick={() => revealInFinder(selectedFile!.path)}
+              title="Finderで表示"
+            >
+              🔍 Finder
+            </button>
+            <button class="close-button" onclick={closeFileDetails}>
+              <X size={20} />
+            </button>
+          </div>
         </div>
         <div class="modal-body">
           <div class="file-detail-section">

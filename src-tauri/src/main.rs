@@ -79,6 +79,8 @@ async fn main() {
             file_manager::delete_file,
             file_manager::move_file,
             file_manager::rescan_directory,
+            file_manager::open_file,
+            file_manager::reveal_in_finder,
             search::search_files,
             search::get_tags,
             search::create_tag,

@@ -7,6 +7,7 @@ use walkdir::WalkDir;
 use std::fs;
 use std::os::unix::fs::MetadataExt;
 use std::os::unix::fs::PermissionsExt;
+use std::process::Command;
 
 #[cfg(test)]
 mod tests;
@@ -294,4 +295,55 @@ pub async fn rescan_directory(
     
     // ディレクトリを再スキャン
     scan_directory(&pool, &directory_id, &directory.path).await
+}
+
+#[tauri::command]
+pub async fn open_file(file_path: String) -> Result<(), String> {
+    // ファイルパスの存在確認
+    if !std::path::Path::new(&file_path).exists() {
+        return Err("ファイルが見つかりません".to_string());
+    }
+
+    // macOSでファイルを開く
+    let result = Command::new("open")
+        .arg(&file_path)
+        .output();
+    
+    match result {
+        Ok(output) => {
+            if output.status.success() {
+                Ok(())
+            } else {
+                let error_message = String::from_utf8_lossy(&output.stderr);
+                Err(format!("ファイルを開けませんでした: {error_message}"))
+            }
+        }
+        Err(e) => Err(format!("コマンド実行エラー: {e}")),
+    }
+}
+
+#[tauri::command]
+pub async fn reveal_in_finder(file_path: String) -> Result<(), String> {
+    // ファイルパスの存在確認
+    if !std::path::Path::new(&file_path).exists() {
+        return Err("ファイルが見つかりません".to_string());
+    }
+
+    // macOSでFinderでファイルを表示
+    let result = Command::new("open")
+        .arg("-R")  // Reveal in Finder
+        .arg(&file_path)
+        .output();
+    
+    match result {
+        Ok(output) => {
+            if output.status.success() {
+                Ok(())
+            } else {
+                let error_message = String::from_utf8_lossy(&output.stderr);
+                Err(format!("Finderで表示できませんでした: {error_message}"))
+            }
+        }
+        Err(e) => Err(format!("コマンド実行エラー: {e}")),
+    }
 }
