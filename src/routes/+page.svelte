@@ -2,7 +2,7 @@
   import { onMount } from "svelte";
   import { invoke } from "@tauri-apps/api/core";
   import { open, confirm } from "@tauri-apps/plugin-dialog";
-  import { FolderPlus, Search, Tag, FileText, X } from "lucide-svelte";
+  import { FolderPlus, Search, Tag, FileText, X, RefreshCw } from "lucide-svelte";
   import "../lib/App.css";
 
   interface Directory {
@@ -49,7 +49,6 @@
   let selectedTags: string[] = $state([]);
   let searchResults: SearchResult[] = $state([]);
   let activeTab: "files" | "search" | "tags" = $state("files");
-  let selectedDirectoryId: string | null = $state(null);
 
   onMount(() => {
     loadData();
@@ -132,14 +131,15 @@
     }
   };
 
-  const selectDirectory = async (directoryId: string) => {
+  const rescanDirectory = async (directoryId: string) => {
     try {
-      selectedDirectoryId = directoryId;
-      // 選択されたディレクトリのファイルを読み込み
-      const filesData = await invoke("get_files_by_directory", { directoryId });
-      files = filesData as File[];
+      // ディレクトリを再スキャン
+      await invoke("rescan_directory", { directoryId });
+      // ファイル一覧を再読み込み
+      await loadData();
     } catch (error) {
-      console.error("Failed to select directory:", error);
+      console.error("Failed to rescan directory:", error);
+      alert("ディレクトリの再スキャンに失敗しました。");
     }
   };
 
@@ -150,11 +150,6 @@
         await invoke('remove_directory', { id: directoryId });
         // データを再読み込み
         await loadData();
-        // 選択されたディレクトリが削除された場合はクリア
-        if (selectedDirectoryId === directoryId) {
-          selectedDirectoryId = null;
-          files = [];
-        }
       } catch (error) {
         console.error("Failed to remove directory:", error);
         alert("ディレクトリの削除に失敗しました。");
@@ -179,29 +174,27 @@
         </button>
         <div class="directory-list">
           {#each directories as dir (dir.id)}
-            <div 
-              class="directory-item {selectedDirectoryId === dir.id ? 'selected' : ''}"
-            >
-              <div 
-                class="directory-content"
-                onclick={() => selectDirectory(dir.id)}
-                onkeydown={(e) => e.key === 'Enter' && selectDirectory(dir.id)}
-                role="button"
-                tabindex="0"
-              >
+            <div class="directory-item">
+              <div class="directory-content">
                 <div class="directory-name">{dir.name}</div>
                 <div class="directory-path">{dir.path}</div>
               </div>
-              <button 
-                class="remove-directory-btn"
-                onclick={(e) => {
-                  e.stopPropagation();
-                  removeDirectory(dir.id, dir.name);
-                }}
-                title="ディレクトリを登録から削除"
-              >
-                <X size={14} />
-              </button>
+              <div class="directory-actions">
+                <button 
+                  class="rescan-directory-btn"
+                  onclick={() => rescanDirectory(dir.id)}
+                  title="ディレクトリを再スキャン"
+                >
+                  <RefreshCw size={14} />
+                </button>
+                <button 
+                  class="remove-directory-btn"
+                  onclick={() => removeDirectory(dir.id, dir.name)}
+                  title="ディレクトリを登録から削除"
+                >
+                  <X size={14} />
+                </button>
+              </div>
             </div>
           {/each}
         </div>
@@ -255,12 +248,31 @@
             <div class="file-list">
               {#each files as file (file.id)}
                 <div class="file-item">
-                  <div class="file-name">{file.name}</div>
-                  <div class="file-info">
-                    {file.size} bytes • {file.file_type || "Unknown"}
+                  <div class="file-icon">
+                    {#if file.is_directory}
+                      📁
+                    {:else}
+                      📄
+                    {/if}
+                  </div>
+                  <div class="file-details">
+                    <div class="file-name">{file.name}</div>
+                    <div class="file-info">
+                      {#if !file.is_directory}
+                        {(file.size / 1024).toFixed(1)} KB • {file.file_type || "Unknown"}
+                      {:else}
+                        ディレクトリ
+                      {/if}
+                    </div>
+                    <div class="file-path">{file.path}</div>
                   </div>
                 </div>
               {/each}
+              {#if files.length === 0}
+                <div class="no-files">
+                  ディレクトリを追加してファイルをスキャンしてください
+                </div>
+              {/if}
             </div>
           </div>
         {/if}

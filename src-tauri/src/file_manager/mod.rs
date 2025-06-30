@@ -17,9 +17,16 @@ pub async fn add_directory(
     name: String,
 ) -> Result<Directory, String> {
     let db = Database;
-    db.add_directory(&pool, &path, &name)
+    let directory = db.add_directory(&pool, &path, &name)
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|e| e.to_string())?;
+    
+    // ディレクトリ追加後、ファイルスキャンを実行
+    if let Err(e) = scan_directory(&pool, &directory.id, &path).await {
+        eprintln!("ファイルスキャンエラー: {e}");
+    }
+    
+    Ok(directory)
 }
 
 #[tauri::command]
@@ -36,10 +43,9 @@ pub async fn remove_directory(
 #[tauri::command]
 pub async fn get_files(
     pool: State<'_, SqlitePool>,
-    directory_id: String,
 ) -> Result<Vec<File>, String> {
     let db = Database;
-    db.get_files_by_directory(&pool, &directory_id)
+    db.get_all_files(&pool)
         .await
         .map_err(|e| e.to_string())
 }
@@ -123,10 +129,10 @@ pub async fn scan_directory(pool: &SqlitePool, directory_id: &str, path: &str) -
                     .map(|s| s.to_string()),
                 created_at: metadata.created()
                     .ok()
-                    .map(|t| DateTime::from(t)),
+                    .map(DateTime::from),
                 modified_at: metadata.modified()
                     .ok()
-                    .map(|t| DateTime::from(t)),
+                    .map(DateTime::from),
                 birth_time: None, // macOS固有の実装が必要
                 inode: Some(metadata.ino() as i64),
                 is_directory: metadata.is_dir(),
@@ -163,4 +169,31 @@ pub async fn get_files_by_directory(
     db.get_files_by_directory(&pool, &directory_id)
         .await
         .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn rescan_directory(
+    pool: State<'_, SqlitePool>,
+    directory_id: String,
+) -> Result<(), String> {
+    let db = Database;
+    
+    // ディレクトリ情報を取得
+    let directories = db.get_directories(&pool)
+        .await
+        .map_err(|e| e.to_string())?;
+    
+    let directory = directories.iter()
+        .find(|d| d.id == directory_id)
+        .ok_or("ディレクトリが見つかりません")?;
+    
+    // 既存のファイル情報を削除
+    sqlx::query("DELETE FROM files WHERE directory_id = ?")
+        .bind(&directory_id)
+        .execute(pool.inner())
+        .await
+        .map_err(|e| e.to_string())?;
+    
+    // ディレクトリを再スキャン
+    scan_directory(&pool, &directory_id, &directory.path).await
 }

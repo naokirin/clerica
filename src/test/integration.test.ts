@@ -35,6 +35,14 @@ class MockClericaAPI {
   static async getFilesByDirectory(directoryId: string) {
     return this.mockInvoke('get_files_by_directory', { directoryId });
   }
+
+  static async getAllFiles() {
+    return this.mockInvoke('get_files');
+  }
+
+  static async rescanDirectory(directoryId: string) {
+    return this.mockInvoke('rescan_directory', { directoryId });
+  }
 }
 
 // 結合テスト - 実際のAPIと同様の動作をモック
@@ -205,6 +213,190 @@ describe('Integration Tests', () => {
       const files = await MockClericaAPI.getFilesByDirectory('dir1');
       expect(files).toHaveLength(1);
       expect(files[0].directory_id).toBe('dir1');
+    });
+  });
+
+  describe('New Features Integration', () => {
+    it('should handle get_all_files functionality', async () => {
+      const allFiles = [
+        {
+          id: 'file1',
+          path: '/dir1/file1.txt',
+          name: 'file1.txt',
+          directory_id: 'dir1',
+          size: 1024,
+          file_type: 'txt',
+          created_at: '2023-01-01T00:00:00Z',
+          modified_at: '2023-01-01T00:00:00Z',
+          birth_time: null,
+          inode: 12345,
+          is_directory: false,
+          created_at_db: '2023-01-01T00:00:00Z',
+          updated_at_db: '2023-01-01T00:00:00Z'
+        },
+        {
+          id: 'file2',
+          path: '/dir2/file2.txt',
+          name: 'file2.txt',
+          directory_id: 'dir2',
+          size: 2048,
+          file_type: 'txt',
+          created_at: '2023-01-01T00:00:00Z',
+          modified_at: '2023-01-01T00:00:00Z',
+          birth_time: null,
+          inode: 54321,
+          is_directory: false,
+          created_at_db: '2023-01-01T00:00:00Z',
+          updated_at_db: '2023-01-01T00:00:00Z'
+        }
+      ];
+
+      mockInvoke.mockResolvedValueOnce(allFiles);
+      const files = await MockClericaAPI.getAllFiles();
+      
+      expect(files).toHaveLength(2);
+      expect(files[0].directory_id).toBe('dir1');
+      expect(files[1].directory_id).toBe('dir2');
+      expect(mockInvoke).toHaveBeenCalledWith('get_files');
+    });
+
+    it('should handle directory rescan workflow', async () => {
+      const directoryId = 'dir1';
+      
+      // 初期ファイル状態
+      const initialFiles = [
+        {
+          id: 'file1',
+          path: '/test/old_file.txt',
+          name: 'old_file.txt',
+          directory_id: directoryId,
+          size: 1024,
+          file_type: 'txt',
+          created_at: '2023-01-01T00:00:00Z',
+          modified_at: '2023-01-01T00:00:00Z',
+          birth_time: null,
+          inode: 12345,
+          is_directory: false,
+          created_at_db: '2023-01-01T00:00:00Z',
+          updated_at_db: '2023-01-01T00:00:00Z'
+        }
+      ];
+
+      mockInvoke.mockResolvedValueOnce(initialFiles);
+      let files = await MockClericaAPI.getAllFiles();
+      expect(files).toHaveLength(1);
+      expect(files[0].name).toBe('old_file.txt');
+
+      // ディレクトリを再スキャン
+      mockInvoke.mockResolvedValueOnce(undefined);
+      await MockClericaAPI.rescanDirectory(directoryId);
+
+      // 再スキャン後の新しいファイル状態
+      const updatedFiles = [
+        {
+          id: 'file1',
+          path: '/test/old_file.txt',
+          name: 'old_file.txt',
+          directory_id: directoryId,
+          size: 1024,
+          file_type: 'txt',
+          created_at: '2023-01-01T00:00:00Z',
+          modified_at: '2023-01-01T00:00:00Z',
+          birth_time: null,
+          inode: 12345,
+          is_directory: false,
+          created_at_db: '2023-01-01T00:00:00Z',
+          updated_at_db: '2023-01-01T00:00:00Z'
+        },
+        {
+          id: 'file2',
+          path: '/test/new_file.txt',
+          name: 'new_file.txt',
+          directory_id: directoryId,
+          size: 2048,
+          file_type: 'txt',
+          created_at: '2023-01-02T00:00:00Z',
+          modified_at: '2023-01-02T00:00:00Z',
+          birth_time: null,
+          inode: 54321,
+          is_directory: false,
+          created_at_db: '2023-01-02T00:00:00Z',
+          updated_at_db: '2023-01-02T00:00:00Z'
+        }
+      ];
+
+      mockInvoke.mockResolvedValueOnce(updatedFiles);
+      files = await MockClericaAPI.getAllFiles();
+      expect(files).toHaveLength(2);
+      expect(files.map(f => f.name)).toContain('new_file.txt');
+      
+      expect(mockInvoke).toHaveBeenCalledWith('rescan_directory', { directoryId });
+    });
+
+    it('should handle mixed file types and directories', async () => {
+      const mixedFiles = [
+        {
+          id: 'file1',
+          path: '/test/document.pdf',
+          name: 'document.pdf',
+          directory_id: 'dir1',
+          size: 3072,
+          file_type: 'pdf',
+          created_at: '2023-01-01T00:00:00Z',
+          modified_at: '2023-01-01T00:00:00Z',
+          birth_time: null,
+          inode: 12345,
+          is_directory: false,
+          created_at_db: '2023-01-01T00:00:00Z',
+          updated_at_db: '2023-01-01T00:00:00Z'
+        },
+        {
+          id: 'dir1',
+          path: '/test/subdir',
+          name: 'subdir',
+          directory_id: 'dir1',
+          size: 0,
+          file_type: null,
+          created_at: '2023-01-01T00:00:00Z',
+          modified_at: '2023-01-01T00:00:00Z',
+          birth_time: null,
+          inode: 54321,
+          is_directory: true,
+          created_at_db: '2023-01-01T00:00:00Z',
+          updated_at_db: '2023-01-01T00:00:00Z'
+        },
+        {
+          id: 'file3',
+          path: '/test/image.jpg',
+          name: 'image.jpg',
+          directory_id: 'dir1',
+          size: 5120,
+          file_type: 'jpg',
+          created_at: '2023-01-01T00:00:00Z',
+          modified_at: '2023-01-01T00:00:00Z',
+          birth_time: null,
+          inode: 67890,
+          is_directory: false,
+          created_at_db: '2023-01-01T00:00:00Z',
+          updated_at_db: '2023-01-01T00:00:00Z'
+        }
+      ];
+
+      mockInvoke.mockResolvedValueOnce(mixedFiles);
+      const files = await MockClericaAPI.getAllFiles();
+      
+      expect(files).toHaveLength(3);
+      
+      const regularFiles = files.filter(f => !f.is_directory);
+      const directories = files.filter(f => f.is_directory);
+      
+      expect(regularFiles).toHaveLength(2);
+      expect(directories).toHaveLength(1);
+      expect(directories[0].name).toBe('subdir');
+      
+      const fileTypes = regularFiles.map(f => f.file_type);
+      expect(fileTypes).toContain('pdf');
+      expect(fileTypes).toContain('jpg');
     });
   });
 });

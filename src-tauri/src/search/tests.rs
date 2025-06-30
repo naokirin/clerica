@@ -1,10 +1,10 @@
 #[cfg(test)]
 mod tests {
     use crate::database::{Database, DatabaseTrait, File, Tag};
-    use crate::search::{SearchResult, search_files, get_tags, create_tag, delete_tag};
+    use crate::search::SearchResult;
     use sqlx::SqlitePool;
     use chrono::Utc;
-    use tauri::State;
+    
 
     #[tokio::test]
     async fn test_database_operations() {

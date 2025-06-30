@@ -47,6 +47,7 @@ pub trait DatabaseTrait {
     async fn remove_directory(&self, pool: &SqlitePool, id: &str) -> Result<(), sqlx::Error>;
     async fn add_file(&self, pool: &SqlitePool, file: &File) -> Result<(), sqlx::Error>;
     async fn get_files_by_directory(&self, pool: &SqlitePool, directory_id: &str) -> Result<Vec<File>, sqlx::Error>;
+    async fn get_all_files(&self, pool: &SqlitePool) -> Result<Vec<File>, sqlx::Error>;
     async fn get_all_tags(&self, pool: &SqlitePool) -> Result<Vec<Tag>, sqlx::Error>;
     async fn create_tag(&self, pool: &SqlitePool, name: &str, color: &str) -> Result<Tag, sqlx::Error>;
     async fn add_file_tag(&self, pool: &SqlitePool, file_id: &str, tag_id: &str) -> Result<(), sqlx::Error>;
@@ -140,6 +141,33 @@ impl DatabaseTrait for Database {
     async fn get_files_by_directory(&self, pool: &SqlitePool, directory_id: &str) -> Result<Vec<File>, sqlx::Error> {
         let rows = sqlx::query("SELECT * FROM files WHERE directory_id = ? ORDER BY name")
             .bind(directory_id)
+            .fetch_all(pool)
+            .await?;
+        
+        let mut files = Vec::new();
+        for row in rows {
+            files.push(File {
+                id: row.get("id"),
+                path: row.get("path"),
+                name: row.get("name"),
+                directory_id: row.get("directory_id"),
+                size: row.get("size"),
+                file_type: row.get("file_type"),
+                created_at: row.get("created_at"),
+                modified_at: row.get("modified_at"),
+                birth_time: row.get("birth_time"),
+                inode: row.get("inode"),
+                is_directory: row.get("is_directory"),
+                created_at_db: row.get("created_at_db"),
+                updated_at_db: row.get("updated_at_db"),
+            });
+        }
+        
+        Ok(files)
+    }
+
+    async fn get_all_files(&self, pool: &SqlitePool) -> Result<Vec<File>, sqlx::Error> {
+        let rows = sqlx::query("SELECT * FROM files ORDER BY name")
             .fetch_all(pool)
             .await?;
         
@@ -473,6 +501,126 @@ mod tests {
         
         let tags = db.get_all_tags(&pool).await.unwrap();
         assert_eq!(tags.len(), 2);
+    }
+
+    #[tokio::test]
+    async fn test_get_all_files() {
+        let pool = setup_test_db().await;
+        let db = Database;
+        
+        // ディレクトリを作成
+        let dir1 = db.add_directory(&pool, "/test/dir1", "dir1").await.unwrap();
+        let dir2 = db.add_directory(&pool, "/test/dir2", "dir2").await.unwrap();
+        
+        // ファイルを作成
+        let file1 = File {
+            id: "file1".to_string(),
+            path: "/test/dir1/file1.txt".to_string(),
+            name: "file1.txt".to_string(),
+            directory_id: dir1.id.clone(),
+            size: 1024,
+            file_type: Some("txt".to_string()),
+            created_at: Some(Utc::now()),
+            modified_at: Some(Utc::now()),
+            birth_time: None,
+            inode: Some(12345),
+            is_directory: false,
+            created_at_db: Utc::now(),
+            updated_at_db: Utc::now(),
+        };
+        
+        let file2 = File {
+            id: "file2".to_string(),
+            path: "/test/dir2/file2.txt".to_string(),
+            name: "file2.txt".to_string(),
+            directory_id: dir2.id.clone(),
+            size: 2048,
+            file_type: Some("txt".to_string()),
+            created_at: Some(Utc::now()),
+            modified_at: Some(Utc::now()),
+            birth_time: None,
+            inode: Some(54321),
+            is_directory: false,
+            created_at_db: Utc::now(),
+            updated_at_db: Utc::now(),
+        };
+        
+        db.add_file(&pool, &file1).await.unwrap();
+        db.add_file(&pool, &file2).await.unwrap();
+        
+        // 全ファイルを取得
+        let all_files = db.get_all_files(&pool).await.unwrap();
+        assert_eq!(all_files.len(), 2);
+        
+        // ファイル名でソートされていることを確認
+        assert_eq!(all_files[0].name, "file1.txt");
+        assert_eq!(all_files[1].name, "file2.txt");
+        
+        // 異なるディレクトリのファイルが含まれていることを確認
+        assert_eq!(all_files[0].directory_id, dir1.id);
+        assert_eq!(all_files[1].directory_id, dir2.id);
+    }
+
+    #[tokio::test]
+    async fn test_get_all_files_empty() {
+        let pool = setup_test_db().await;
+        let db = Database;
+        
+        let all_files = db.get_all_files(&pool).await.unwrap();
+        assert_eq!(all_files.len(), 0);
+    }
+
+    #[tokio::test]
+    async fn test_get_all_files_mixed_types() {
+        let pool = setup_test_db().await;
+        let db = Database;
+        
+        let dir = db.add_directory(&pool, "/test", "test").await.unwrap();
+        
+        // 通常ファイル
+        let file = File {
+            id: "file1".to_string(),
+            path: "/test/file.txt".to_string(),
+            name: "file.txt".to_string(),
+            directory_id: dir.id.clone(),
+            size: 1024,
+            file_type: Some("txt".to_string()),
+            created_at: Some(Utc::now()),
+            modified_at: Some(Utc::now()),
+            birth_time: None,
+            inode: Some(12345),
+            is_directory: false,
+            created_at_db: Utc::now(),
+            updated_at_db: Utc::now(),
+        };
+        
+        // ディレクトリファイル
+        let subdir = File {
+            id: "dir1".to_string(),
+            path: "/test/subdir".to_string(),
+            name: "subdir".to_string(),
+            directory_id: dir.id.clone(),
+            size: 0,
+            file_type: None,
+            created_at: Some(Utc::now()),
+            modified_at: Some(Utc::now()),
+            birth_time: None,
+            inode: Some(54321),
+            is_directory: true,
+            created_at_db: Utc::now(),
+            updated_at_db: Utc::now(),
+        };
+        
+        db.add_file(&pool, &file).await.unwrap();
+        db.add_file(&pool, &subdir).await.unwrap();
+        
+        let all_files = db.get_all_files(&pool).await.unwrap();
+        assert_eq!(all_files.len(), 2);
+        
+        // ファイルとディレクトリが両方含まれていることを確認
+        let file_types: Vec<bool> = all_files.iter().map(|f| f.is_directory).collect();
+        assert!(file_types.contains(&true));  // ディレクトリが含まれている
+        assert!(file_types.contains(&false)); // 通常ファイルが含まれている
     }
 
     #[tokio::test]

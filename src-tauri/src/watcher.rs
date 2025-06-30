@@ -77,10 +77,10 @@ pub async fn handle_file_event(
                             .map(|s| s.to_string()),
                         created_at: metadata.created()
                             .ok()
-                            .map(|t| chrono::DateTime::from(t)),
+                            .map(chrono::DateTime::from),
                         modified_at: metadata.modified()
                             .ok()
-                            .map(|t| chrono::DateTime::from(t)),
+                            .map(chrono::DateTime::from),
                         birth_time: None,
                         inode: None, // macOS固有の実装が必要
                         is_directory: metadata.is_dir(),
@@ -113,7 +113,7 @@ mod tests {
     use notify::{Event, EventKind, event::CreateKind};
     use std::path::PathBuf;
     use sqlx::SqlitePool;
-    use tauri::State;
+    
 
     #[test]
     fn test_file_watcher_creation() {

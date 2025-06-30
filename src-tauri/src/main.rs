@@ -1,9 +1,8 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use sqlx::migrate::MigrateDatabase;
 use sqlx::sqlite::SqliteConnectOptions;
-use sqlx::{Sqlite, SqlitePool};
+use sqlx::SqlitePool;
 use std::env;
 use std::path::Path;
 use std::str::FromStr;
@@ -26,16 +25,15 @@ async fn main() {
     } else {
         // 本番モード: ホームディレクトリに配置
         let home = env::var("HOME").unwrap_or_else(|_| ".".to_string());
-        let db_path = format!("{}/clerica.db", home);
-        (format!("sqlite:{}", db_path), db_path)
+        let db_path = format!("{home}/clerica.db");
+        (format!("sqlite:{db_path}"), db_path)
     };
 
     // データベースファイルが存在しない場合の処理
     let db_exists = Path::new(&db_file_path).exists();
     if !db_exists {
         println!(
-            "データベースファイルが存在しません。新規作成します: {}",
-            db_file_path
+            "データベースファイルが存在しません。新規作成します: {db_file_path}"
         );
     }
 
@@ -49,7 +47,7 @@ async fn main() {
     // マイグレーション実行
     println!("マイグレーションを実行しています...");
     if let Err(e) = sqlx::migrate!("./migrations").run(&pool).await {
-        eprintln!("マイグレーション実行エラー: {}", e);
+        eprintln!("マイグレーション実行エラー: {e}");
         std::process::exit(1);
     }
     println!("マイグレーションが完了しました。");
@@ -57,7 +55,7 @@ async fn main() {
     // データベース初期化（テーブル作成など）
     let db = database::Database;
     if let Err(e) = database::DatabaseTrait::init_database(&db, &pool).await {
-        eprintln!("データベース初期化エラー: {}", e);
+        eprintln!("データベース初期化エラー: {e}");
         std::process::exit(1);
     }
 
@@ -80,6 +78,7 @@ async fn main() {
             file_manager::update_file_tags,
             file_manager::delete_file,
             file_manager::move_file,
+            file_manager::rescan_directory,
             search::search_files,
             search::get_tags,
             search::create_tag,

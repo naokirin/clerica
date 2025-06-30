@@ -34,14 +34,14 @@ pub async fn search_files(
     // ファイル名検索
     if !query.is_empty() {
         conditions.push("f.name LIKE ?".to_string());
-        params.push(format!("%{}%", query));
+        params.push(format!("%{query}%"));
     }
     
     // タグフィルタ
     if let Some(tag_ids) = tag_ids {
         if !tag_ids.is_empty() {
             let placeholders = tag_ids.iter().map(|_| "?".to_string()).collect::<Vec<_>>().join(",");
-            conditions.push(format!("ft.tag_id IN ({})", placeholders));
+            conditions.push(format!("ft.tag_id IN ({placeholders})"));
             params.extend(tag_ids);
         }
     }
