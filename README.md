@@ -53,7 +53,7 @@ cargo build
 npm run dev
 
 # 別ターミナルでTauri開発サーバー
-cargo tauri dev
+npm run tauri dev
 ```
 
 ## ビルド
@@ -66,7 +66,7 @@ npm run build
 
 ### 本番ビルド
 ```bash
-cargo tauri build
+npm run tauri build
 ```
 
 ## プロジェクト構造

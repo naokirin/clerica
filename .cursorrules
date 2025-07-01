@@ -25,7 +25,7 @@ npm run build
 
 ### 3. Tauri ビルド確認
 ```bash
-cd src-tauri && cargo tauri build
+npm run tauri build
 ```
 - Tauri アプリケーションが正常にビルドされることを確認
 - バックエンドとフロントエンドの統合が正常に動作することを確認
@@ -33,7 +33,6 @@ cd src-tauri && cargo tauri build
 ### 4. 開発サーバー確認
 ```bash
 npm run dev
-cd src-tauri && cargo tauri dev
 ```
 - 開発環境でアプリケーションが正常に起動することを確認
 
@@ -75,10 +74,10 @@ cd src-tauri && cargo tauri dev
 - データベースエラー: マイグレーションとスキーマを確認
 
 ## 開発フロー
-1. 機能開発時は `cargo tauri dev` で開発サーバー起動
+1. 機能開発時は `npm run dev` で開発サーバー起動
 2. 変更後は `cargo build` でバックエンド確認
 3. フロントエンド変更後は `npm run build` で確認
-4. 最終確認は `cargo tauri build` で統合ビルド
+4. 最終確認は `npm run tauri build` で統合ビルド
 
 ## 注意事項
 - ファイル監視機能の実装時はパフォーマンスに注意

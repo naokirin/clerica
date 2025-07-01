@@ -32,7 +32,6 @@ Clericaは、Mac向けファイル整理・検索ツールです。複数のデ�
 ### Development Server
 ```bash
 npm run dev  # フロントエンド開発サーバー起動
-cd src-tauri && cargo tauri dev  # Tauri開発アプリ起動
 ```
 
 ### Build Commands
@@ -44,7 +43,7 @@ npm run build
 cd src-tauri && cargo build
 
 # 統合ビルド（本番）
-cd src-tauri && cargo tauri build
+npm run tauri build
 ```
 
 ### Code Quality
@@ -84,7 +83,7 @@ cd src-tauri && cargo llvm-cov
 変更後は必ず以下のコマンドを実行してビルドエラーがないことを確認:
 1. `cd src-tauri && cargo build` - Rustコンパイル確認
 2. `npm run build` - TypeScriptコンパイル確認
-3. `cd src-tauri && cargo tauri build` - 統合ビルド確認
+3. `npm run tauri build` - 統合ビルド確認
 
 ### Code Quality
 - TypeScript strict モード有効
