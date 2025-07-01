@@ -65,6 +65,15 @@
   // 削除処理中の状態管理
   let isDeleting = $state(false);
   
+  // 読み込み状態管理
+  let isLoading = $state(true);
+  let loadingSteps = $state({
+    directories: false,
+    tags: false,
+    files: false
+  });
+  let loadingProgress = $state(0);
+  
   // ページネーション状態
   let currentPage = $state(1);
   let itemsPerPage = 25;
@@ -172,25 +181,41 @@
 
   const loadData = async () => {
     try {
+      isLoading = true;
+      loadingProgress = 0;
+      loadingSteps = { directories: false, tags: false, files: false };
+      
       // ディレクトリの読み込み
       const directoriesData = await invoke("get_directories");
       directories = directoriesData as Directory[];
+      loadingSteps.directories = true;
+      loadingProgress = 33;
       
       // タグの読み込み
       const tagsData = await invoke("get_tags");
       tags = tagsData as Tag[];
+      loadingSteps.tags = true;
+      loadingProgress = 66;
       
       // ファイルの読み込み
       const filesData = await invoke("get_files");
       files = filesData as File[];
+      loadingSteps.files = true;
+      loadingProgress = 100;
       
       // カテゴリ別ファイル数を計算
       updateCategoryCounts();
       
       // フィルタリングを適用
       filterFilesByCategory();
+      
+      // 読み込み完了
+      setTimeout(() => {
+        isLoading = false;
+      }, 500); // 少し遅延を入れてアニメーションを見やすくする
     } catch (error) {
       console.error("Failed to load data:", error);
+      isLoading = false;
     }
   };
 
@@ -568,12 +593,75 @@
 </script>
 
 <div class="app">
+  <!-- ローディング画面 -->
+  {#if isLoading}
+    <div class="loading-overlay">
+      <div class="loading-container">
+        <div class="loading-logo">
+          <h1>Clerica</h1>
+          <p>Mac向けファイル整理・検索ツール</p>
+        </div>
+        
+        <div class="loading-content">
+          <div class="loading-spinner">
+            <Loader2 size={48} class="animate-spin" />
+          </div>
+          
+          <div class="loading-progress">
+            <div class="progress-bar">
+              <div 
+                class="progress-fill" 
+                style="width: {loadingProgress}%"
+              ></div>
+            </div>
+            <div class="progress-text">{loadingProgress}%</div>
+          </div>
+          
+          <div class="loading-steps">
+            <div class="loading-step {loadingSteps.directories ? 'completed' : ''}">
+              <div class="step-icon">
+                {#if loadingSteps.directories}
+                  ✓
+                {:else}
+                  <div class="step-dot"></div>
+                {/if}
+              </div>
+              <span>ディレクトリを読み込み中...</span>
+            </div>
+            
+            <div class="loading-step {loadingSteps.tags ? 'completed' : ''}">
+              <div class="step-icon">
+                {#if loadingSteps.tags}
+                  ✓
+                {:else}
+                  <div class="step-dot"></div>
+                {/if}
+              </div>
+              <span>タグを読み込み中...</span>
+            </div>
+            
+            <div class="loading-step {loadingSteps.files ? 'completed' : ''}">
+              <div class="step-icon">
+                {#if loadingSteps.files}
+                  ✓
+                {:else}
+                  <div class="step-dot"></div>
+                {/if}
+              </div>
+              <span>ファイルを読み込み中...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  {/if}
+
   <header class="app-header">
     <h1>Clerica</h1>
     <p>Mac向けファイル整理・検索ツール</p>
   </header>
 
-  <div class="app-content">
+  <div class="app-content {isLoading ? 'loading' : ''}">
     <div class="sidebar">
       <div class="sidebar-section">
         <h3>ディレクトリ</h3>
