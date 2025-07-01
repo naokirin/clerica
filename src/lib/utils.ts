@@ -16,13 +16,7 @@ export function formatDate(dateString: string | null): string {
   
   try {
     const date = new Date(dateString);
-    return date.toLocaleDateString('ja-JP', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    return date.toLocaleString('ja-JP');
   } catch (error) {
     return 'Invalid Date';
   }
@@ -131,4 +125,67 @@ export function sortByProperty<T>(
     
     return 0;
   });
+}
+
+import type { File, FileCategory, FileCategoryInfo } from './types.js';
+
+export function getFileCategory(file: File): FileCategory {
+  if (file.is_directory) return "other";
+  
+  const mimeType = file.mime_type?.toLowerCase() || "";
+  const extension = file.file_type?.toLowerCase() || "";
+  
+  const fileCategories: FileCategoryInfo[] = [
+    {
+      key: "image",
+      label: "画像",
+      icon: "🖼️",
+      mimeTypes: ["image/"],
+      extensions: ["jpg", "jpeg", "png", "gif", "bmp", "webp", "svg", "ico", "tiff", "raw"]
+    },
+    {
+      key: "audio",
+      label: "音声",
+      icon: "🎵",
+      mimeTypes: ["audio/"],
+      extensions: ["mp3", "wav", "ogg", "flac", "aac", "m4a", "wma", "opus"]
+    },
+    {
+      key: "video",
+      label: "動画",
+      icon: "🎬",
+      mimeTypes: ["video/"],
+      extensions: ["mp4", "avi", "mov", "wmv", "flv", "webm", "mkv", "m4v", "3gp"]
+    },
+    {
+      key: "document",
+      label: "ドキュメント",
+      icon: "📄",
+      mimeTypes: ["application/pdf", "application/msword", "application/vnd.", "text/"],
+      extensions: ["pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt", "md", "html", "htm", "css", "js", "json", "xml", "csv", "rtf"]
+    },
+    {
+      key: "archive",
+      label: "圧縮ファイル",
+      icon: "📦",
+      mimeTypes: ["application/zip", "application/x-rar", "application/x-7z", "application/x-tar", "application/gzip"],
+      extensions: ["zip", "rar", "7z", "tar", "gz", "bz2", "xz", "lzma"]
+    }
+  ];
+  
+  for (const category of fileCategories) {
+    // MIMEタイプでチェック
+    for (const mime of category.mimeTypes) {
+      if (mimeType.startsWith(mime.toLowerCase())) {
+        return category.key;
+      }
+    }
+    
+    // 拡張子でチェック
+    if (category.extensions.includes(extension)) {
+      return category.key;
+    }
+  }
+  
+  return "other";
 }

@@ -20,6 +20,14 @@ export interface File {
   is_directory: boolean;
   created_at_db: string;
   updated_at_db: string;
+  file_size: number | null;
+  mime_type: string | null;
+  permissions: string | null;
+  owner_uid: number | null;
+  group_gid: number | null;
+  hard_links: number | null;
+  device_id: number | null;
+  last_accessed: string | null;
 }
 
 export interface Tag {
@@ -33,4 +41,20 @@ export interface SearchResult {
   file: File;
   tags: Tag[];
   score: number;
+}
+
+export type FileCategory = "all" | "image" | "audio" | "video" | "document" | "archive" | "other";
+
+export interface FileCategoryInfo {
+  key: FileCategory;
+  label: string;
+  icon: string;
+  mimeTypes: string[];
+  extensions: string[];
+}
+
+export interface LoadingSteps {
+  directories: boolean;
+  tags: boolean;
+  files: boolean;
 }
