@@ -44,6 +44,30 @@ pub struct Tag {
     pub created_at: DateTime<Utc>,
 }
 
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, PartialEq)]
+pub struct CustomMetadataKey {
+    pub id: String,
+    pub name: String,
+    pub display_name: String,
+    pub data_type: String,
+    pub description: Option<String>,
+    pub is_required: bool,
+    pub default_value: Option<String>,
+    pub validation_pattern: Option<String>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, PartialEq)]
+pub struct CustomMetadataValue {
+    pub id: String,
+    pub file_id: String,
+    pub key_id: String,
+    pub value: Option<String>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
 #[cfg(test)]
 use mockall::predicate::*;
 
@@ -59,8 +83,19 @@ pub trait DatabaseTrait {
     async fn get_all_tags(&self, pool: &SqlitePool) -> Result<Vec<Tag>, sqlx::Error>;
     async fn create_tag(&self, pool: &SqlitePool, name: &str, color: &str) -> Result<Tag, sqlx::Error>;
     async fn add_file_tag(&self, pool: &SqlitePool, file_id: &str, tag_id: &str) -> Result<(), sqlx::Error>;
-    async fn remove_file_tag(&self, pool: &SqlitePool, file_id: &str, tag_id: &str) -> Result<(), sqlx::Error>;
+    async fn remove_file_tag(&self, pool: &SqlitePool, file_id: &str, tag_id: &str) -> Result<(), sqlx::Error>;  
     async fn get_file_tags(&self, pool: &SqlitePool, file_id: &str) -> Result<Vec<Tag>, sqlx::Error>;
+    // カスタムメタデータキー管理
+    async fn create_custom_metadata_key(&self, pool: &SqlitePool, key: &CustomMetadataKey) -> Result<CustomMetadataKey, sqlx::Error>;
+    async fn get_all_custom_metadata_keys(&self, pool: &SqlitePool) -> Result<Vec<CustomMetadataKey>, sqlx::Error>;
+    async fn update_custom_metadata_key(&self, pool: &SqlitePool, key: &CustomMetadataKey) -> Result<CustomMetadataKey, sqlx::Error>;
+    async fn delete_custom_metadata_key(&self, pool: &SqlitePool, key_id: &str) -> Result<(), sqlx::Error>;
+    async fn get_custom_metadata_key_by_name(&self, pool: &SqlitePool, name: &str) -> Result<Option<CustomMetadataKey>, sqlx::Error>;
+    // カスタムメタデータ値管理
+    async fn set_custom_metadata_value(&self, pool: &SqlitePool, file_id: &str, key_id: &str, value: Option<&str>) -> Result<CustomMetadataValue, sqlx::Error>;
+    async fn get_custom_metadata_values_by_file(&self, pool: &SqlitePool, file_id: &str) -> Result<Vec<CustomMetadataValue>, sqlx::Error>;
+    async fn get_custom_metadata_value(&self, pool: &SqlitePool, file_id: &str, key_id: &str) -> Result<Option<CustomMetadataValue>, sqlx::Error>;
+    async fn delete_custom_metadata_value(&self, pool: &SqlitePool, file_id: &str, key_id: &str) -> Result<(), sqlx::Error>;
 }
 
 pub struct Database;
@@ -305,6 +340,204 @@ impl DatabaseTrait for Database {
         }
         
         Ok(tags)
+    }
+
+    async fn create_custom_metadata_key(&self, pool: &SqlitePool, key: &CustomMetadataKey) -> Result<CustomMetadataKey, sqlx::Error> {
+        let id = Uuid::new_v4().to_string();
+        let now = Utc::now();
+        
+        sqlx::query(
+            "INSERT INTO custom_metadata_keys (id, name, display_name, data_type, description, is_required, default_value, validation_pattern, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        )
+        .bind(&id)
+        .bind(&key.name)
+        .bind(&key.display_name)
+        .bind(&key.data_type)
+        .bind(&key.description)
+        .bind(key.is_required)
+        .bind(&key.default_value)
+        .bind(&key.validation_pattern)
+        .bind(now)
+        .bind(now)
+        .execute(pool)
+        .await?;
+        
+        Ok(CustomMetadataKey {
+            id,
+            name: key.name.clone(),
+            display_name: key.display_name.clone(),
+            data_type: key.data_type.clone(),
+            description: key.description.clone(),
+            is_required: key.is_required,
+            default_value: key.default_value.clone(),
+            validation_pattern: key.validation_pattern.clone(),
+            created_at: now,
+            updated_at: now,
+        })
+    }
+
+    async fn get_all_custom_metadata_keys(&self, pool: &SqlitePool) -> Result<Vec<CustomMetadataKey>, sqlx::Error> {
+        let rows = sqlx::query("SELECT * FROM custom_metadata_keys ORDER BY name")
+            .fetch_all(pool)
+            .await?;
+        
+        let mut keys = Vec::new();
+        for row in rows {
+            keys.push(CustomMetadataKey {
+                id: row.get("id"),
+                name: row.get("name"),
+                display_name: row.get("display_name"),
+                data_type: row.get("data_type"),
+                description: row.get("description"),
+                is_required: row.get("is_required"),
+                default_value: row.get("default_value"),
+                validation_pattern: row.get("validation_pattern"),
+                created_at: row.get("created_at"),
+                updated_at: row.get("updated_at"),
+            });
+        }
+        
+        Ok(keys)
+    }
+
+    async fn update_custom_metadata_key(&self, pool: &SqlitePool, key: &CustomMetadataKey) -> Result<CustomMetadataKey, sqlx::Error> {
+        let now = Utc::now();
+        
+        sqlx::query(
+            "UPDATE custom_metadata_keys SET display_name = ?, data_type = ?, description = ?, is_required = ?, default_value = ?, validation_pattern = ?, updated_at = ? WHERE id = ?"
+        )
+        .bind(&key.display_name)
+        .bind(&key.data_type)
+        .bind(&key.description)
+        .bind(key.is_required)
+        .bind(&key.default_value)
+        .bind(&key.validation_pattern)
+        .bind(now)
+        .bind(&key.id)
+        .execute(pool)
+        .await?;
+        
+        Ok(CustomMetadataKey {
+            id: key.id.clone(),
+            name: key.name.clone(),
+            display_name: key.display_name.clone(),
+            data_type: key.data_type.clone(),
+            description: key.description.clone(),
+            is_required: key.is_required,
+            default_value: key.default_value.clone(),
+            validation_pattern: key.validation_pattern.clone(),
+            created_at: key.created_at,
+            updated_at: now,
+        })
+    }
+
+    async fn delete_custom_metadata_key(&self, pool: &SqlitePool, key_id: &str) -> Result<(), sqlx::Error> {
+        sqlx::query("DELETE FROM custom_metadata_keys WHERE id = ?")
+            .bind(key_id)
+            .execute(pool)
+            .await?;
+        
+        Ok(())
+    }
+
+    async fn get_custom_metadata_key_by_name(&self, pool: &SqlitePool, name: &str) -> Result<Option<CustomMetadataKey>, sqlx::Error> {
+        let row = sqlx::query("SELECT * FROM custom_metadata_keys WHERE name = ?")
+            .bind(name)
+            .fetch_optional(pool)
+            .await?;
+        
+        match row {
+            Some(row) => Ok(Some(CustomMetadataKey {
+                id: row.get("id"),
+                name: row.get("name"),
+                display_name: row.get("display_name"),
+                data_type: row.get("data_type"),
+                description: row.get("description"),
+                is_required: row.get("is_required"),
+                default_value: row.get("default_value"),
+                validation_pattern: row.get("validation_pattern"),
+                created_at: row.get("created_at"),
+                updated_at: row.get("updated_at"),
+            })),
+            None => Ok(None),
+        }
+    }
+
+    async fn set_custom_metadata_value(&self, pool: &SqlitePool, file_id: &str, key_id: &str, value: Option<&str>) -> Result<CustomMetadataValue, sqlx::Error> {
+        let id = Uuid::new_v4().to_string();
+        let now = Utc::now();
+        
+        sqlx::query(
+            "INSERT OR REPLACE INTO custom_metadata_values (id, file_id, key_id, value, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)"
+        )
+        .bind(&id)
+        .bind(file_id)
+        .bind(key_id)
+        .bind(value)
+        .bind(now)
+        .bind(now)
+        .execute(pool)
+        .await?;
+        
+        Ok(CustomMetadataValue {
+            id,
+            file_id: file_id.to_string(),
+            key_id: key_id.to_string(),
+            value: value.map(|v| v.to_string()),
+            created_at: now,
+            updated_at: now,
+        })
+    }
+
+    async fn get_custom_metadata_values_by_file(&self, pool: &SqlitePool, file_id: &str) -> Result<Vec<CustomMetadataValue>, sqlx::Error> {
+        let rows = sqlx::query("SELECT * FROM custom_metadata_values WHERE file_id = ?")
+            .bind(file_id)
+            .fetch_all(pool)
+            .await?;
+        
+        let mut values = Vec::new();
+        for row in rows {
+            values.push(CustomMetadataValue {
+                id: row.get("id"),
+                file_id: row.get("file_id"),
+                key_id: row.get("key_id"),
+                value: row.get("value"),
+                created_at: row.get("created_at"),
+                updated_at: row.get("updated_at"),
+            });
+        }
+        
+        Ok(values)
+    }
+
+    async fn get_custom_metadata_value(&self, pool: &SqlitePool, file_id: &str, key_id: &str) -> Result<Option<CustomMetadataValue>, sqlx::Error> {
+        let row = sqlx::query("SELECT * FROM custom_metadata_values WHERE file_id = ? AND key_id = ?")
+            .bind(file_id)
+            .bind(key_id)
+            .fetch_optional(pool)
+            .await?;
+        
+        match row {
+            Some(row) => Ok(Some(CustomMetadataValue {
+                id: row.get("id"),
+                file_id: row.get("file_id"),
+                key_id: row.get("key_id"),
+                value: row.get("value"),
+                created_at: row.get("created_at"),
+                updated_at: row.get("updated_at"),
+            })),
+            None => Ok(None),
+        }
+    }
+
+    async fn delete_custom_metadata_value(&self, pool: &SqlitePool, file_id: &str, key_id: &str) -> Result<(), sqlx::Error> {
+        sqlx::query("DELETE FROM custom_metadata_values WHERE file_id = ? AND key_id = ?")
+            .bind(file_id)
+            .bind(key_id)
+            .execute(pool)
+            .await?;
+        
+        Ok(())
     }
 }
 

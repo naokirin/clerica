@@ -11,9 +11,10 @@
   import SearchView from "../lib/components/SearchView.svelte";
   import TagsView from "../lib/components/TagsView.svelte";
   import FileDetailModal from "../lib/components/FileDetailModal.svelte";
+  import CustomMetadataKeyManager from "../lib/components/CustomMetadataKeyManager.svelte";
   
   // 型とユーティリティのインポート
-  import type { Directory, File, Tag as TagType, SearchResult, FileCategory, LoadingSteps } from "../lib/types.js";
+  import type { Directory, File, Tag as TagType, SearchResult, FileCategory, LoadingSteps, CustomMetadataKey } from "../lib/types.js";
   import { getFileCategory } from "../lib/utils.js";
   import "../lib/App.css";
 
@@ -21,10 +22,11 @@
   let directories: Directory[] = $state([]);
   let files: File[] = $state([]);
   let tags: TagType[] = $state([]);
+  let customMetadataKeys: CustomMetadataKey[] = $state([]);
   let searchQuery = $state("");
   let selectedTags: string[] = $state([]);
   let searchResults: SearchResult[] = $state([]);
-  let activeTab: "files" | "search" | "tags" = $state("files");
+  let activeTab: "files" | "search" | "tags" | "metadata" = $state("files");
   let selectedFile: File | null = $state(null);
   
   // ディレクトリフィルタリング状態
@@ -94,13 +96,18 @@
       const directoriesData = await invoke("get_directories");
       directories = directoriesData as Directory[];
       loadingSteps.directories = true;
-      loadingProgress = 33;
+      loadingProgress = 25;
       
       // タグの読み込み
       const tagsData = await invoke("get_tags");
       tags = tagsData as TagType[];
       loadingSteps.tags = true;
-      loadingProgress = 66;
+      loadingProgress = 50;
+      
+      // カスタムメタデータキーの読み込み
+      const customKeysData = await invoke("get_custom_metadata_keys");
+      customMetadataKeys = customKeysData as CustomMetadataKey[];
+      loadingProgress = 75;
       
       // ファイルの読み込み
       const filesData = await invoke("get_files");
@@ -425,6 +432,16 @@
     searchSelectedCategory = category;
     filterSearchResultsByCategory();
   };
+
+  // カスタムメタデータキーが更新された時の処理
+  const handleCustomMetadataKeysUpdated = async () => {
+    try {
+      const customKeysData = await invoke("get_custom_metadata_keys");
+      customMetadataKeys = customKeysData as CustomMetadataKey[];
+    } catch (error) {
+      console.error("Failed to reload custom metadata keys:", error);
+    }
+  };
 </script>
 
 <div class="app">
@@ -474,6 +491,12 @@
           <Tag size={16} />
           タグ管理
         </button>
+        <button
+          class="tab {activeTab === 'metadata' ? 'active' : ''}"
+          onclick={() => (activeTab = "metadata")}
+        >
+          🏷️ メタデータ
+        </button>
       </div>
 
       <div class="content-area">
@@ -519,6 +542,13 @@
         {#if activeTab === "tags"}
           <TagsView {tags} />
         {/if}
+
+        {#if activeTab === "metadata"}
+          <CustomMetadataKeyManager 
+            keys={customMetadataKeys} 
+            onKeysUpdated={handleCustomMetadataKeysUpdated}
+          />
+        {/if}
       </div>
     </div>
   </div>
@@ -526,6 +556,7 @@
   <FileDetailModal
     file={selectedFile}
     {isDeleting}
+    customMetadataKeys={customMetadataKeys}
     onOpenFile={openFile}
     onRevealInFinder={revealInFinder}
     onDeleteFile={deleteFile}

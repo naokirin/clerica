@@ -1,11 +1,13 @@
 <script lang="ts">
   import { X, Trash2, Loader2 } from "lucide-svelte";
-  import type { File } from "../types.js";
+  import type { File, CustomMetadataKey } from "../types.js";
   import { formatFileSize, formatDate } from "../utils.js";
+  import CustomMetadataEditor from "./CustomMetadataEditor.svelte";
 
   interface Props {
     file: File | null;
     isDeleting: boolean;
+    customMetadataKeys: CustomMetadataKey[];
     onOpenFile: (filePath: string) => void;
     onRevealInFinder: (filePath: string) => void;
     onDeleteFile: (filePath: string, fileName: string) => void;
@@ -15,6 +17,7 @@
   let {
     file,
     isDeleting,
+    customMetadataKeys,
     onOpenFile,
     onRevealInFinder,
     onDeleteFile,
@@ -157,6 +160,14 @@
             {/if}
           </div>
         </div>
+
+        <!-- カスタムメタデータ -->
+        {#if customMetadataKeys.length > 0}
+          <CustomMetadataEditor 
+            fileId={file.id}
+            {customMetadataKeys}
+          />
+        {/if}
       </div>
     </div>
   </div>

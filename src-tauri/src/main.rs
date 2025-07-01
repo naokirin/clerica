@@ -12,6 +12,7 @@ mod database;
 mod file_manager;
 mod search;
 mod watcher;
+mod custom_metadata;
 
 #[tokio::main]
 async fn main() {
@@ -87,6 +88,15 @@ async fn main() {
             search::delete_tag,
             watcher::start_watching,
             watcher::stop_watching,
+            custom_metadata::create_custom_metadata_key,
+            custom_metadata::get_custom_metadata_keys,
+            custom_metadata::update_custom_metadata_key,
+            custom_metadata::delete_custom_metadata_key,
+            custom_metadata::get_custom_metadata_key_by_name,
+            custom_metadata::set_custom_metadata_value,
+            custom_metadata::get_custom_metadata_values_by_file,
+            custom_metadata::get_custom_metadata_value,
+            custom_metadata::delete_custom_metadata_value,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

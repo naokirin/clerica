@@ -58,3 +58,58 @@ export interface LoadingSteps {
   tags: boolean;
   files: boolean;
 }
+
+export type CustomMetadataDataType = "text" | "number" | "date" | "boolean" | "json";
+
+export interface CustomMetadataKey {
+  id: string;
+  name: string;
+  display_name: string;
+  data_type: CustomMetadataDataType;
+  description: string | null;
+  is_required: boolean;
+  default_value: string | null;
+  validation_pattern: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CustomMetadataValue {
+  id: string;
+  file_id: string;
+  key_id: string;
+  value: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateCustomMetadataKeyRequest {
+  name: string;
+  display_name: string;
+  data_type: CustomMetadataDataType;
+  description: string | null;
+  is_required: boolean;
+  default_value: string | null;
+  validation_pattern: string | null;
+}
+
+export interface UpdateCustomMetadataKeyRequest {
+  id: string;
+  display_name: string;
+  data_type: CustomMetadataDataType;
+  description: string | null;
+  is_required: boolean;
+  default_value: string | null;
+  validation_pattern: string | null;
+}
+
+export interface SetCustomMetadataValueRequest {
+  file_id: string;
+  key_id: string;
+  value: string | null;
+}
+
+export interface CustomMetadataValueWithKey {
+  value: CustomMetadataValue;
+  key: CustomMetadataKey;
+}
