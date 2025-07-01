@@ -96,6 +96,7 @@ pub async fn search_files(
             group_gid: row.get("group_gid"),
             hard_links: row.get("hard_links"),
             device_id: row.get("device_id"),
+            last_accessed: row.get("last_accessed"),
         };
         
         let tag_names: Option<String> = row.get("tag_names");

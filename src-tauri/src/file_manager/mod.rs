@@ -268,6 +268,9 @@ pub async fn scan_directory(pool: &SqlitePool, directory_id: &str, path: &str) -
                 group_gid: Some(metadata.gid() as i64),
                 hard_links: Some(metadata.nlink() as i64),
                 device_id: Some(metadata.dev() as i64),
+                last_accessed: metadata.accessed()
+                    .ok()
+                    .map(DateTime::from),
             };
             
             let db = Database;
@@ -329,7 +332,10 @@ pub async fn rescan_directory(
 }
 
 #[tauri::command]
-pub async fn open_file(file_path: String) -> Result<(), String> {
+pub async fn open_file(
+    pool: State<'_, SqlitePool>,
+    file_path: String,
+) -> Result<(), String> {
     // ファイルパスの存在確認
     if !std::path::Path::new(&file_path).exists() {
         return Err("ファイルが見つかりません".to_string());
@@ -343,6 +349,8 @@ pub async fn open_file(file_path: String) -> Result<(), String> {
     match result {
         Ok(output) => {
             if output.status.success() {
+                // ファイルのアクセス日時を更新
+                update_file_last_accessed(&pool, &file_path).await?;
                 Ok(())
             } else {
                 let error_message = String::from_utf8_lossy(&output.stderr);
@@ -351,6 +359,18 @@ pub async fn open_file(file_path: String) -> Result<(), String> {
         }
         Err(e) => Err(format!("コマンド実行エラー: {e}")),
     }
+}
+
+async fn update_file_last_accessed(pool: &SqlitePool, file_path: &str) -> Result<(), String> {
+    let now = Utc::now();
+    sqlx::query("UPDATE files SET last_accessed = ? WHERE path = ?")
+        .bind(now)
+        .bind(file_path)
+        .execute(pool)
+        .await
+        .map_err(|e| format!("アクセス日時更新エラー: {e}"))?;
+    
+    Ok(())
 }
 
 #[tauri::command]

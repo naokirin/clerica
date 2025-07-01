@@ -93,6 +93,9 @@ pub async fn handle_file_event(
                         group_gid: None,
                         hard_links: None,
                         device_id: None,
+                        last_accessed: metadata.accessed()
+                            .ok()
+                            .map(chrono::DateTime::from),
                     };
                     
                     let db = Database;

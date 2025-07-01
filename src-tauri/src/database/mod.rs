@@ -33,6 +33,7 @@ pub struct File {
     pub group_gid: Option<i64>,
     pub hard_links: Option<i64>,
     pub device_id: Option<i64>,
+    pub last_accessed: Option<DateTime<Utc>>,
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone, PartialEq)]
@@ -124,7 +125,7 @@ impl DatabaseTrait for Database {
 
     async fn add_file(&self, pool: &SqlitePool, file: &File) -> Result<(), sqlx::Error> {
         sqlx::query(
-            "INSERT OR REPLACE INTO files (id, path, name, directory_id, size, file_type, created_at, modified_at, birth_time, inode, is_directory, created_at_db, updated_at_db, file_size, mime_type, permissions, owner_uid, group_gid, hard_links, device_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+            "INSERT OR REPLACE INTO files (id, path, name, directory_id, size, file_type, created_at, modified_at, birth_time, inode, is_directory, created_at_db, updated_at_db, file_size, mime_type, permissions, owner_uid, group_gid, hard_links, device_id, last_accessed) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
         )
         .bind(&file.id)
         .bind(&file.path)
@@ -146,6 +147,7 @@ impl DatabaseTrait for Database {
         .bind(file.group_gid)
         .bind(file.hard_links)
         .bind(file.device_id)
+        .bind(file.last_accessed)
         .execute(pool)
         .await?;
         
@@ -181,6 +183,7 @@ impl DatabaseTrait for Database {
                 group_gid: row.get("group_gid"),
                 hard_links: row.get("hard_links"),
                 device_id: row.get("device_id"),
+                last_accessed: row.get("last_accessed"),
             });
         }
         
@@ -215,6 +218,7 @@ impl DatabaseTrait for Database {
                 group_gid: row.get("group_gid"),
                 hard_links: row.get("hard_links"),
                 device_id: row.get("device_id"),
+                last_accessed: row.get("last_accessed"),
             });
         }
         
@@ -349,6 +353,7 @@ mod tests {
                 group_gid INTEGER,
                 hard_links INTEGER,
                 device_id INTEGER,
+                last_accessed TIMESTAMP,
                 FOREIGN KEY (directory_id) REFERENCES directories (id) ON DELETE CASCADE
             )"
         )
@@ -455,6 +460,7 @@ mod tests {
             group_gid: Some(1000),
             hard_links: Some(1),
             device_id: Some(12345),
+            last_accessed: None,
         };
         
         db.add_file(&pool, &file).await.unwrap();
@@ -515,6 +521,7 @@ mod tests {
             group_gid: Some(1000),
             hard_links: Some(1),
             device_id: Some(12345),
+            last_accessed: None,
         };
         
         let file2 = File {
@@ -538,6 +545,7 @@ mod tests {
             group_gid: Some(1000),
             hard_links: Some(1),
             device_id: Some(12345),
+            last_accessed: None,
         };
         
         db.add_file(&pool, &file1).await.unwrap();
@@ -590,6 +598,7 @@ mod tests {
             group_gid: Some(1000),
             hard_links: Some(1),
             device_id: Some(12345),
+            last_accessed: None,
         };
         
         let file2 = File {
@@ -613,6 +622,7 @@ mod tests {
             group_gid: Some(1000),
             hard_links: Some(1),
             device_id: Some(12345),
+            last_accessed: None,
         };
         
         db.add_file(&pool, &file1).await.unwrap();
@@ -669,6 +679,7 @@ mod tests {
             group_gid: Some(1000),
             hard_links: Some(1),
             device_id: Some(12345),
+            last_accessed: None,
         };
         
         // ディレクトリファイル
@@ -693,6 +704,7 @@ mod tests {
             group_gid: Some(1000),
             hard_links: Some(1),
             device_id: Some(12345),
+            last_accessed: None,
         };
         
         db.add_file(&pool, &file).await.unwrap();
@@ -745,6 +757,7 @@ mod tests {
             group_gid: Some(1000),
             hard_links: Some(1),
             device_id: Some(12345),
+            last_accessed: None,
         };
         
         let result = db.add_file(&pool, &dir_file).await;
@@ -780,6 +793,7 @@ mod tests {
             group_gid: Some(1000),
             hard_links: Some(1),
             device_id: Some(12345),
+            last_accessed: None,
         };
         
         db.add_file(&pool, &file).await.unwrap();

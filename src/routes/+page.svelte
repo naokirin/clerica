@@ -34,6 +34,7 @@
     group_gid: number | null;
     hard_links: number | null;
     device_id: number | null;
+    last_accessed: string | null;
   }
 
   interface Tag {
@@ -310,6 +311,8 @@
   const openFile = async (filePath: string) => {
     try {
       await invoke("open_file", { filePath });
+      // ファイルを開いた後にデータを再読み込み（アクセス日時更新のため）
+      await loadData();
     } catch (error) {
       console.error("Failed to open file:", error);
       alert(`ファイルを開けませんでした: ${error}`);
@@ -1147,6 +1150,12 @@
                 <div class="detail-item">
                   <span class="detail-label">作成日時 (birth_time):</span>
                   <span class="detail-value">{formatDate(selectedFile.birth_time)}</span>
+                </div>
+              {/if}
+              {#if selectedFile.last_accessed}
+                <div class="detail-item">
+                  <span class="detail-label">最終アクセス日時:</span>
+                  <span class="detail-value">{formatDate(selectedFile.last_accessed)}</span>
                 </div>
               {/if}
             </div>
