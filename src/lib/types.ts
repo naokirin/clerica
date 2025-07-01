@@ -113,3 +113,12 @@ export interface CustomMetadataValueWithKey {
   value: CustomMetadataValue;
   key: CustomMetadataKey;
 }
+
+export interface MetadataSearchFilter {
+  keyId: string;
+  keyName: string;
+  displayName: string;
+  dataType: CustomMetadataDataType;
+  value: string;
+  operator: 'equals' | 'contains' | 'greater_than' | 'less_than' | 'not_equals';
+}
