@@ -1,6 +1,10 @@
 <script lang="ts">
-  import { invoke } from "@tauri-apps/api/core";
   import { Save, X, Edit3, Trash2 } from "lucide-svelte";
+  import { 
+    getCustomMetadataValuesByFile, 
+    setCustomMetadataValue, 
+    deleteCustomMetadataValue 
+  } from "../api/metadata.js";
   import type { 
     CustomMetadataKey, 
     CustomMetadataValue, 
@@ -27,8 +31,7 @@
     
     isLoading = true;
     try {
-      const values = await invoke("get_custom_metadata_values_by_file", { fileId });
-      metadataValues = values as CustomMetadataValue[];
+      metadataValues = await getCustomMetadataValuesByFile(fileId);
     } catch (e) {
       console.error("カスタムメタデータ値の読み込みに失敗:", e);
       error = "メタデータ値の読み込みに失敗しました";
@@ -128,7 +131,7 @@
         value: value.trim() || null
       };
 
-      await invoke("set_custom_metadata_value", { request });
+      await setCustomMetadataValue(request);
       
       // フォーカスを保持するため、loadMetadataValues()を呼ばず直接値を更新
       const existingValueIndex = metadataValues.findIndex(v => v.key_id === key.id);

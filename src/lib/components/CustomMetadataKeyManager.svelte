@@ -1,7 +1,11 @@
 <script lang="ts">
-  import { invoke } from "@tauri-apps/api/core";
   import { confirm } from "@tauri-apps/plugin-dialog";
   import { Plus, Edit, Trash2, Save, X } from "lucide-svelte";
+  import { 
+    createCustomMetadataKey, 
+    updateCustomMetadataKey, 
+    deleteCustomMetadataKey 
+  } from "../api/metadata.js";
   import type { 
     CustomMetadataKey, 
     CustomMetadataDataType, 
@@ -119,7 +123,7 @@
         validation_pattern: formData.validation_pattern.trim() || null
       };
 
-      await invoke("create_custom_metadata_key", { request });
+      await createCustomMetadataKey(request);
       onKeysUpdated();
       cancelForm();
     } catch (e) {
@@ -145,7 +149,7 @@
         validation_pattern: formData.validation_pattern.trim() || null
       };
 
-      await invoke("update_custom_metadata_key", { request });
+      await updateCustomMetadataKey(editingKeyId, request);
       onKeysUpdated();
       cancelForm();
     } catch (e) {
@@ -170,7 +174,7 @@
         return;
       }
 
-      await invoke("delete_custom_metadata_key", { keyId });
+      await deleteCustomMetadataKey(keyId);
       onKeysUpdated();
     } catch (e) {
       console.error("削除処理でエラーが発生しました:", e);

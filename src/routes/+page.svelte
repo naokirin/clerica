@@ -1,7 +1,26 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { invoke } from "@tauri-apps/api/core";
   import { open, confirm } from "@tauri-apps/plugin-dialog";
+  
+  // API関数のインポート
+  import { 
+    getDirectories, 
+    addDirectory as addDirectoryAPI, 
+    removeDirectory as removeDirectoryAPI, 
+    rescanDirectory as rescanDirectoryAPI 
+  } from "../lib/api/directories.js";
+  import { 
+    getFiles, 
+    openFile as openFileAPI, 
+    revealInFinder as revealInFinderAPI, 
+    deleteFile as deleteFileAPI 
+  } from "../lib/api/files.js";
+  import { searchFiles as searchFilesAPI } from "../lib/api/search.js";
+  import { 
+    getTags, 
+    createTag as createTagAPI, 
+    getCustomMetadataKeys 
+  } from "../lib/api/tags.js";
   import { FileText, Search, Tag } from "lucide-svelte";
 
   // コンポーネントのインポート
@@ -103,25 +122,21 @@
       loadingSteps = { directories: false, tags: false, files: false };
 
       // ディレクトリの読み込み
-      const directoriesData = await invoke("get_directories");
-      directories = directoriesData as Directory[];
+      directories = await getDirectories();
       loadingSteps.directories = true;
       loadingProgress = 25;
 
       // タグの読み込み
-      const tagsData = await invoke("get_tags");
-      tags = tagsData as TagType[];
+      tags = await getTags();
       loadingSteps.tags = true;
       loadingProgress = 50;
 
       // カスタムメタデータキーの読み込み
-      const customKeysData = await invoke("get_custom_metadata_keys");
-      customMetadataKeys = customKeysData as CustomMetadataKey[];
+      customMetadataKeys = await getCustomMetadataKeys();
       loadingProgress = 75;
 
       // ファイルの読み込み
-      const filesData = await invoke("get_files");
-      files = filesData as File[];
+      files = await getFiles();
       loadingSteps.files = true;
       loadingProgress = 100;
 
@@ -151,7 +166,7 @@
 
       if (selected && typeof selected === "string") {
         const name = selected.split("/").pop() || selected;
-        await invoke("add_directory", { path: selected, name });
+        await addDirectoryAPI(selected, name);
         await loadData();
       }
     } catch (error) {
@@ -161,7 +176,7 @@
       );
       if (fallbackPath && fallbackPath.trim()) {
         const name = fallbackPath.split("/").pop() || fallbackPath;
-        await invoke("add_directory", { path: fallbackPath.trim(), name });
+        await addDirectoryAPI(fallbackPath.trim(), name);
         await loadData();
       }
     }
@@ -175,7 +190,7 @@
 
   const rescanDirectory = async (directoryId: string) => {
     try {
-      await invoke("rescan_directory", { directoryId });
+      await rescanDirectoryAPI(directoryId);
       await loadData();
     } catch (error) {
       console.error("Failed to rescan directory:", error);
@@ -193,7 +208,7 @@
     );
     if (confirmed) {
       try {
-        await invoke("remove_directory", { id: directoryId });
+        await removeDirectoryAPI(directoryId);
         await loadData();
       } catch (error) {
         console.error("Failed to remove directory:", error);
@@ -206,7 +221,7 @@
     try {
       const name = prompt("Enter tag name:");
       if (name) {
-        await invoke("create_tag", { name, color: "#3B82F6" });
+        await createTagAPI(name, "#3B82F6");
         await loadData();
       }
     } catch (error) {
@@ -216,12 +231,11 @@
 
   const searchFiles = async () => {
     try {
-      const results = await invoke("search_files", {
-        query: searchQuery,
-        tagIds: selectedTags,
-        metadataFilters: metadataSearchFilters,
-      });
-      searchResults = results as SearchResult[];
+      searchResults = await searchFilesAPI(
+        searchQuery,
+        selectedTags,
+        metadataSearchFilters
+      );
       updateSearchCategoryCounts();
       filterSearchResultsByCategory();
     } catch (error) {
@@ -239,7 +253,7 @@
 
   const openFile = async (filePath: string) => {
     try {
-      await invoke("open_file", { filePath });
+      await openFileAPI(filePath);
       await loadData();
     } catch (error) {
       console.error("Failed to open file:", error);
@@ -249,7 +263,7 @@
 
   const revealInFinder = async (filePath: string) => {
     try {
-      await invoke("reveal_in_finder", { filePath });
+      await revealInFinderAPI(filePath);
     } catch (error) {
       console.error("Failed to reveal in Finder:", error);
       alert(`Finderで表示できませんでした: ${error}`);
@@ -264,7 +278,7 @@
     if (confirmed) {
       isDeleting = true;
       try {
-        await invoke("delete_file", { filePath });
+        await deleteFileAPI(filePath);
         await loadData();
         closeFileDetails();
       } catch (error) {
@@ -464,8 +478,7 @@
   // カスタムメタデータキーが更新された時の処理
   const handleCustomMetadataKeysUpdated = async () => {
     try {
-      const customKeysData = await invoke("get_custom_metadata_keys");
-      customMetadataKeys = customKeysData as CustomMetadataKey[];
+      customMetadataKeys = await getCustomMetadataKeys();
     } catch (error) {
       console.error("Failed to reload custom metadata keys:", error);
     }
