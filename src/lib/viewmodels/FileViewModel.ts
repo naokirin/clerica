@@ -1,6 +1,6 @@
 import { writable, derived, type Writable, type Readable } from 'svelte/store';
 import { BaseViewModel } from './BaseViewModel.js';
-import { getFiles, openFile, revealInFinder, deleteFile } from '../api/files.js';
+import { getFiles, getFilesByDirectory, openFile, revealInFinder, deleteFile } from '../api/files.js';
 import type { File, FileCategory } from '../types.js';
 import { getFileCategory } from '../utils.js';
 
@@ -11,12 +11,14 @@ export class FileViewModel extends BaseViewModel {
   private _currentPage: Writable<number> = writable(1);
   private _itemsPerPage = 25;
   private _isDeleting: Writable<boolean> = writable(false);
+  private _selectedDirectoryId: Writable<string | "all"> = writable("all");
 
   public readonly files = this._files;
   public readonly selectedFile = this._selectedFile;
   public readonly selectedCategory = this._selectedCategory;
   public readonly currentPage = this._currentPage;
   public readonly isDeleting = this._isDeleting;
+  public readonly selectedDirectoryId = this._selectedDirectoryId;
 
   // 派生ストア
   public readonly categoryCounts: Readable<Record<FileCategory, number>> = derived(
@@ -70,14 +72,26 @@ export class FileViewModel extends BaseViewModel {
     this.loadFiles();
   }
 
-  public async loadFiles(): Promise<void> {
+  public async loadFiles(directoryId?: string | "all"): Promise<void> {
+    const targetDirectoryId = directoryId || "all";
+    
     const result = await this.executeAsync(async () => {
-      return await getFiles();
+      if (targetDirectoryId === "all") {
+        return await getFiles();
+      } else {
+        return await getFilesByDirectory(targetDirectoryId);
+      }
     });
 
     if (result) {
       this._files.set(result);
     }
+  }
+
+  public setSelectedDirectoryId(directoryId: string | "all"): void {
+    this._selectedDirectoryId.set(directoryId);
+    this.loadFiles(directoryId); // ディレクトリ変更時にファイルを再読み込み
+    this._currentPage.set(1); // ページをリセット
   }
 
   public selectFile(file: File): void {

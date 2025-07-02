@@ -1,4 +1,4 @@
-import { writable, derived, type Writable, type Readable } from 'svelte/store';
+import { writable, derived, type Writable, type Readable, type Unsubscriber } from 'svelte/store';
 import { BaseViewModel } from './BaseViewModel.js';
 import { DirectoryViewModel } from './DirectoryViewModel.js';
 import { FileViewModel } from './FileViewModel.js';
@@ -23,6 +23,9 @@ export class AppViewModel extends BaseViewModel {
     files: false,
   });
   private _loadingProgress: Writable<number> = writable(0);
+  
+  // サブスクリプション管理
+  private _unsubscribers: Unsubscriber[] = [];
 
   public readonly activeTab = this._activeTab;
   public readonly loadingSteps = this._loadingSteps;
@@ -42,6 +45,13 @@ export class AppViewModel extends BaseViewModel {
     this.fileViewModel = new FileViewModel();
     this.searchViewModel = new SearchViewModel();
     this.tagViewModel = new TagViewModel();
+
+    // ディレクトリ選択の変更をFileViewModelとSearchViewModelに反映
+    const unsubscriber = this.directoryViewModel.selectedDirectoryId.subscribe((directoryId) => {
+      this.fileViewModel.setSelectedDirectoryId(directoryId);
+      this.searchViewModel.setSelectedDirectoryId(directoryId);
+    });
+    this._unsubscribers.push(unsubscriber);
 
     // アプリケーション初期化
     this.initializeApp();
@@ -100,6 +110,11 @@ export class AppViewModel extends BaseViewModel {
   // リソースクリーンアップ
   public dispose(): void {
     super.dispose();
+    
+    // サブスクリプションのクリーンアップ
+    this._unsubscribers.forEach(unsubscriber => unsubscriber());
+    this._unsubscribers = [];
+    
     this.directoryViewModel.dispose();
     this.fileViewModel.dispose();
     this.searchViewModel.dispose();

@@ -12,6 +12,7 @@ export class SearchViewModel extends BaseViewModel {
   private _selectedCategory: Writable<FileCategory> = writable("all");
   private _currentPage: Writable<number> = writable(1);
   private _itemsPerPage = 25;
+  private _selectedDirectoryId: Writable<string | "all"> = writable("all");
 
   public readonly searchQuery = this._searchQuery;
   public readonly selectedTags = this._selectedTags;
@@ -19,6 +20,7 @@ export class SearchViewModel extends BaseViewModel {
   public readonly searchResults = this._searchResults;
   public readonly selectedCategory = this._selectedCategory;
   public readonly currentPage = this._currentPage;
+  public readonly selectedDirectoryId = this._selectedDirectoryId;
 
   // 派生ストア
   public readonly searchCategoryCounts: Readable<Record<FileCategory, number>> = derived(
@@ -108,23 +110,38 @@ export class SearchViewModel extends BaseViewModel {
     this._currentPage.set(totalPages);
   }
 
+  public setSelectedDirectoryId(directoryId: string | "all"): void {
+    this._selectedDirectoryId.set(directoryId);
+    // ディレクトリ変更時に検索を再実行（検索クエリがある場合のみ）
+    let query: string;
+    const queryUnsub = this._searchQuery.subscribe(q => query = q);
+    queryUnsub();
+    
+    if (query! && query!.trim() !== "") {
+      this.performSearch();
+    }
+  }
+
   public async performSearch(): Promise<void> {
     const result = await this.executeAsync(async () => {
       let query: string;
       let tags: string[];
       let filters: MetadataSearchFilter[];
+      let directoryId: string | "all";
 
       // 現在の値を取得
       const queryUnsub = this._searchQuery.subscribe(q => query = q);
       const tagsUnsub = this._selectedTags.subscribe(t => tags = t);
       const filtersUnsub = this._metadataSearchFilters.subscribe(f => filters = f);
+      const dirUnsub = this._selectedDirectoryId.subscribe(d => directoryId = d);
       
       // 購読を即座に解除
       queryUnsub();
       tagsUnsub(); 
       filtersUnsub();
+      dirUnsub();
 
-      return await searchFiles(query!, tags!, filters!);
+      return await searchFiles(query!, tags!, filters!, directoryId!);
     });
 
     if (result) {

@@ -35,6 +35,7 @@ pub async fn search_files(
     tag_ids: Option<Vec<String>>,
     metadata_filters: Vec<MetadataSearchFilter>,
     sort_by: Option<String>,
+    directory_id: Option<String>,
 ) -> Result<Vec<SearchResult>, String> {
 
     // メタデータフィルタの有効性をチェック
@@ -81,6 +82,14 @@ pub async fn search_files(
                 .join(",");
             conditions.push(format!("ft.tag_id IN ({placeholders})"));
             params.extend(tag_ids);
+        }
+    }
+
+    // ディレクトリフィルタ
+    if let Some(dir_id) = directory_id {
+        if dir_id != "all" {
+            conditions.push("f.directory_id = ?".to_string());
+            params.push(dir_id);
         }
     }
 
