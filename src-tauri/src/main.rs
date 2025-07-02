@@ -14,6 +14,7 @@ mod search;
 mod watcher;
 mod custom_metadata;
 mod exif_config;
+mod exif_constants;
 
 #[tokio::main]
 async fn main() {

@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::fs;
-use std::path::Path;
+use crate::exif_constants::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ExifConfig {
@@ -17,10 +16,18 @@ pub struct ExifConfig {
 }
 
 impl ExifConfig {
-    pub fn load_from_file<P: AsRef<Path>>(path: P) -> Result<Self, Box<dyn std::error::Error>> {
-        let content = fs::read_to_string(path)?;
-        let config: ExifConfig = serde_yaml::from_str(&content)?;
-        Ok(config)
+    pub fn new() -> Self {
+        Self {
+            exif_tags: get_exif_tag_names().into_iter().map(|(k, v)| (k, v.to_string())).collect(),
+            orientation_values: get_orientation_values().into_iter().map(|(k, v)| (k, v.to_string())).collect(),
+            color_space_values: get_color_space_values().into_iter().map(|(k, v)| (k, v.to_string())).collect(),
+            metering_mode_values: get_metering_mode_values().into_iter().map(|(k, v)| (k, v.to_string())).collect(),
+            light_source_values: get_light_source_values().into_iter().map(|(k, v)| (k, v.to_string())).collect(),
+            white_balance_values: get_white_balance_values().into_iter().map(|(k, v)| (k, v.to_string())).collect(),
+            scene_capture_type_values: get_scene_capture_type_values().into_iter().map(|(k, v)| (k, v.to_string())).collect(),
+            enhancement_values: get_enhancement_values().into_iter().map(|(k, v)| (k, v.to_string())).collect(),
+            subject_distance_range_values: get_subject_distance_range_values().into_iter().map(|(k, v)| (k, v.to_string())).collect(),
+        }
     }
 }
 
@@ -30,8 +37,7 @@ use std::sync::OnceLock;
 static EXIF_CONFIG: OnceLock<ExifConfig> = OnceLock::new();
 
 pub fn initialize_exif_config() -> Result<(), Box<dyn std::error::Error>> {
-    let config_path = "config/exif_tags.yaml";
-    let config = ExifConfig::load_from_file(config_path)?;
+    let config = ExifConfig::new();
     EXIF_CONFIG.set(config).map_err(|_| "Failed to set EXIF config")?;
     Ok(())
 }

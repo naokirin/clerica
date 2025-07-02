@@ -19,7 +19,6 @@ notify = "8.0"
 walkdir = "2.4"
 exif = { package = "kamadak-exif", version = "0.5" }
 lofty = "0.21"
-serde_yaml = "0.9"
 tauri = { version = "2", features = [] }
 
 [dev-dependencies]
