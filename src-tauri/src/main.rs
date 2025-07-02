@@ -13,6 +13,7 @@ mod file_manager;
 mod search;
 mod watcher;
 mod custom_metadata;
+mod exif_config;
 
 #[tokio::main]
 async fn main() {
@@ -52,6 +53,13 @@ async fn main() {
         std::process::exit(1);
     }
     println!("マイグレーションが完了しました。");
+
+    // EXIF設定の初期化
+    if let Err(e) = exif_config::initialize_exif_config() {
+        eprintln!("EXIF設定の初期化エラー: {e}");
+        std::process::exit(1);
+    }
+    println!("EXIF設定が初期化されました。");
 
     // データベース初期化（テーブル作成など）
     let db = database::Database;
@@ -97,6 +105,7 @@ async fn main() {
             custom_metadata::get_custom_metadata_values_by_file,
             custom_metadata::get_custom_metadata_value,
             custom_metadata::delete_custom_metadata_value,
+            exif_config::get_exif_config_data,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

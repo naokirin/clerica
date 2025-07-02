@@ -3,6 +3,7 @@
   import type { File, CustomMetadataKey } from "../types.js";
   import { formatFileSize, formatDate } from "../utils.js";
   import CustomMetadataEditor from "./CustomMetadataEditor.svelte";
+  import * as exifApi from "../api/exif.js";
 
   interface Props {
     file: File | null;
@@ -25,22 +26,43 @@
   }: Props = $props();
 
   // EXIFメタデータの値を解釈する関数
-  function interpretExifValue(key: string, value: any): string {
+  async function interpretExifValue(key: string, value: any): Promise<string> {
     if (value === null || value === undefined) return '不明';
     
     switch (key) {
       case 'Orientation':
-        const orientations: { [key: number]: string } = {
-          1: '正常',
-          2: '水平反転',
-          3: '180度回転',
-          4: '垂直反転',
-          5: '90度反時計回り回転+水平反転',
-          6: '90度時計回り回転',
-          7: '90度時計回り回転+水平反転',
-          8: '90度反時計回り回転'
-        };
-        return orientations[value] || `不明 (${value})`;
+        const orientationName = await exifApi.getOrientationName(value);
+        return orientationName || `不明 (${value})`;
+        
+      case 'ColorSpace':
+        const colorSpaceName = await exifApi.getColorSpaceName(value);
+        return colorSpaceName || `不明 (${value})`;
+        
+      case 'MeteringMode':
+        const meteringModeName = await exifApi.getMeteringModeName(value);
+        return meteringModeName || `不明 (${value})`;
+        
+      case 'LightSource':
+        const lightSourceName = await exifApi.getLightSourceName(value);
+        return lightSourceName || `不明 (${value})`;
+        
+      case 'WhiteBalance':
+        const whiteBalanceName = await exifApi.getWhiteBalanceName(value);
+        return whiteBalanceName || `不明 (${value})`;
+        
+      case 'SceneCaptureType':
+        const sceneCaptureTypeName = await exifApi.getSceneCaptureTypeName(value);
+        return sceneCaptureTypeName || `不明 (${value})`;
+        
+      case 'Contrast':
+      case 'Saturation':
+      case 'Sharpness':
+        const enhancementName = await exifApi.getEnhancementName(value);
+        return enhancementName || `不明 (${value})`;
+        
+      case 'SubjectDistanceRange':
+        const subjectDistanceRangeName = await exifApi.getSubjectDistanceRangeName(value);
+        return subjectDistanceRangeName || `不明 (${value})`;
         
       case 'Flash':
         const flashModes: { [key: number]: string } = {
@@ -247,98 +269,9 @@
   }
 
   // EXIFタグ番号から名前を取得する関数
-  function getExifTagName(tagNumber: number): string {
-    const tagNames: { [key: number]: string } = {
-      // 基本的なTIFFタグ
-      256: '画像幅',
-      257: '画像高',
-      258: 'ビット/サンプル',
-      259: '圧縮',
-      262: '測光解釈',
-      270: '画像説明',
-      271: 'メーカー',
-      272: 'モデル',
-      274: '向き',
-      277: 'サンプル/ピクセル',
-      282: 'X解像度',
-      283: 'Y解像度',
-      284: 'プレーナー構成',
-      296: '解像度単位',
-      301: '転送関数',
-      306: '撮影日時',
-      315: 'アーティスト',
-      318: 'ホワイトポイント',
-      319: '原色度',
-      529: 'YCbCr係数',
-      530: 'YCbCrサブサンプリング',
-      531: 'YCbCr位置',
-      532: '基準黒白',
-      33432: '著作権',
-      
-      // EXIFタグ
-      33434: '露出時間',
-      33437: 'F値',
-      34850: '露出プログラム',
-      34852: 'スペクトル感度',
-      34855: 'ISO感度',
-      36864: 'Exifバージョン',
-      36867: '撮影日時（オリジナル）',
-      36868: 'デジタル化日時',
-      37121: 'コンポーネント構成',
-      37122: '圧縮ビット/ピクセル',
-      37377: 'シャッター速度値',
-      37378: '絞り値',
-      37379: '明度値',
-      37380: '露出補正値',
-      37381: '最大絞り値',
-      37382: '被写体距離',
-      37383: '測光モード',
-      37384: '光源',
-      37385: 'フラッシュ',
-      37386: '焦点距離',
-      37396: '被写体エリア',
-      37500: 'メーカーノート',
-      37510: 'ユーザーコメント',
-      37520: 'サブ秒時間',
-      37521: 'サブ秒時間（オリジナル）',
-      37522: 'サブ秒時間（デジタル化）',
-      40960: 'FlashPixバージョン',
-      40961: 'カラースペース',
-      40962: 'ピクセルX次元',
-      40963: 'ピクセルY次元',
-      40964: '関連音声ファイル',
-      41483: 'フラッシュエネルギー',
-      41484: '空間周波数応答',
-      41486: '焦点面X解像度',
-      41487: '焦点面Y解像度',
-      41488: '焦点面解像度単位',
-      41492: '被写体位置',
-      41493: '露出インデックス',
-      41495: 'センシング方法',
-      41728: 'ファイルソース',
-      41729: 'シーンタイプ',
-      41730: 'CFAパターン',
-      41985: 'カスタムレンダリング',
-      41986: '露出モード',
-      41987: 'ホワイトバランス',
-      41988: 'デジタルズーム比',
-      41989: '35mm換算焦点距離',
-      41990: 'シーンキャプチャタイプ',
-      41991: 'ゲインコントロール',
-      41992: 'コントラスト',
-      41993: '彩度',
-      41994: 'シャープネス',
-      41996: '被写体距離範囲',
-      42016: '画像ユニークID',
-      42032: 'カメラ所有者名',
-      42033: 'ボディシリアル番号',
-      42034: 'レンズ仕様',
-      42035: 'レンズメーカー',
-      42036: 'レンズモデル',
-      42037: 'レンズシリアル番号'
-    };
-    
-    return tagNames[tagNumber] || `タグ ${tagNumber}`;
+  async function getExifTagName(tagNumber: number): Promise<string> {
+    const tagName = await exifApi.getTagName(tagNumber);
+    return tagName || `タグ ${tagNumber}`;
   }
 </script>
 
@@ -574,78 +507,94 @@
                       <!-- その他のメタデータ（EXIF等）の表示 -->
                       <div class="detail-grid">
                         {#each Object.entries(data) as [key, value]}
-                          <div class="detail-item">
-                            <span class="detail-label">{(() => {
-                              // Tag(Exif, 数値)形式のキーを処理
-                              if (key.startsWith('Tag(') && key.includes(',')) {
-                                const match = key.match(/Tag\((\w+),\s*(\d+)\)/);
-                                if (match) {
-                                  const tagNumber = parseInt(match[2]);
-                                  return getExifTagName(tagNumber);
+                          {#snippet metadataItem()}
+                            {#await Promise.all([ 
+                              (async () => {
+                                // Tag(Exif, 数値)形式のキーを処理
+                                if (key.startsWith('Tag(') && key.includes(',')) {
+                                  const match = key.match(/Tag\((\w+),\s*(\d+)\)/);
+                                  if (match) {
+                                    const tagNumber = parseInt(match[2]);
+                                    return await getExifTagName(tagNumber);
+                                  }
                                 }
-                              }
-                              
-                              // キー名を日本語化
-                              switch(key) {
-                                case 'Make': return 'メーカー';
-                                case 'Model': return 'モデル';
-                                case 'DateTime': return '撮影日時';
-                                case 'ExposureTime': return '露出時間';
-                                case 'FNumber': return 'F値';
-                                case 'ISOSpeedRatings': return 'ISO感度';
-                                case 'FocalLength': return '焦点距離';
-                                case 'Flash': return 'フラッシュ';
-                                case 'WhiteBalance': return 'ホワイトバランス';
-                                case 'ColorSpace': return 'カラースペース';
-                                case 'ExifImageWidth': return '画像幅';
-                                case 'ExifImageHeight': return '画像高';
-                                case 'Orientation': return '向き';
-                                case 'MeteringMode': return '測光モード';
-                                case 'ExposureMode': return '露出モード';
-                                case 'ExposureProgram': return '露出プログラム';
-                                case 'SceneCaptureType': return 'シーンタイプ';
-                                case 'LightSource': return '光源';
-                                case 'FlashPixVersion': return 'FlashPixバージョン';
-                                case 'ExifVersion': return 'Exifバージョン';
-                                case 'ComponentsConfiguration': return 'コンポーネント構成';
-                                case 'CompressedBitsPerPixel': return '圧縮ビット/ピクセル';
-                                case 'PixelXDimension': return 'ピクセルX次元';
-                                case 'PixelYDimension': return 'ピクセルY次元';
-                                case 'UserComment': return 'ユーザーコメント';
-                                case 'RelatedSoundFile': return '関連音声ファイル';
-                                case 'DateTimeOriginal': return '撮影日時（オリジナル）';
-                                case 'DateTimeDigitized': return 'デジタル化日時';
-                                case 'SubSecTime': return 'サブ秒時間';
-                                case 'SubSecTimeOriginal': return 'サブ秒時間（オリジナル）';
-                                case 'SubSecTimeDigitized': return 'サブ秒時間（デジタル化）';
-                                case 'ImageDescription': return '画像説明';
-                                case 'Software': return 'ソフトウェア';
-                                case 'Artist': return 'アーティスト';
-                                case 'Copyright': return '著作権';
-                                case 'XResolution': return 'X解像度';
-                                case 'YResolution': return 'Y解像度';
-                                case 'ResolutionUnit': return '解像度単位';
-                                case 'ImageWidth': return '画像幅';
-                                case 'ImageLength': return '画像高';
-                                case 'BitsPerSample': return 'ビット/サンプル';
-                                case 'Compression': return '圧縮';
-                                case 'PhotometricInterpretation': return '測光解釈';
-                                case 'SamplesPerPixel': return 'サンプル/ピクセル';
-                                case 'PlanarConfiguration': return 'プレーナー構成';
-                                case 'TransferFunction': return '転送関数';
-                                case 'WhitePoint': return 'ホワイトポイント';
-                                case 'PrimaryChromaticities': return '原色度';
-                                case 'YCbCrCoefficients': return 'YCbCr係数';
-                                case 'YCbCrSubSampling': return 'YCbCrサブサンプリング';
-                                case 'YCbCrPositioning': return 'YCbCr位置';
-                                case 'ReferenceBlackWhite': return '基準黒白';
-                                default: return key;
-                              }
-                            })()}:</span>
-                            <span class="detail-value">
-                              {interpretExifValue(key, value)}
-                            </span>
-                          </div>
+                                
+                                // キー名を日本語化
+                                switch(key) {
+                                  case 'Make': return 'メーカー';
+                                  case 'Model': return 'モデル';
+                                  case 'DateTime': return '撮影日時';
+                                  case 'ExposureTime': return '露出時間';
+                                  case 'FNumber': return 'F値';
+                                  case 'ISOSpeedRatings': return 'ISO感度';
+                                  case 'FocalLength': return '焦点距離';
+                                  case 'Flash': return 'フラッシュ';
+                                  case 'WhiteBalance': return 'ホワイトバランス';
+                                  case 'ColorSpace': return 'カラースペース';
+                                  case 'ExifImageWidth': return '画像幅';
+                                  case 'ExifImageHeight': return '画像高';
+                                  case 'Orientation': return '向き';
+                                  case 'MeteringMode': return '測光モード';
+                                  case 'ExposureMode': return '露出モード';
+                                  case 'ExposureProgram': return '露出プログラム';
+                                  case 'SceneCaptureType': return 'シーンタイプ';
+                                  case 'LightSource': return '光源';
+                                  case 'FlashPixVersion': return 'FlashPixバージョン';
+                                  case 'ExifVersion': return 'Exifバージョン';
+                                  case 'ComponentsConfiguration': return 'コンポーネント構成';
+                                  case 'CompressedBitsPerPixel': return '圧縮ビット/ピクセル';
+                                  case 'PixelXDimension': return 'ピクセルX次元';
+                                  case 'PixelYDimension': return 'ピクセルY次元';
+                                  case 'UserComment': return 'ユーザーコメント';
+                                  case 'RelatedSoundFile': return '関連音声ファイル';
+                                  case 'DateTimeOriginal': return '撮影日時（オリジナル）';
+                                  case 'DateTimeDigitized': return 'デジタル化日時';
+                                  case 'SubSecTime': return 'サブ秒時間';
+                                  case 'SubSecTimeOriginal': return 'サブ秒時間（オリジナル）';
+                                  case 'SubSecTimeDigitized': return 'サブ秒時間（デジタル化）';
+                                  case 'ImageDescription': return '画像説明';
+                                  case 'Software': return 'ソフトウェア';
+                                  case 'Artist': return 'アーティスト';
+                                  case 'Copyright': return '著作権';
+                                  case 'XResolution': return 'X解像度';
+                                  case 'YResolution': return 'Y解像度';
+                                  case 'ResolutionUnit': return '解像度単位';
+                                  case 'ImageWidth': return '画像幅';
+                                  case 'ImageLength': return '画像高';
+                                  case 'BitsPerSample': return 'ビット/サンプル';
+                                  case 'Compression': return '圧縮';
+                                  case 'PhotometricInterpretation': return '測光解釈';
+                                  case 'SamplesPerPixel': return 'サンプル/ピクセル';
+                                  case 'PlanarConfiguration': return 'プレーナー構成';
+                                  case 'TransferFunction': return '転送関数';
+                                  case 'WhitePoint': return 'ホワイトポイント';
+                                  case 'PrimaryChromaticities': return '原色度';
+                                  case 'YCbCrCoefficients': return 'YCbCr係数';
+                                  case 'YCbCrSubSampling': return 'YCbCrサブサンプリング';
+                                  case 'YCbCrPositioning': return 'YCbCr位置';
+                                  case 'ReferenceBlackWhite': return '基準黒白';
+                                  default: return key;
+                                }
+                              })(),
+                              interpretExifValue(key, value)
+                            ])}
+                              <div class="detail-item">
+                                <span class="detail-label">読み込み中...</span>
+                                <span class="detail-value">読み込み中...</span>
+                              </div>
+                            {:then [labelName, interpretedValue]}
+                              <div class="detail-item">
+                                <span class="detail-label">{labelName}:</span>
+                                <span class="detail-value">{interpretedValue}</span>
+                              </div>
+                            {:catch error}
+                              <div class="detail-item">
+                                <span class="detail-label">{key}:</span>
+                                <span class="detail-value">エラー: {error.message}</span>
+                              </div>
+                            {/await}
+                          {/snippet}
+                          {@render metadataItem()}
                         {/each}
                       </div>
                     {/if}
