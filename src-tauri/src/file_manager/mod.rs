@@ -112,7 +112,6 @@ pub async fn delete_file(
         Ok(output) => {
             if output.status.success() {
                 // データベースからファイル情報を削除
-                let db = Database;
                 sqlx::query("DELETE FROM files WHERE path = ?")
                     .bind(&file_path)
                     .execute(pool.inner())

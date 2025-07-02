@@ -35,6 +35,7 @@ mod tests {
             file_size: Some(1024),
             mime_type: Some("text/plain".to_string()),
             permissions: Some("644".to_string()),
+            last_accessed: Some(Utc::now()),
             owner_uid: Some(1000),
             group_gid: Some(1000),
             hard_links: Some(1),

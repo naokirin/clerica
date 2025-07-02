@@ -7,8 +7,10 @@ import {
   debounce,
   validatePath,
   generateColorFromString,
-  sortByProperty
+  sortByProperty,
+  getFileCategory
 } from './utils';
+import type { File } from './types';
 
 describe('formatFileSize', () => {
   it('should format bytes correctly', () => {
@@ -185,5 +187,176 @@ describe('sortByProperty', () => {
     const original = [...testArray];
     sortByProperty(testArray, 'name', 'asc');
     expect(testArray).toEqual(original);
+  });
+
+  it('should handle undefined values', () => {
+    const arrayWithUndefined = [
+      { name: 'Alice', value: undefined },
+      { name: 'Bob', value: 10 },
+      { name: 'Charlie', value: 5 }
+    ];
+    const sorted = sortByProperty(arrayWithUndefined, 'value', 'asc');
+    expect(sorted.map(item => item.value)).toEqual([5, 10, undefined]);
+  });
+
+  it('should handle mixed types gracefully', () => {
+    const mixedArray = [
+      { id: 1, value: 'string' },
+      { id: 2, value: 42 },
+      { id: 3, value: 'another' }
+    ];
+    const sorted = sortByProperty(mixedArray, 'value', 'asc');
+    expect(sorted).toHaveLength(3);
+  });
+});
+
+describe('getFileCategory', () => {
+  it('should return "other" for directory files', () => {
+    const dirFile: File = {
+      id: '1',
+      name: 'folder',
+      path: '/test/folder',
+      size: 0,
+      created_at: '2024-01-01',
+      modified_at: '2024-01-01',
+      is_directory: true
+    };
+    expect(getFileCategory(dirFile)).toBe('other');
+  });
+
+  it('should categorize image files by mime type', () => {
+    const imageFile: File = {
+      id: '1',
+      name: 'photo.jpg',
+      path: '/test/photo.jpg',
+      size: 1024,
+      created_at: '2024-01-01',
+      modified_at: '2024-01-01',
+      mime_type: 'image/jpeg'
+    };
+    expect(getFileCategory(imageFile)).toBe('image');
+  });
+
+  it('should categorize image files by extension', () => {
+    const imageFile: File = {
+      id: '1',
+      name: 'photo.png',
+      path: '/test/photo.png',
+      size: 1024,
+      created_at: '2024-01-01',
+      modified_at: '2024-01-01',
+      file_type: 'png'
+    };
+    expect(getFileCategory(imageFile)).toBe('image');
+  });
+
+  it('should categorize audio files', () => {
+    const audioFile: File = {
+      id: '1',
+      name: 'song.mp3',
+      path: '/test/song.mp3',
+      size: 2048,
+      created_at: '2024-01-01',
+      modified_at: '2024-01-01',
+      mime_type: 'audio/mpeg',
+      file_type: 'mp3'
+    };
+    expect(getFileCategory(audioFile)).toBe('audio');
+  });
+
+  it('should categorize video files', () => {
+    const videoFile: File = {
+      id: '1',
+      name: 'movie.mp4',
+      path: '/test/movie.mp4',
+      size: 10240,
+      created_at: '2024-01-01',
+      modified_at: '2024-01-01',
+      mime_type: 'video/mp4',
+      file_type: 'mp4'
+    };
+    expect(getFileCategory(videoFile)).toBe('video');
+  });
+
+  it('should categorize document files', () => {
+    const docFile: File = {
+      id: '1',
+      name: 'document.pdf',
+      path: '/test/document.pdf',
+      size: 5120,
+      created_at: '2024-01-01',
+      modified_at: '2024-01-01',
+      mime_type: 'application/pdf',
+      file_type: 'pdf'
+    };
+    expect(getFileCategory(docFile)).toBe('document');
+  });
+
+  it('should categorize archive files', () => {
+    const archiveFile: File = {
+      id: '1',
+      name: 'archive.zip',
+      path: '/test/archive.zip',
+      size: 15360,
+      created_at: '2024-01-01',
+      modified_at: '2024-01-01',
+      mime_type: 'application/zip',
+      file_type: 'zip'
+    };
+    expect(getFileCategory(archiveFile)).toBe('archive');
+  });
+
+  it('should return "other" for unknown file types', () => {
+    const unknownFile: File = {
+      id: '1',
+      name: 'unknown.xyz',
+      path: '/test/unknown.xyz',
+      size: 1024,
+      created_at: '2024-01-01',
+      modified_at: '2024-01-01',
+      mime_type: 'application/unknown',
+      file_type: 'xyz'
+    };
+    expect(getFileCategory(unknownFile)).toBe('other');
+  });
+
+  it('should handle files without mime type or extension', () => {
+    const fileWithoutType: File = {
+      id: '1',
+      name: 'noextension',
+      path: '/test/noextension',
+      size: 512,
+      created_at: '2024-01-01',
+      modified_at: '2024-01-01'
+    };
+    expect(getFileCategory(fileWithoutType)).toBe('other');
+  });
+
+  it('should handle case insensitive matching', () => {
+    const upperCaseFile: File = {
+      id: '1',
+      name: 'IMAGE.JPG',
+      path: '/test/IMAGE.JPG',
+      size: 1024,
+      created_at: '2024-01-01',
+      modified_at: '2024-01-01',
+      mime_type: 'IMAGE/JPEG',
+      file_type: 'JPG'
+    };
+    expect(getFileCategory(upperCaseFile)).toBe('image');
+  });
+
+  it('should prioritize mime type over extension', () => {
+    const conflictFile: File = {
+      id: '1',
+      name: 'file.txt',
+      path: '/test/file.txt',
+      size: 1024,
+      created_at: '2024-01-01',
+      modified_at: '2024-01-01',
+      mime_type: 'image/png',
+      file_type: 'txt'
+    };
+    expect(getFileCategory(conflictFile)).toBe('image');
   });
 });

@@ -39,6 +39,14 @@ mod tests {
                 is_directory BOOLEAN NOT NULL DEFAULT 0,
                 created_at_db TIMESTAMP NOT NULL,
                 updated_at_db TIMESTAMP NOT NULL,
+                file_size INTEGER,
+                mime_type TEXT,
+                permissions TEXT,
+                owner_uid INTEGER,
+                group_gid INTEGER,
+                hard_links INTEGER,
+                device_id INTEGER,
+                last_accessed TIMESTAMP,
                 FOREIGN KEY (directory_id) REFERENCES directories (id) ON DELETE CASCADE
             )"
         )
@@ -77,6 +85,7 @@ mod tests {
             file_size: Some(1024),
             mime_type: Some("text/plain".to_string()),
             permissions: Some("644".to_string()),
+            last_accessed: Some(Utc::now()),
             owner_uid: Some(1000),
             group_gid: Some(1000),
             hard_links: Some(1),

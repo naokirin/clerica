@@ -1,26 +1,6 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import { open, confirm } from "@tauri-apps/plugin-dialog";
-  
-  // API関数のインポート
-  import { 
-    getDirectories, 
-    addDirectory as addDirectoryAPI, 
-    removeDirectory as removeDirectoryAPI, 
-    rescanDirectory as rescanDirectoryAPI 
-  } from "../lib/api/directories.js";
-  import { 
-    getFiles, 
-    openFile as openFileAPI, 
-    revealInFinder as revealInFinderAPI, 
-    deleteFile as deleteFileAPI 
-  } from "../lib/api/files.js";
-  import { searchFiles as searchFilesAPI } from "../lib/api/search.js";
-  import { 
-    getTags, 
-    createTag as createTagAPI, 
-    getCustomMetadataKeys 
-  } from "../lib/api/tags.js";
   import { FileText, Search, Tag } from "lucide-svelte";
 
   // コンポーネントのインポート
@@ -32,128 +12,62 @@
   import FileDetailModal from "../lib/components/FileDetailModal.svelte";
   import CustomMetadataKeyManager from "../lib/components/CustomMetadataKeyManager.svelte";
 
-  // 型とユーティリティのインポート
-  import type {
-    Directory,
-    File,
-    Tag as TagType,
-    SearchResult,
-    FileCategory,
-    LoadingSteps,
-    CustomMetadataKey,
-    MetadataSearchFilter,
-  } from "../lib/types.js";
-  import { getFileCategory } from "../lib/utils.js";
+  // ViewModel のインポート
+  import { AppViewModel, type ActiveTab } from "../lib/viewmodels/AppViewModel.js";
+  import type { File } from "../lib/types.js";
   import "../lib/App.css";
 
-  // 状態管理
-  let directories: Directory[] = $state([]);
-  let files: File[] = $state([]);
-  let tags: TagType[] = $state([]);
-  let customMetadataKeys: CustomMetadataKey[] = $state([]);
-  let searchQuery = $state("");
-  let selectedTags: string[] = $state([]);
-  let metadataSearchFilters: MetadataSearchFilter[] = $state([]);
-  let searchResults: SearchResult[] = $state([]);
-  let activeTab: "files" | "search" | "tags" | "metadata" = $state("files");
-  let selectedFile: File | null = $state(null);
+  // AppViewModel インスタンス
+  const appViewModel = new AppViewModel();
 
-  // ディレクトリフィルタリング状態
-  let selectedDirectoryId: string | "all" = $state("all");
+  // ViewModelからのストア取得
+  const { 
+    activeTab,
+    isAppLoading,
+    loadingSteps,
+    loadingProgress,
+    directoryViewModel,
+    fileViewModel,
+    searchViewModel,
+    tagViewModel
+  } = appViewModel;
 
-  // 削除処理中の状態管理
-  let isDeleting = $state(false);
-
-  // 読み込み状態管理
-  let isLoading = $state(true);
-  let loadingSteps: LoadingSteps = $state({
-    directories: false,
-    tags: false,
-    files: false,
-  });
-  let loadingProgress = $state(0);
-
-  // ページネーション状態
-  let currentPage = $state(1);
-  let itemsPerPage = 25;
-  let totalFiles = $state(0);
-  let totalPages = $state(0);
-  let paginatedFiles: File[] = $state([]);
-
-  // 検索結果のページネーション状態
-  let searchCurrentPage = $state(1);
-  let searchTotalPages = $state(0);
-  let paginatedSearchResults: SearchResult[] = $state([]);
-
-  // 検索結果のフィルタリング状態
-  let searchSelectedCategory: FileCategory = $state("all");
-  let filteredSearchResults: SearchResult[] = $state([]);
-  let searchCategoryCounts: Record<FileCategory, number> = $state({
-    all: 0,
-    image: 0,
-    audio: 0,
-    video: 0,
-    document: 0,
-    archive: 0,
-    other: 0,
-  });
-
-  // ファイル種別フィルタリング状態
-  let selectedCategory: FileCategory = $state("all");
-  let filteredFiles: File[] = $state([]);
-  let categoryCounts: Record<FileCategory, number> = $state({
-    all: 0,
-    image: 0,
-    audio: 0,
-    video: 0,
-    document: 0,
-    archive: 0,
-    other: 0,
-  });
+  const { directories, selectedDirectoryId } = directoryViewModel;
+  const { 
+    files, 
+    selectedFile, 
+    selectedCategory, 
+    currentPage, 
+    isDeleting,
+    categoryCounts,
+    filteredFiles,
+    totalPages,
+    paginatedFiles 
+  } = fileViewModel;
+  const { 
+    searchQuery, 
+    selectedTags, 
+    metadataSearchFilters, 
+    searchResults,
+    selectedCategory: searchSelectedCategory,
+    currentPage: searchCurrentPage,
+    searchCategoryCounts,
+    filteredSearchResults,
+    searchTotalPages,
+    paginatedSearchResults
+  } = searchViewModel;
+  const { tags, customMetadataKeys } = tagViewModel;
 
   onMount(() => {
-    loadData();
+    // ViewModelが自動的に初期化するため、特別な処理は不要
   });
 
-  const loadData = async () => {
-    try {
-      isLoading = true;
-      loadingProgress = 0;
-      loadingSteps = { directories: false, tags: false, files: false };
+  onDestroy(() => {
+    appViewModel.dispose();
+  });
 
-      // ディレクトリの読み込み
-      directories = await getDirectories();
-      loadingSteps.directories = true;
-      loadingProgress = 25;
-
-      // タグの読み込み
-      tags = await getTags();
-      loadingSteps.tags = true;
-      loadingProgress = 50;
-
-      // カスタムメタデータキーの読み込み
-      customMetadataKeys = await getCustomMetadataKeys();
-      loadingProgress = 75;
-
-      // ファイルの読み込み
-      files = await getFiles();
-      loadingSteps.files = true;
-      loadingProgress = 100;
-
-      // カテゴリ別ファイル数を計算
-      updateCategoryCounts();
-
-      // フィルタリングを適用
-      filterFilesByCategory();
-
-      // 読み込み完了
-      setTimeout(() => {
-        isLoading = false;
-      }, 500);
-    } catch (error) {
-      console.error("Failed to load data:", error);
-      isLoading = false;
-    }
+  const reloadData = async () => {
+    await appViewModel.reloadAllData();
   };
 
   const addDirectory = async () => {
@@ -166,8 +80,8 @@
 
       if (selected && typeof selected === "string") {
         const name = selected.split("/").pop() || selected;
-        await addDirectoryAPI(selected, name);
-        await loadData();
+        await directoryViewModel.addNewDirectory(selected, name);
+        await fileViewModel.loadFiles(); // ファイル一覧も更新
       }
     } catch (error) {
       console.error("Failed to add directory:", error);
@@ -176,24 +90,21 @@
       );
       if (fallbackPath && fallbackPath.trim()) {
         const name = fallbackPath.split("/").pop() || fallbackPath;
-        await addDirectoryAPI(fallbackPath.trim(), name);
-        await loadData();
+        await directoryViewModel.addNewDirectory(fallbackPath.trim(), name);
+        await fileViewModel.loadFiles();
       }
     }
   };
 
   const selectDirectory = (directoryId: string | "all") => {
-    selectedDirectoryId = directoryId;
-    updateCategoryCounts();
-    filterFilesByCategory();
+    directoryViewModel.selectDirectory(directoryId);
   };
 
   const rescanDirectory = async (directoryId: string) => {
-    try {
-      await rescanDirectoryAPI(directoryId);
-      await loadData();
-    } catch (error) {
-      console.error("Failed to rescan directory:", error);
+    const success = await directoryViewModel.rescanExistingDirectory(directoryId);
+    if (success) {
+      await fileViewModel.loadFiles();
+    } else {
       alert("ディレクトリの再スキャンに失敗しました。");
     }
   };
@@ -207,66 +118,45 @@
       { title: "確認", kind: "warning" },
     );
     if (confirmed) {
-      try {
-        await removeDirectoryAPI(directoryId);
-        await loadData();
-      } catch (error) {
-        console.error("Failed to remove directory:", error);
+      const success = await directoryViewModel.removeExistingDirectory(directoryId);
+      if (success) {
+        await fileViewModel.loadFiles();
+      } else {
         alert("ディレクトリの削除に失敗しました。");
       }
     }
   };
 
   const createTag = async () => {
-    try {
-      const name = prompt("Enter tag name:");
-      if (name) {
-        await createTagAPI(name, "#3B82F6");
-        await loadData();
-      }
-    } catch (error) {
-      console.error("Failed to create tag:", error);
+    const name = prompt("Enter tag name:");
+    if (name) {
+      await tagViewModel.createNewTag(name, "#3B82F6");
     }
   };
 
   const searchFiles = async () => {
-    try {
-      searchResults = await searchFilesAPI(
-        searchQuery,
-        selectedTags,
-        metadataSearchFilters
-      );
-      updateSearchCategoryCounts();
-      filterSearchResultsByCategory();
-    } catch (error) {
-      console.error("Failed to search files:", error);
-    }
+    await searchViewModel.performSearch();
   };
 
   const selectFile = (file: File) => {
-    selectedFile = file;
+    fileViewModel.selectFile(file);
   };
 
   const closeFileDetails = () => {
-    selectedFile = null;
+    fileViewModel.closeFileDetails();
   };
 
   const openFile = async (filePath: string) => {
-    try {
-      await openFileAPI(filePath);
-      await loadData();
-    } catch (error) {
-      console.error("Failed to open file:", error);
-      alert(`ファイルを開けませんでした: ${error}`);
+    const success = await fileViewModel.openSelectedFile(filePath);
+    if (!success) {
+      alert(`ファイルを開けませんでした`);
     }
   };
 
   const revealInFinder = async (filePath: string) => {
-    try {
-      await revealInFinderAPI(filePath);
-    } catch (error) {
-      console.error("Failed to reveal in Finder:", error);
-      alert(`Finderで表示できませんでした: ${error}`);
+    const success = await fileViewModel.revealFileInFinder(filePath);
+    if (!success) {
+      alert(`Finderで表示できませんでした`);
     }
   };
 
@@ -276,220 +166,28 @@
       kind: "warning",
     });
     if (confirmed) {
-      isDeleting = true;
-      try {
-        await deleteFileAPI(filePath);
-        await loadData();
-        closeFileDetails();
-      } catch (error) {
-        console.error("Failed to delete file:", error);
-        alert(`ファイルをゴミ箱に移動できませんでした: ${error}`);
-      } finally {
-        isDeleting = false;
+      const success = await fileViewModel.deleteSelectedFile(filePath);
+      if (!success) {
+        alert(`ファイルをゴミ箱に移動できませんでした`);
       }
     }
   };
 
-  // ページネーション関数
-  const updatePagination = () => {
-    totalFiles = filteredFiles.length;
-    totalPages = Math.ceil(totalFiles / itemsPerPage);
 
-    if (currentPage > totalPages && totalPages > 0) {
-      currentPage = 1;
-    }
 
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    paginatedFiles = filteredFiles.slice(startIndex, endIndex);
-  };
 
-  const goToPage = (page: number) => {
-    if (page >= 1 && page <= totalPages) {
-      currentPage = page;
-      updatePagination();
-    }
-  };
-
-  const goToPreviousPage = () => {
-    if (currentPage > 1) {
-      currentPage--;
-      updatePagination();
-    }
-  };
-
-  const goToNextPage = () => {
-    if (currentPage < totalPages) {
-      currentPage++;
-      updatePagination();
-    }
-  };
-
-  const goToFirstPage = () => {
-    currentPage = 1;
-    updatePagination();
-  };
-
-  const goToLastPage = () => {
-    currentPage = totalPages;
-    updatePagination();
-  };
-
-  // 検索結果のページネーション関数
-  const updateSearchPagination = () => {
-    searchTotalPages = Math.ceil(filteredSearchResults.length / itemsPerPage);
-
-    if (searchCurrentPage > searchTotalPages && searchTotalPages > 0) {
-      searchCurrentPage = 1;
-    }
-
-    const startIndex = (searchCurrentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    paginatedSearchResults = filteredSearchResults.slice(startIndex, endIndex);
-  };
-
-  const goToSearchPage = (page: number) => {
-    if (page >= 1 && page <= searchTotalPages) {
-      searchCurrentPage = page;
-      updateSearchPagination();
-    }
-  };
-
-  const goToSearchPreviousPage = () => {
-    if (searchCurrentPage > 1) {
-      searchCurrentPage--;
-      updateSearchPagination();
-    }
-  };
-
-  const goToSearchNextPage = () => {
-    if (searchCurrentPage < searchTotalPages) {
-      searchCurrentPage++;
-      updateSearchPagination();
-    }
-  };
-
-  const goToSearchFirstPage = () => {
-    searchCurrentPage = 1;
-    updateSearchPagination();
-  };
-
-  const goToSearchLastPage = () => {
-    searchCurrentPage = searchTotalPages;
-    updateSearchPagination();
-  };
-
-  // カテゴリ別ファイル数を計算
-  const updateCategoryCounts = () => {
-    const directoryFilteredFiles = filterFilesByDirectory();
-    const counts: Record<FileCategory, number> = {
-      all: directoryFilteredFiles.length,
-      image: 0,
-      audio: 0,
-      video: 0,
-      document: 0,
-      archive: 0,
-      other: 0,
-    };
-
-    directoryFilteredFiles.forEach((file) => {
-      const category = getFileCategory(file);
-      counts[category]++;
-    });
-
-    categoryCounts = counts;
-  };
-
-  // ディレクトリでファイルをフィルタリング
-  const filterFilesByDirectory = () => {
-    let directoryFilteredFiles: File[];
-    if (selectedDirectoryId === "all") {
-      directoryFilteredFiles = [...files];
-    } else {
-      directoryFilteredFiles = files.filter(
-        (file) => file.directory_id === selectedDirectoryId,
-      );
-    }
-    return directoryFilteredFiles;
-  };
-
-  // ファイルをフィルタリング
-  const filterFilesByCategory = () => {
-    const directoryFilteredFiles = filterFilesByDirectory();
-
-    if (selectedCategory === "all") {
-      filteredFiles = directoryFilteredFiles;
-    } else {
-      filteredFiles = directoryFilteredFiles.filter(
-        (file) => getFileCategory(file) === selectedCategory,
-      );
-    }
-
-    currentPage = 1;
-    updatePagination();
-  };
-
-  // カテゴリ選択
-  const selectCategory = (category: FileCategory) => {
-    selectedCategory = category;
-    filterFilesByCategory();
-  };
-
-  // 検索結果のカテゴリ別ファイル数を計算
-  const updateSearchCategoryCounts = () => {
-    const counts: Record<FileCategory, number> = {
-      all: searchResults.length,
-      image: 0,
-      audio: 0,
-      video: 0,
-      document: 0,
-      archive: 0,
-      other: 0,
-    };
-
-    searchResults.forEach((result) => {
-      const category = getFileCategory(result.file);
-      counts[category]++;
-    });
-
-    searchCategoryCounts = counts;
-  };
-
-  // 検索結果をフィルタリング
-  const filterSearchResultsByCategory = () => {
-    if (searchSelectedCategory === "all") {
-      filteredSearchResults = [...searchResults];
-    } else {
-      filteredSearchResults = searchResults.filter(
-        (result) => getFileCategory(result.file) === searchSelectedCategory,
-      );
-    }
-
-    searchCurrentPage = 1;
-    updateSearchPagination();
-  };
-
-  // 検索結果のカテゴリ選択
-  const selectSearchCategory = (category: FileCategory) => {
-    searchSelectedCategory = category;
-    filterSearchResultsByCategory();
-  };
 
   // カスタムメタデータキーが更新された時の処理
   const handleCustomMetadataKeysUpdated = async () => {
-    try {
-      customMetadataKeys = await getCustomMetadataKeys();
-    } catch (error) {
-      console.error("Failed to reload custom metadata keys:", error);
-    }
+    await tagViewModel.loadCustomMetadataKeys();
   };
 </script>
 
 <div class="app">
   <LoadingScreen
-    isVisible={isLoading}
-    progress={loadingProgress}
-    steps={loadingSteps}
+    isVisible={$isAppLoading}
+    progress={$loadingProgress}
+    steps={$loadingSteps}
   />
 
   <header class="app-header">
@@ -497,11 +195,11 @@
     <p>Mac向けファイル整理・検索ツール</p>
   </header>
 
-  <div class="app-content {isLoading ? 'loading' : ''}">
+  <div class="app-content {$isAppLoading ? 'loading' : ''}">
     <Sidebar
-      {directories}
-      {tags}
-      {selectedDirectoryId}
+      directories={$directories}
+      tags={$tags}
+      selectedDirectoryId={$selectedDirectoryId}
       onAddDirectory={addDirectory}
       onSelectDirectory={selectDirectory}
       onRescanDirectory={rescanDirectory}
@@ -512,83 +210,83 @@
     <div class="main-content">
       <div class="tabs">
         <button
-          class="tab {activeTab === 'files' ? 'active' : ''}"
-          onclick={() => (activeTab = "files")}
+          class="tab {$activeTab === 'files' ? 'active' : ''}"
+          onclick={() => appViewModel.setActiveTab('files')}
         >
           <FileText size={16} />
           ファイル
         </button>
         <button
-          class="tab {activeTab === 'search' ? 'active' : ''}"
-          onclick={() => (activeTab = "search")}
+          class="tab {$activeTab === 'search' ? 'active' : ''}"
+          onclick={() => appViewModel.setActiveTab('search')}
         >
           <Search size={16} />
           検索
         </button>
         <button
-          class="tab {activeTab === 'tags' ? 'active' : ''}"
-          onclick={() => (activeTab = "tags")}
+          class="tab {$activeTab === 'tags' ? 'active' : ''}"
+          onclick={() => appViewModel.setActiveTab('tags')}
         >
           <Tag size={16} />
           タグ管理
         </button>
         <button
-          class="tab {activeTab === 'metadata' ? 'active' : ''}"
-          onclick={() => (activeTab = "metadata")}
+          class="tab {$activeTab === 'metadata' ? 'active' : ''}"
+          onclick={() => appViewModel.setActiveTab('metadata')}
         >
           🏷️ メタデータ
         </button>
       </div>
 
       <div class="content-area">
-        {#if activeTab === "files"}
+        {#if $activeTab === "files"}
           <FilesView
-            files={paginatedFiles}
-            {selectedCategory}
-            {categoryCounts}
-            {currentPage}
-            {totalFiles}
-            {totalPages}
+            files={$paginatedFiles}
+            selectedCategory={$selectedCategory}
+            categoryCounts={$categoryCounts}
+            currentPage={$currentPage}
+            totalFiles={$filteredFiles.length}
+            totalPages={$totalPages}
             onSelectFile={selectFile}
-            onSelectCategory={selectCategory}
-            onGoToPage={goToPage}
-            onGoToPreviousPage={goToPreviousPage}
-            onGoToNextPage={goToNextPage}
-            onGoToFirstPage={goToFirstPage}
-            onGoToLastPage={goToLastPage}
+            onSelectCategory={(category) => fileViewModel.selectCategory(category)}
+            onGoToPage={(page) => fileViewModel.goToPage(page)}
+            onGoToPreviousPage={() => fileViewModel.goToPreviousPage()}
+            onGoToNextPage={() => fileViewModel.goToNextPage()}
+            onGoToFirstPage={() => fileViewModel.goToFirstPage()}
+            onGoToLastPage={() => fileViewModel.goToLastPage($totalPages)}
           />
         {/if}
 
-        {#if activeTab === "search"}
+        {#if $activeTab === "search"}
           <SearchView
-            bind:searchQuery
-            {searchResults}
-            filteredResults={paginatedSearchResults}
-            selectedCategory={searchSelectedCategory}
-            categoryCounts={searchCategoryCounts}
-            currentPage={searchCurrentPage}
-            totalPages={searchTotalPages}
-            bind:metadataSearchFilters
-            availableMetadataKeys={customMetadataKeys}
-            onSearchQueryChange={(query) => (searchQuery = query)}
+            bind:searchQuery={$searchQuery}
+            searchResults={$searchResults}
+            filteredResults={$paginatedSearchResults}
+            selectedCategory={$searchSelectedCategory}
+            categoryCounts={$searchCategoryCounts}
+            currentPage={$searchCurrentPage}
+            totalPages={$searchTotalPages}
+            bind:metadataSearchFilters={$metadataSearchFilters}
+            availableMetadataKeys={$customMetadataKeys}
+            onSearchQueryChange={(query) => searchViewModel.setSearchQuery(query)}
             onSearch={searchFiles}
             onSelectFile={selectFile}
-            onSelectCategory={selectSearchCategory}
-            onGoToPage={goToSearchPage}
-            onGoToPreviousPage={goToSearchPreviousPage}
-            onGoToNextPage={goToSearchNextPage}
-            onGoToFirstPage={goToSearchFirstPage}
-            onGoToLastPage={goToSearchLastPage}
+            onSelectCategory={(category) => searchViewModel.selectCategory(category)}
+            onGoToPage={(page) => searchViewModel.goToPage(page)}
+            onGoToPreviousPage={() => searchViewModel.goToPreviousPage()}
+            onGoToNextPage={() => searchViewModel.goToNextPage()}
+            onGoToFirstPage={() => searchViewModel.goToFirstPage()}
+            onGoToLastPage={() => searchViewModel.goToLastPage($searchTotalPages)}
           />
         {/if}
 
-        {#if activeTab === "tags"}
-          <TagsView {tags} />
+        {#if $activeTab === "tags"}
+          <TagsView tags={$tags} />
         {/if}
 
-        {#if activeTab === "metadata"}
+        {#if $activeTab === "metadata"}
           <CustomMetadataKeyManager
-            keys={customMetadataKeys}
+            keys={$customMetadataKeys}
             onKeysUpdated={handleCustomMetadataKeysUpdated}
           />
         {/if}
@@ -597,9 +295,9 @@
   </div>
 
   <FileDetailModal
-    file={selectedFile}
-    {isDeleting}
-    {customMetadataKeys}
+    file={$selectedFile}
+    isDeleting={$isDeleting}
+    customMetadataKeys={$customMetadataKeys}
     onOpenFile={openFile}
     onRevealInFinder={revealInFinder}
     onDeleteFile={deleteFile}

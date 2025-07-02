@@ -167,8 +167,7 @@ pub async fn set_custom_metadata_value(
     request: SetCustomMetadataValueRequest,
 ) -> Result<CustomMetadataValue, String> {
     let db = Database;
-    let value_ref = request.value.as_deref();
-    match db.set_custom_metadata_value(&pool, &request.file_id, &request.key_id, value_ref).await {
+    match db.set_custom_metadata_value(&pool, &request.file_id, &request.key_id, request.value).await {
         Ok(value) => Ok(value),
         Err(e) => Err(format!("カスタムメタデータ値の設定に失敗しました: {}", e)),
     }

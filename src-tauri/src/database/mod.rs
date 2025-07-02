@@ -92,7 +92,7 @@ pub trait DatabaseTrait {
     async fn delete_custom_metadata_key(&self, pool: &SqlitePool, key_id: &str) -> Result<(), sqlx::Error>;
     async fn get_custom_metadata_key_by_name(&self, pool: &SqlitePool, name: &str) -> Result<Option<CustomMetadataKey>, sqlx::Error>;
     // カスタムメタデータ値管理
-    async fn set_custom_metadata_value(&self, pool: &SqlitePool, file_id: &str, key_id: &str, value: Option<&str>) -> Result<CustomMetadataValue, sqlx::Error>;
+    async fn set_custom_metadata_value(&self, pool: &SqlitePool, file_id: &str, key_id: &str, value: Option<String>) -> Result<CustomMetadataValue, sqlx::Error>;
     async fn get_custom_metadata_values_by_file(&self, pool: &SqlitePool, file_id: &str) -> Result<Vec<CustomMetadataValue>, sqlx::Error>;
     async fn get_custom_metadata_value(&self, pool: &SqlitePool, file_id: &str, key_id: &str) -> Result<Option<CustomMetadataValue>, sqlx::Error>;
     async fn delete_custom_metadata_value(&self, pool: &SqlitePool, file_id: &str, key_id: &str) -> Result<(), sqlx::Error>;
@@ -463,7 +463,7 @@ impl DatabaseTrait for Database {
         }
     }
 
-    async fn set_custom_metadata_value(&self, pool: &SqlitePool, file_id: &str, key_id: &str, value: Option<&str>) -> Result<CustomMetadataValue, sqlx::Error> {
+    async fn set_custom_metadata_value(&self, pool: &SqlitePool, file_id: &str, key_id: &str, value: Option<String>) -> Result<CustomMetadataValue, sqlx::Error> {
         let id = Uuid::new_v4().to_string();
         let now = Utc::now();
         
@@ -473,7 +473,7 @@ impl DatabaseTrait for Database {
         .bind(&id)
         .bind(file_id)
         .bind(key_id)
-        .bind(value)
+        .bind(value.as_deref())
         .bind(now)
         .bind(now)
         .execute(pool)
@@ -483,7 +483,7 @@ impl DatabaseTrait for Database {
             id,
             file_id: file_id.to_string(),
             key_id: key_id.to_string(),
-            value: value.map(|v| v.to_string()),
+            value,
             created_at: now,
             updated_at: now,
         })

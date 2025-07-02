@@ -1,0 +1,144 @@
+import { writable, derived, type Writable, type Readable } from 'svelte/store';
+import { BaseViewModel } from './BaseViewModel.js';
+import { searchFiles } from '../api/search.js';
+import type { SearchResult, FileCategory, MetadataSearchFilter } from '../types.js';
+import { getFileCategory } from '../utils.js';
+
+export class SearchViewModel extends BaseViewModel {
+  private _searchQuery: Writable<string> = writable("");
+  private _selectedTags: Writable<string[]> = writable([]);
+  private _metadataSearchFilters: Writable<MetadataSearchFilter[]> = writable([]);
+  private _searchResults: Writable<SearchResult[]> = writable([]);
+  private _selectedCategory: Writable<FileCategory> = writable("all");
+  private _currentPage: Writable<number> = writable(1);
+  private _itemsPerPage = 25;
+
+  public readonly searchQuery = this._searchQuery;
+  public readonly selectedTags = this._selectedTags;
+  public readonly metadataSearchFilters = this._metadataSearchFilters;
+  public readonly searchResults = this._searchResults;
+  public readonly selectedCategory = this._selectedCategory;
+  public readonly currentPage = this._currentPage;
+
+  // 派生ストア
+  public readonly searchCategoryCounts: Readable<Record<FileCategory, number>> = derived(
+    this._searchResults,
+    (searchResults) => {
+      const counts: Record<FileCategory, number> = {
+        all: searchResults.length,
+        image: 0,
+        audio: 0,
+        video: 0,
+        document: 0,
+        archive: 0,
+        other: 0,
+      };
+
+      searchResults.forEach((result) => {
+        const category = getFileCategory(result.file);
+        counts[category]++;
+      });
+
+      return counts;
+    }
+  );
+
+  public readonly filteredSearchResults: Readable<SearchResult[]> = derived(
+    [this._searchResults, this._selectedCategory],
+    ([searchResults, selectedCategory]) => {
+      if (selectedCategory === "all") {
+        return searchResults;
+      }
+      return searchResults.filter((result) => getFileCategory(result.file) === selectedCategory);
+    }
+  );
+
+  public readonly searchTotalPages: Readable<number> = derived(
+    this.filteredSearchResults,
+    (filteredResults) => Math.ceil(filteredResults.length / this._itemsPerPage)
+  );
+
+  public readonly paginatedSearchResults: Readable<SearchResult[]> = derived(
+    [this.filteredSearchResults, this._currentPage],
+    ([filteredResults, currentPage]) => {
+      const startIndex = (currentPage - 1) * this._itemsPerPage;
+      const endIndex = startIndex + this._itemsPerPage;
+      return filteredResults.slice(startIndex, endIndex);
+    }
+  );
+
+  constructor() {
+    super();
+  }
+
+  public setSearchQuery(query: string): void {
+    this._searchQuery.set(query);
+  }
+
+  public setSelectedTags(tags: string[]): void {
+    this._selectedTags.set(tags);
+  }
+
+  public setMetadataSearchFilters(filters: MetadataSearchFilter[]): void {
+    this._metadataSearchFilters.set(filters);
+  }
+
+  public selectCategory(category: FileCategory): void {
+    this._selectedCategory.set(category);
+    this._currentPage.set(1);
+  }
+
+  public goToPage(page: number): void {
+    this._currentPage.set(page);
+  }
+
+  public goToPreviousPage(): void {
+    this._currentPage.update(page => Math.max(1, page - 1));
+  }
+
+  public goToNextPage(): void {
+    this._currentPage.update(page => page + 1);
+  }
+
+  public goToFirstPage(): void {
+    this._currentPage.set(1);
+  }
+
+  public goToLastPage(totalPages: number): void {
+    this._currentPage.set(totalPages);
+  }
+
+  public async performSearch(): Promise<void> {
+    const result = await this.executeAsync(async () => {
+      let query: string;
+      let tags: string[];
+      let filters: MetadataSearchFilter[];
+
+      // 現在の値を取得
+      const queryUnsub = this._searchQuery.subscribe(q => query = q);
+      const tagsUnsub = this._selectedTags.subscribe(t => tags = t);
+      const filtersUnsub = this._metadataSearchFilters.subscribe(f => filters = f);
+      
+      // 購読を即座に解除
+      queryUnsub();
+      tagsUnsub(); 
+      filtersUnsub();
+
+      return await searchFiles(query!, tags!, filters!);
+    });
+
+    if (result) {
+      this._searchResults.set(result);
+      this._currentPage.set(1); // 検索後はページをリセット
+    }
+  }
+
+  public clearSearch(): void {
+    this._searchQuery.set("");
+    this._selectedTags.set([]);
+    this._metadataSearchFilters.set([]);
+    this._searchResults.set([]);
+    this._selectedCategory.set("all");
+    this._currentPage.set(1);
+  }
+}

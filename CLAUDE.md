@@ -62,6 +62,10 @@ cd src-tauri && cargo llvm-cov
 - 主要なコマンド: `add_directory`, `get_files`, `search_files`, `update_file_tags`, `start_watching`
 - 全てのTauriコマンドは`src-tauri/src/main.rs`で登録
 
+### Frontend architecture
+- MVVMアーキテクチャを採用
+- Rust側の呼び出しはlib/api以下に集約
+
 ### Frontend State Management
 - SvelteKitの$state等でローカル状態管理
 - Tauri APIを直接呼び出してバックエンドと通信

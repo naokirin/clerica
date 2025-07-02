@@ -1,0 +1,69 @@
+import { writable, type Writable } from 'svelte/store';
+import { BaseViewModel } from './BaseViewModel.js';
+import { getDirectories, addDirectory, removeDirectory, rescanDirectory } from '../api/directories.js';
+import type { Directory } from '../types.js';
+
+export class DirectoryViewModel extends BaseViewModel {
+  private _directories: Writable<Directory[]> = writable([]);
+  private _selectedDirectoryId: Writable<string | "all"> = writable("all");
+
+  public readonly directories = this._directories;
+  public readonly selectedDirectoryId = this._selectedDirectoryId;
+
+  constructor() {
+    super();
+    this.loadDirectories();
+  }
+
+  public async loadDirectories(): Promise<void> {
+    const result = await this.executeAsync(async () => {
+      return await getDirectories();
+    });
+
+    if (result) {
+      this._directories.set(result);
+    }
+  }
+
+  public async addNewDirectory(path: string, name: string): Promise<boolean> {
+    const result = await this.executeAsync(async () => {
+      await addDirectory(path, name);
+      return true;
+    });
+
+    if (result) {
+      await this.loadDirectories();
+      return true;
+    }
+    return false;
+  }
+
+  public async removeExistingDirectory(id: string): Promise<boolean> {
+    const result = await this.executeAsync(async () => {
+      await removeDirectory(id);
+      return true;
+    });
+
+    if (result) {
+      await this.loadDirectories();
+      return true;
+    }
+    return false;
+  }
+
+  public async rescanExistingDirectory(directoryId: string): Promise<boolean> {
+    const result = await this.executeAsync(async () => {
+      await rescanDirectory(directoryId);
+      return true;
+    });
+
+    if (result) {
+      return true;
+    }
+    return false;
+  }
+
+  public selectDirectory(directoryId: string | "all"): void {
+    this._selectedDirectoryId.set(directoryId);
+  }
+}
