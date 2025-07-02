@@ -595,6 +595,39 @@
   word-break: break-all;
 }
 
+/* メタデータセクション */
+.metadata-section {
+  margin-top: 0.5rem;
+}
+
+.metadata-category {
+  margin-bottom: 1.5rem;
+}
+
+.metadata-category:last-child {
+  margin-bottom: 0;
+}
+
+.metadata-category h5 {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #4b5563;
+  background-color: #f3f4f6;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.25rem;
+  border-left: 3px solid #3b82f6;
+}
+
+.error-message {
+  padding: 0.75rem;
+  background-color: #fee2e2;
+  color: #dc2626;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  border: 1px solid #fecaca;
+}
+
 /* ファイル一覧ヘッダー */
 .files-header {
   display: flex;

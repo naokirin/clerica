@@ -17,6 +17,8 @@ uuid = { version = "1.0", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
 notify = "8.0"
 walkdir = "2.4"
+exif = { package = "kamadak-exif", version = "0.5" }
+lofty = "0.21"
 tauri = { version = "2", features = [] }
 
 [dev-dependencies]

@@ -28,6 +28,7 @@ export interface File {
   hard_links: number | null;
   device_id: number | null;
   last_accessed: string | null;
+  metadata: string | null;
 }
 
 export interface Tag {

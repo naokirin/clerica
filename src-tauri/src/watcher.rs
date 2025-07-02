@@ -96,6 +96,7 @@ pub async fn handle_file_event(
                         last_accessed: metadata.accessed()
                             .ok()
                             .map(chrono::DateTime::from),
+                        metadata: None,
                     };
                     
                     let db = Database;

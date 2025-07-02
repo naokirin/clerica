@@ -163,6 +163,7 @@ pub async fn search_files(
             hard_links: row.get("hard_links"),
             device_id: row.get("device_id"),
             last_accessed: row.get("last_accessed"),
+            metadata: row.get("metadata"),
         };
 
         let tag_names: Option<String> = row.get("tag_names");
