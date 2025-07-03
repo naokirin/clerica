@@ -133,7 +133,7 @@
     },
     {
       key: "archive",
-      label: "圧縮ファイル",
+      label: "アーカイブ",
       icon: "📦",
       mimeTypes: [
         "application/zip",

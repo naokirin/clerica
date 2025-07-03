@@ -72,7 +72,7 @@
     },
     {
       key: "archive",
-      label: "圧縮ファイル",
+      label: "アーカイブ",
       icon: "📦",
       mimeTypes: ["application/zip", "application/x-rar", "application/x-7z", "application/x-tar", "application/gzip"],
       extensions: ["zip", "rar", "7z", "tar", "gz", "bz2", "xz", "lzma"]

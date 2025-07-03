@@ -55,6 +55,21 @@ cd src-tauri && cargo clippy
 cd src-tauri && cargo llvm-cov
 ```
 
+### Testing
+```bash
+# ユニットテスト実行
+npm run test
+
+# E2Eテスト実行
+npm run test:e2e
+
+# E2EテストUI実行
+npm run test:e2e:ui
+
+# E2Eテストデバッグ実行
+npm run test:e2e:debug
+```
+
 ## Key Technical Details
 
 ### Tauri Command Architecture

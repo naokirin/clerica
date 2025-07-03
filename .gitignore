@@ -127,6 +127,10 @@ target
 /src-tauri/target
 /src-tauri/gen
 
+# playwright
+/playwright-report
+
+
 # macOS
 .DS_Store
 .DS_Store?
