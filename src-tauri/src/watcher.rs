@@ -6,11 +6,9 @@ use uuid::Uuid;
 use chrono::Utc;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::sync::mpsc;
-use std::sync::Arc;
+use std::sync::{mpsc, Arc, Mutex};
 use std::collections::HashMap;
 use std::thread;
-use std::time::Duration;
 
 pub struct FileWatcher {
     watcher: notify::FsEventWatcher,
@@ -74,22 +72,30 @@ impl FileWatcher {
 #[tauri::command]
 pub async fn start_watching(
     pool: State<'_, SqlitePool>,
+    watcher: State<'_, Arc<Mutex<FileWatcher>>>,
     directory_id: String,
     path: String,
 ) -> Result<(), String> {
-    // 実装予定: ファイル監視の開始
-    // 現在はディレクトリスキャンのみ実装
+    // ディレクトリスキャンを実行
     crate::file_manager::scan_directory(&pool, &directory_id, &path)
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|e| e.to_string())?;
+    
+    // ファイル監視を開始
+    let mut watcher_guard = watcher.lock().map_err(|e| e.to_string())?;
+    watcher_guard.watch_directory(&directory_id, &path).map_err(|e| e.to_string())?;
+    
+    Ok(())
 }
 
 #[tauri::command]
 pub async fn stop_watching(
     _pool: State<'_, SqlitePool>,
-    _directory_id: String,
+    watcher: State<'_, Arc<Mutex<FileWatcher>>>,
+    directory_id: String,
 ) -> Result<(), String> {
-    // 実装予定: ファイル監視の停止
+    let mut watcher_guard = watcher.lock().map_err(|e| e.to_string())?;
+    watcher_guard.unwatch_directory(&directory_id).map_err(|e| e.to_string())?;
     Ok(())
 }
 

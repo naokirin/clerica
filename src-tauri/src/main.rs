@@ -6,6 +6,8 @@ use sqlx::SqlitePool;
 use std::env;
 use std::path::Path;
 use std::str::FromStr;
+use std::sync::{Arc, Mutex};
+use watcher::FileWatcher;
 
 
 mod database;
@@ -74,10 +76,20 @@ async fn main() {
         println!("新しいデータベースが作成され、初期化が完了しました。");
     }
 
+    // ファイル監視の初期化
+    let file_watcher = match FileWatcher::new(Arc::new(pool.clone())) {
+        Ok(watcher) => Arc::new(Mutex::new(watcher)),
+        Err(e) => {
+            eprintln!("ファイル監視の初期化エラー: {e}");
+            std::process::exit(1);
+        }
+    };
+
     tauri::Builder::default()
         .plugin(tauri_plugin_sql::Builder::default().build())
         .plugin(tauri_plugin_dialog::init())
         .manage(pool)
+        .manage(file_watcher)
         .setup(|_app| Ok(()))
         .invoke_handler(tauri::generate_handler![
             file_manager::add_directory,
