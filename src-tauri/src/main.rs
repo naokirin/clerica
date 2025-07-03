@@ -15,6 +15,7 @@ mod watcher;
 mod custom_metadata;
 mod exif_config;
 mod exif_constants;
+mod thumbnail;
 
 #[tokio::main]
 async fn main() {
@@ -107,6 +108,9 @@ async fn main() {
             custom_metadata::get_custom_metadata_value,
             custom_metadata::delete_custom_metadata_value,
             exif_config::get_exif_config_data,
+            thumbnail::generate_video_thumbnail,
+            thumbnail::cleanup_thumbnail_cache,
+            thumbnail::get_thumbnail_cache_size,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

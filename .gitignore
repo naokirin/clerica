@@ -1,5 +1,6 @@
 # Clerica
-clerica.db
+/src-tauri/clerica.db
+/src-tauri/cache
 
 # Dependencies
 node_modules/

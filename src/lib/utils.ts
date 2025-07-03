@@ -81,6 +81,19 @@ export function isImageFile(file: { mime_type?: string | null; name: string }): 
   return extension ? imageExtensions.includes(extension) : false;
 }
 
+export function isVideoFile(file: { mime_type?: string | null; name: string }): boolean {
+  // MIMEタイプで判定
+  if (file.mime_type?.startsWith('video/')) {
+    return true;
+  }
+
+  // 拡張子で判定
+  const videoExtensions = ['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv', 'm4v', '3gp'];
+  const extension = file.name.split('.').pop()?.toLowerCase();
+
+  return extension ? videoExtensions.includes(extension) : false;
+}
+
 export async function getImageUrl(filePath: string): Promise<string> {
   try {
     // Tauriの convertFileSrc を使用してファイルパスをURLに変換

@@ -20,6 +20,7 @@ walkdir = "2.4"
 exif = { package = "kamadak-exif", version = "0.5" }
 lofty = "0.21"
 tauri = { version = "2", features = ["protocol-asset"] }
+md5 = "0.7"
 
 [dev-dependencies]
 mockall = "0.13"

@@ -7,7 +7,7 @@
     MetadataSearchFilter,
     CustomMetadataKey,
   } from "../types.js";
-  import { formatFileSize } from "../utils.js";
+  import FileItemDisplay from "./FileItemDisplay.svelte";
 
   interface Props {
     searchQuery: string;
@@ -448,48 +448,11 @@
 
   <div class="search-results">
     {#each filteredResults as result (result.file.id)}
-      <div class="search-result-item" onclick={() => onSelectFile(result.file)}>
-        <div class="file-icon">
-          {#if result.file.is_directory}
-            📁
-          {:else if result.file.mime_type?.startsWith("image/")}
-            🖼️
-          {:else if result.file.mime_type?.startsWith("video/")}
-            🎬
-          {:else if result.file.mime_type?.startsWith("audio/")}
-            🎵
-          {:else if result.file.mime_type?.includes("pdf")}
-            📄
-          {:else if result.file.mime_type?.includes("text")}
-            📝
-          {:else}
-            📄
-          {/if}
-        </div>
-        <div class="search-result-details">
-          <div class="result-file-name">{result.file.name}</div>
-          <div class="file-info">
-            {#if !result.file.is_directory}
-              {formatFileSize(result.file.file_size || result.file.size)}
-              {#if result.file.mime_type}
-                • {result.file.mime_type}
-              {:else if result.file.file_type}
-                • {result.file.file_type}
-              {/if}
-            {:else}
-              ディレクトリ
-            {/if}
-          </div>
-          <div class="file-path">{result.file.path}</div>
-          <div class="result-tags">
-            {#each result.tags as tag (tag.id)}
-              <span class="result-tag" style="background-color: {tag.color}">
-                {tag.name}
-              </span>
-            {/each}
-          </div>
-        </div>
-      </div>
+      <FileItemDisplay 
+        file={result.file} 
+        tags={result.tags}
+        onSelectFile={onSelectFile}
+      />
     {/each}
     {#if searchResults.length === 0 && (searchQuery || metadataSearchFilters.some(f => f.keyId && f.value))}
       <div class="no-results">検索結果が見つかりませんでした</div>
