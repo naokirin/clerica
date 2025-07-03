@@ -116,10 +116,8 @@ export class SearchViewModel extends BaseViewModel {
     let query: string;
     const queryUnsub = this._searchQuery.subscribe(q => query = q);
     queryUnsub();
-    
-    if (query! && query!.trim() !== "") {
-      this.performSearch();
-    }
+
+    this.performSearch();
   }
 
   public async performSearch(): Promise<void> {
@@ -134,10 +132,10 @@ export class SearchViewModel extends BaseViewModel {
       const tagsUnsub = this._selectedTags.subscribe(t => tags = t);
       const filtersUnsub = this._metadataSearchFilters.subscribe(f => filters = f);
       const dirUnsub = this._selectedDirectoryId.subscribe(d => directoryId = d);
-      
+
       // 購読を即座に解除
       queryUnsub();
-      tagsUnsub(); 
+      tagsUnsub();
       filtersUnsub();
       dirUnsub();
 
