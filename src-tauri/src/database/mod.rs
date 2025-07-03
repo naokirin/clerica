@@ -97,6 +97,10 @@ pub trait DatabaseTrait {
     async fn get_custom_metadata_values_by_file(&self, pool: &SqlitePool, file_id: &str) -> Result<Vec<CustomMetadataValue>, sqlx::Error>;
     async fn get_custom_metadata_value(&self, pool: &SqlitePool, file_id: &str, key_id: &str) -> Result<Option<CustomMetadataValue>, sqlx::Error>;
     async fn delete_custom_metadata_value(&self, pool: &SqlitePool, file_id: &str, key_id: &str) -> Result<(), sqlx::Error>;
+    // ファイル監視に必要な関数
+    async fn get_all_directories(&self, pool: &SqlitePool) -> Result<Vec<Directory>, sqlx::Error>;
+    async fn remove_file_by_path(&self, pool: &SqlitePool, path: &str) -> Result<(), sqlx::Error>;
+    async fn update_file_metadata(&self, pool: &SqlitePool, path: &str, metadata: &std::fs::Metadata) -> Result<(), sqlx::Error>;
 }
 
 pub struct Database;
@@ -543,6 +547,87 @@ impl DatabaseTrait for Database {
         
         Ok(())
     }
+
+    async fn get_all_directories(&self, pool: &SqlitePool) -> Result<Vec<Directory>, sqlx::Error> {
+        let rows = sqlx::query("SELECT * FROM directories ORDER BY name")
+            .fetch_all(pool)
+            .await?;
+        
+        let mut directories = Vec::new();
+        for row in rows {
+            directories.push(Directory {
+                id: row.get("id"),
+                path: row.get("path"),
+                name: row.get("name"),
+                created_at: row.get("created_at"),
+                updated_at: row.get("updated_at"),
+            });
+        }
+        
+        Ok(directories)
+    }
+
+    async fn remove_file_by_path(&self, pool: &SqlitePool, path: &str) -> Result<(), sqlx::Error> {
+        sqlx::query("DELETE FROM files WHERE path = ?")
+            .bind(path)
+            .execute(pool)
+            .await?;
+        
+        Ok(())
+    }
+
+    async fn update_file_metadata(&self, pool: &SqlitePool, path: &str, metadata: &std::fs::Metadata) -> Result<(), sqlx::Error> {
+        use std::os::unix::fs::MetadataExt;
+        use chrono::{DateTime, Utc};
+        
+        let now = Utc::now();
+        let size = metadata.len() as i64;
+        let modified_at = metadata.modified().ok()
+            .and_then(|st| DateTime::from_timestamp(st.duration_since(std::time::UNIX_EPOCH).ok()?.as_secs() as i64, 0));
+        let created_at = metadata.created().ok()
+            .and_then(|st| DateTime::from_timestamp(st.duration_since(std::time::UNIX_EPOCH).ok()?.as_secs() as i64, 0));
+        let last_accessed = metadata.accessed().ok()
+            .and_then(|st| DateTime::from_timestamp(st.duration_since(std::time::UNIX_EPOCH).ok()?.as_secs() as i64, 0));
+        
+        let inode = metadata.ino() as i64;
+        let owner_uid = metadata.uid() as i64;
+        let group_gid = metadata.gid() as i64;
+        let hard_links = metadata.nlink() as i64;
+        let device_id = metadata.dev() as i64;
+        let permissions = format!("{:o}", metadata.mode() & 0o777);
+        
+        sqlx::query(
+            "UPDATE files SET 
+                size = ?, 
+                modified_at = ?, 
+                created_at = ?, 
+                last_accessed = ?, 
+                inode = ?, 
+                owner_uid = ?, 
+                group_gid = ?, 
+                hard_links = ?, 
+                device_id = ?, 
+                permissions = ?, 
+                updated_at_db = ?
+            WHERE path = ?"
+        )
+        .bind(size)
+        .bind(modified_at)
+        .bind(created_at)
+        .bind(last_accessed)
+        .bind(inode)
+        .bind(owner_uid)
+        .bind(group_gid)
+        .bind(hard_links)
+        .bind(device_id)
+        .bind(permissions)
+        .bind(now)
+        .bind(path)
+        .execute(pool)
+        .await?;
+        
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -971,6 +1056,126 @@ mod tests {
         
         let result = db.init_database(&pool).await;
         assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_get_all_directories() {
+        let pool = setup_test_db().await;
+        let db = Database;
+        
+        // ディレクトリを追加
+        db.add_directory(&pool, "/test/dir1", "dir1").await.unwrap();
+        db.add_directory(&pool, "/test/dir2", "dir2").await.unwrap();
+        
+        // 全ディレクトリを取得
+        let directories = db.get_all_directories(&pool).await.unwrap();
+        assert_eq!(directories.len(), 2);
+        assert_eq!(directories[0].name, "dir1");
+        assert_eq!(directories[1].name, "dir2");
+    }
+
+    #[tokio::test]
+    async fn test_remove_file_by_path() {
+        let pool = setup_test_db().await;
+        let db = Database;
+        
+        let dir = db.add_directory(&pool, "/test", "test").await.unwrap();
+        
+        let file = File {
+            id: "test_file".to_string(),
+            path: "/test/file.txt".to_string(),
+            name: "file.txt".to_string(),
+            directory_id: dir.id.clone(),
+            size: 1024,
+            file_type: Some("txt".to_string()),
+            created_at: Some(Utc::now()),
+            modified_at: Some(Utc::now()),
+            birth_time: None,
+            inode: Some(12345),
+            is_directory: false,
+            created_at_db: Utc::now(),
+            updated_at_db: Utc::now(),
+            file_size: Some(1024),
+            mime_type: Some("text/plain".to_string()),
+            permissions: Some("644".to_string()),
+            owner_uid: Some(1000),
+            group_gid: Some(1000),
+            hard_links: Some(1),
+            device_id: Some(12345),
+            last_accessed: None,
+            metadata: None,
+        };
+        
+        // ファイルを追加
+        db.add_file(&pool, &file).await.unwrap();
+        
+        // ファイルが存在することを確認
+        let files = db.get_files_by_directory(&pool, &dir.id).await.unwrap();
+        assert_eq!(files.len(), 1);
+        
+        // パスでファイルを削除
+        db.remove_file_by_path(&pool, "/test/file.txt").await.unwrap();
+        
+        // ファイルが削除されていることを確認
+        let files = db.get_files_by_directory(&pool, &dir.id).await.unwrap();
+        assert_eq!(files.len(), 0);
+    }
+
+    #[tokio::test]
+    async fn test_update_file_metadata() {
+        let pool = setup_test_db().await;
+        let db = Database;
+        
+        let dir = db.add_directory(&pool, "/test", "test").await.unwrap();
+        
+        let file = File {
+            id: "test_file".to_string(),
+            path: "/test/file.txt".to_string(),
+            name: "file.txt".to_string(),
+            directory_id: dir.id.clone(),
+            size: 1024,
+            file_type: Some("txt".to_string()),
+            created_at: Some(Utc::now()),
+            modified_at: Some(Utc::now()),
+            birth_time: None,
+            inode: Some(12345),
+            is_directory: false,
+            created_at_db: Utc::now(),
+            updated_at_db: Utc::now(),
+            file_size: Some(1024),
+            mime_type: Some("text/plain".to_string()),
+            permissions: Some("644".to_string()),
+            owner_uid: Some(1000),
+            group_gid: Some(1000),
+            hard_links: Some(1),
+            device_id: Some(12345),
+            last_accessed: None,
+            metadata: None,
+        };
+        
+        // ファイルを追加
+        db.add_file(&pool, &file).await.unwrap();
+        
+        // テスト用の一時ファイルを作成
+        let temp_file = std::env::temp_dir().join("test_file.txt");
+        std::fs::write(&temp_file, "test content").unwrap();
+        
+        // ファイルメタデータを取得
+        let metadata = std::fs::metadata(&temp_file).unwrap();
+        
+        // メタデータを更新
+        let result = db.update_file_metadata(&pool, "/test/file.txt", &metadata).await;
+        assert!(result.is_ok());
+        
+        // 更新されたファイルを取得
+        let updated_files = db.get_files_by_directory(&pool, &dir.id).await.unwrap();
+        assert_eq!(updated_files.len(), 1);
+        
+        let updated_file = &updated_files[0];
+        assert_eq!(updated_file.size, metadata.len() as i64);
+        
+        // 一時ファイルを削除
+        std::fs::remove_file(&temp_file).unwrap();
     }
 
     #[tokio::test]

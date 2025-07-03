@@ -40,6 +40,7 @@ mod tests {
             group_gid: Some(1000),
             hard_links: Some(1),
             device_id: Some(12345),
+            metadata: None,
         };
         
         let tag = Tag {

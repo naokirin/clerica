@@ -47,6 +47,7 @@ mod tests {
                 hard_links INTEGER,
                 device_id INTEGER,
                 last_accessed TIMESTAMP,
+                metadata TEXT DEFAULT '{}',
                 FOREIGN KEY (directory_id) REFERENCES directories (id) ON DELETE CASCADE
             )"
         )
@@ -90,6 +91,7 @@ mod tests {
             group_gid: Some(1000),
             hard_links: Some(1),
             device_id: Some(12345),
+            metadata: None,
         }
     }
 
