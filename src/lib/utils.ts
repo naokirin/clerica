@@ -117,10 +117,16 @@ export function isArchiveFile(file: { mime_type?: string | null; name: string })
     return true;
   }
 
-  // 拡張子で判定
+  // 拡張子で判定（.tar.gzのような複合拡張子も考慮）
   const archiveExtensions = ['zip', 'rar', '7z', 'tar', 'gz', 'bz2', 'xz', 'lzma'];
+  const fileName = file.name.toLowerCase();
+  
+  // .tar.gzのような複合拡張子をチェック
+  if (fileName.endsWith('.tar.gz') || fileName.endsWith('.tar.bz2') || fileName.endsWith('.tar.xz')) {
+    return true;
+  }
+  
   const extension = file.name.split('.').pop()?.toLowerCase();
-
   return extension ? archiveExtensions.includes(extension) : false;
 }
 

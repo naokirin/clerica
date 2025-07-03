@@ -371,7 +371,8 @@ impl ThumbnailGenerator {
     */
 
     fn get_first_image_from_rar(&self, archive_path: &Path) -> Result<(String, Vec<u8>), ThumbnailError> {
-        let mut archive = RarArchive::new(archive_path.to_str().unwrap())
+        // まずアーカイブを開いてファイル名を収集
+        let archive = RarArchive::new(archive_path.to_str().unwrap())
             .open_for_processing()
             .map_err(|e| ThumbnailError {
                 message: format!("Failed to open RAR archive: {}", e),
@@ -379,15 +380,23 @@ impl ThumbnailGenerator {
 
         // アーカイブ内のファイル名を取得してソート
         let mut file_names: Vec<String> = Vec::new();
-        while let Some(header) = archive.read_header().map_err(|e| ThumbnailError {
-            message: format!("Failed to read RAR header: {}", e),
-        })? {
-            if !header.entry().is_directory() {
-                file_names.push(header.entry().filename.to_string());
+        let mut archive_cursor = archive;
+        
+        loop {
+            match archive_cursor.read_header() {
+                Ok(Some(header)) => {
+                    if !header.entry().is_directory() {
+                        file_names.push(header.entry().filename.to_string_lossy().to_string());
+                    }
+                    archive_cursor = header.skip().map_err(|e| ThumbnailError {
+                        message: format!("Failed to skip RAR entry: {}", e),
+                    })?;
+                }
+                Ok(None) => break, // アーカイブの終端
+                Err(e) => return Err(ThumbnailError {
+                    message: format!("Failed to read RAR header: {}", e),
+                }),
             }
-            archive.skip().map_err(|e| ThumbnailError {
-                message: format!("Failed to skip RAR entry: {}", e),
-            })?;
         }
 
         // ファイル名でソート
@@ -398,25 +407,32 @@ impl ThumbnailGenerator {
             let file_path = Path::new(&file_name);
             if Self::is_image_file(file_path) {
                 // RAR ファイルを再度開いて対象ファイルを抽出
-                let mut archive = RarArchive::new(archive_path.to_str().unwrap())
+                let archive = RarArchive::new(archive_path.to_str().unwrap())
                     .open_for_processing()
                     .map_err(|e| ThumbnailError {
                         message: format!("Failed to reopen RAR archive: {}", e),
                     })?;
 
-                while let Some(header) = archive.read_header().map_err(|e| ThumbnailError {
-                    message: format!("Failed to read RAR header: {}", e),
-                })? {
-                    if header.entry().filename == file_name {
-                        let mut buffer = Vec::new();
-                        archive.read_data(&mut buffer).map_err(|e| ThumbnailError {
-                            message: format!("Failed to read RAR file contents: {}", e),
-                        })?;
-                        return Ok((file_name, buffer));
-                    } else {
-                        archive.skip().map_err(|e| ThumbnailError {
-                            message: format!("Failed to skip RAR entry: {}", e),
-                        })?;
+                let mut archive_cursor = archive;
+                
+                loop {
+                    match archive_cursor.read_header() {
+                        Ok(Some(header)) => {
+                            if header.entry().filename.to_string_lossy() == file_name {
+                                let (data, _rest) = header.read().map_err(|e| ThumbnailError {
+                                    message: format!("Failed to read RAR file contents: {}", e),
+                                })?;
+                                return Ok((file_name, data));
+                            } else {
+                                archive_cursor = header.skip().map_err(|e| ThumbnailError {
+                                    message: format!("Failed to skip RAR entry: {}", e),
+                                })?;
+                            }
+                        }
+                        Ok(None) => break,
+                        Err(e) => return Err(ThumbnailError {
+                            message: format!("Failed to read RAR header: {}", e),
+                        }),
                     }
                 }
             }
