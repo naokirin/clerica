@@ -5,6 +5,7 @@
     formatDate,
     isImageFile,
     isVideoFile,
+    isAudioFile,
     getImageUrl,
   } from "../utils.js";
   import { onMount } from "svelte";
@@ -31,7 +32,6 @@
 
   async function loadVideoThumbnail(filePath: string): Promise<string> {
     // 動画サムネイルを生成するTauri関数を呼び出す
-    // TODO: Rust側でサムネイル生成機能を実装する
     try {
       const { invoke } = await import("@tauri-apps/api/core");
       const thumbnailPath = await invoke("generate_video_thumbnail", {
@@ -40,6 +40,20 @@
       return await getImageUrl(thumbnailPath);
     } catch (error) {
       console.error("Failed to generate video thumbnail:", error);
+      throw error;
+    }
+  }
+
+  async function loadAlbumArt(filePath: string): Promise<string> {
+    // 音声ファイルのアルバムアートを抽出するTauri関数を呼び出す
+    try {
+      const { invoke } = await import("@tauri-apps/api/core");
+      const thumbnailPath = await invoke("extract_audio_album_art", {
+        filePath,
+      });
+      return await getImageUrl(thumbnailPath);
+    } catch (error) {
+      console.error("Failed to extract album art:", error);
       throw error;
     }
   }
@@ -92,8 +106,29 @@
           <span class="icon-emoji">🎬</span>
         {/await}
       </div>
-    {:else if file.mime_type?.startsWith("audio/")}
-      <span class="icon-emoji">🎵</span>
+    {:else if isAudioFile(file)}
+      <div class="audio-preview">
+        {#await loadAlbumArt(file.path)}
+          <span class="icon-emoji loading">🎵</span>
+        {:then albumArtUrl}
+          <img
+            src={albumArtUrl}
+            alt={file.name}
+            class="thumbnail album-art"
+            onerror={(e) => {
+              console.error("Failed to load album art:", albumArtUrl);
+              e.currentTarget.style.display = "none";
+              e.currentTarget.nextElementSibling.style.display = "block";
+            }}
+          />
+          <div class="audio-overlay">
+            <span class="music-icon">♪</span>
+          </div>
+          <span class="icon-emoji fallback" style="display: none;">🎵</span>
+        {:catch}
+          <span class="icon-emoji">🎵</span>
+        {/await}
+      </div>
     {:else if file.mime_type?.includes("pdf")}
       <span class="icon-emoji">📄</span>
     {:else if file.mime_type?.includes("text")}
@@ -168,7 +203,8 @@
   }
 
   .image-preview,
-  .video-preview {
+  .video-preview,
+  .audio-preview {
     width: 48px;
     height: 48px;
     display: flex;
@@ -196,7 +232,8 @@
     filter: brightness(0.8);
   }
 
-  .video-overlay {
+  .video-overlay,
+  .audio-overlay {
     position: absolute;
     top: 0;
     left: 0;
@@ -211,9 +248,15 @@
     opacity: 0.7;
   }
 
-  .play-icon {
+  .play-icon,
+  .music-icon {
     font-size: 12px;
     opacity: 0.9;
+    color: white;
+  }
+
+  .album-art {
+    filter: brightness(0.8);
   }
 
   .loading {

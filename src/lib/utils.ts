@@ -94,6 +94,19 @@ export function isVideoFile(file: { mime_type?: string | null; name: string }): 
   return extension ? videoExtensions.includes(extension) : false;
 }
 
+export function isAudioFile(file: { mime_type?: string | null; name: string }): boolean {
+  // MIMEタイプで判定
+  if (file.mime_type?.startsWith('audio/')) {
+    return true;
+  }
+
+  // 拡張子で判定
+  const audioExtensions = ['mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a', 'wma', 'opus'];
+  const extension = file.name.split('.').pop()?.toLowerCase();
+
+  return extension ? audioExtensions.includes(extension) : false;
+}
+
 export async function getImageUrl(filePath: string): Promise<string> {
   try {
     // Tauriの convertFileSrc を使用してファイルパスをURLに変換

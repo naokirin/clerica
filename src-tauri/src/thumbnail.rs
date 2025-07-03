@@ -2,7 +2,6 @@ use serde::{Deserialize, Serialize};
 use std::env;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use uuid::Uuid;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ThumbnailError {
@@ -147,6 +146,68 @@ impl ThumbnailGenerator {
         false
     }
 
+    pub fn is_audio_file(path: &Path) -> bool {
+        let audio_extensions = [
+            "mp3", "wav", "ogg", "flac", "aac", "m4a", "wma", "opus",
+        ];
+
+        if let Some(extension) = path.extension() {
+            if let Some(ext_str) = extension.to_str() {
+                return audio_extensions.contains(&ext_str.to_lowercase().as_str());
+            }
+        }
+
+        false
+    }
+
+    fn get_audio_thumbnail_path(&self, audio_path: &Path) -> PathBuf {
+        let file_name = audio_path.file_name().unwrap_or_default().to_string_lossy();
+        let hash = format!(
+            "{:x}",
+            md5::compute(audio_path.to_string_lossy().as_bytes())
+        );
+        let thumbnail_name = format!("audio_{}_{}.jpg", file_name, hash);
+        self.cache_dir.join(thumbnail_name)
+    }
+
+    pub fn extract_album_art(&self, audio_path: &Path) -> Result<PathBuf, ThumbnailError> {
+        let thumbnail_path = self.get_audio_thumbnail_path(audio_path);
+
+        // 既にサムネイルが存在する場合はそれを返す
+        if thumbnail_path.exists() {
+            return Ok(thumbnail_path);
+        }
+
+        // loftyを使用してアルバムアートを抽出
+        use lofty::prelude::*;
+        use lofty::probe::Probe;
+
+        let tagged_file = Probe::open(audio_path)
+            .map_err(|e| ThumbnailError {
+                message: format!("Failed to open audio file: {}", e),
+            })?
+            .read()
+            .map_err(|e| ThumbnailError {
+                message: format!("Failed to read audio file: {}", e),
+            })?;
+
+        // アルバムアートを取得
+        let picture = tagged_file
+            .first_tag()
+            .and_then(|tag| tag.pictures().first())
+            .ok_or_else(|| ThumbnailError {
+                message: "No album art found".to_string(),
+            })?;
+
+        // 画像データをファイルに保存
+        std::fs::write(&thumbnail_path, picture.data())
+            .map_err(|e| ThumbnailError {
+                message: format!("Failed to write album art: {}", e),
+            })?;
+
+        Ok(thumbnail_path)
+    }
+
     pub fn get_cache_size(&self) -> Result<u64, ThumbnailError> {
         let mut total_size = 0;
 
@@ -207,6 +268,27 @@ pub async fn get_thumbnail_cache_size() -> Result<u64, String> {
     let generator = ThumbnailGenerator::new().map_err(|e| e.message)?;
 
     generator.get_cache_size().map_err(|e| e.message)
+}
+
+#[tauri::command]
+pub async fn extract_audio_album_art(file_path: String) -> Result<String, String> {
+    let audio_path = Path::new(&file_path);
+
+    if !audio_path.exists() {
+        return Err("Audio file does not exist".to_string());
+    }
+
+    if !ThumbnailGenerator::is_audio_file(audio_path) {
+        return Err("File is not an audio file".to_string());
+    }
+
+    let generator = ThumbnailGenerator::new().map_err(|e| e.message)?;
+
+    let thumbnail_path = generator
+        .extract_album_art(audio_path)
+        .map_err(|e| e.message)?;
+
+    Ok(thumbnail_path.to_string_lossy().to_string())
 }
 
 #[cfg(test)]

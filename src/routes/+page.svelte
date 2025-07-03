@@ -98,6 +98,7 @@
 
   const selectDirectory = (directoryId: string | "all") => {
     directoryViewModel.selectDirectory(directoryId);
+    searchViewModel.setSelectedDirectoryId(directoryId);
   };
 
   const rescanDirectory = async (directoryId: string) => {

@@ -111,6 +111,7 @@ async fn main() {
             thumbnail::generate_video_thumbnail,
             thumbnail::cleanup_thumbnail_cache,
             thumbnail::get_thumbnail_cache_size,
+            thumbnail::extract_audio_album_art,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
