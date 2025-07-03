@@ -5,6 +5,10 @@ use std::process::Command;
 use std::fs::File;
 use std::io::{BufReader, Read};
 use zip::ZipArchive;
+// use sevenz_rust::SevenZReader;  // 7zサポートは一時的に無効化
+use unrar::Archive as RarArchive;
+use tar::Archive as TarArchive;
+use flate2::read::GzDecoder;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ThumbnailError {
@@ -316,6 +320,219 @@ impl ThumbnailGenerator {
         })
     }
 
+    // 7zサポートは一時的に無効化
+    /*
+    fn get_first_image_from_7z(&self, archive_path: &Path) -> Result<(String, Vec<u8>), ThumbnailError> {
+        let file = File::open(archive_path).map_err(|e| ThumbnailError {
+            message: format!("Failed to open 7z file: {}", e),
+        })?;
+
+        let mut reader = SevenZReader::new(file).map_err(|e| ThumbnailError {
+            message: format!("Failed to read 7z archive: {}", e),
+        })?;
+
+        // アーカイブ内のファイル名を取得してソート
+        let mut file_names: Vec<String> = Vec::new();
+        for entry in reader.archive().files.iter() {
+            if !entry.is_directory() {
+                file_names.push(entry.name().to_string());
+            }
+        }
+
+        // ファイル名でソート
+        file_names.sort();
+
+        // 最初の画像ファイルを探す
+        for file_name in file_names {
+            let file_path = Path::new(&file_name);
+            if Self::is_image_file(file_path) {
+                let mut buffer = Vec::new();
+                reader.for_each_entries(|entry, reader| {
+                    if entry.name() == file_name {
+                        reader.read_to_end(&mut buffer).map_err(|e| ThumbnailError {
+                            message: format!("Failed to read file contents: {}", e),
+                        })?;
+                    }
+                    Ok(true)
+                }).map_err(|e| ThumbnailError {
+                    message: format!("Failed to extract from 7z: {}", e),
+                })?;
+
+                if !buffer.is_empty() {
+                    return Ok((file_name, buffer));
+                }
+            }
+        }
+
+        Err(ThumbnailError {
+            message: "No image files found in 7z archive".to_string(),
+        })
+    }
+    */
+
+    fn get_first_image_from_rar(&self, archive_path: &Path) -> Result<(String, Vec<u8>), ThumbnailError> {
+        let mut archive = RarArchive::new(archive_path.to_str().unwrap())
+            .open_for_processing()
+            .map_err(|e| ThumbnailError {
+                message: format!("Failed to open RAR archive: {}", e),
+            })?;
+
+        // アーカイブ内のファイル名を取得してソート
+        let mut file_names: Vec<String> = Vec::new();
+        while let Some(header) = archive.read_header().map_err(|e| ThumbnailError {
+            message: format!("Failed to read RAR header: {}", e),
+        })? {
+            if !header.entry().is_directory() {
+                file_names.push(header.entry().filename.to_string());
+            }
+            archive.skip().map_err(|e| ThumbnailError {
+                message: format!("Failed to skip RAR entry: {}", e),
+            })?;
+        }
+
+        // ファイル名でソート
+        file_names.sort();
+
+        // 最初の画像ファイルを探す
+        for file_name in file_names {
+            let file_path = Path::new(&file_name);
+            if Self::is_image_file(file_path) {
+                // RAR ファイルを再度開いて対象ファイルを抽出
+                let mut archive = RarArchive::new(archive_path.to_str().unwrap())
+                    .open_for_processing()
+                    .map_err(|e| ThumbnailError {
+                        message: format!("Failed to reopen RAR archive: {}", e),
+                    })?;
+
+                while let Some(header) = archive.read_header().map_err(|e| ThumbnailError {
+                    message: format!("Failed to read RAR header: {}", e),
+                })? {
+                    if header.entry().filename == file_name {
+                        let mut buffer = Vec::new();
+                        archive.read_data(&mut buffer).map_err(|e| ThumbnailError {
+                            message: format!("Failed to read RAR file contents: {}", e),
+                        })?;
+                        return Ok((file_name, buffer));
+                    } else {
+                        archive.skip().map_err(|e| ThumbnailError {
+                            message: format!("Failed to skip RAR entry: {}", e),
+                        })?;
+                    }
+                }
+            }
+        }
+
+        Err(ThumbnailError {
+            message: "No image files found in RAR archive".to_string(),
+        })
+    }
+
+    fn get_first_image_from_tar(&self, archive_path: &Path, is_gzipped: bool) -> Result<(String, Vec<u8>), ThumbnailError> {
+        let file = File::open(archive_path).map_err(|e| ThumbnailError {
+            message: format!("Failed to open tar file: {}", e),
+        })?;
+
+        let mut file_names: Vec<String> = Vec::new();
+        
+        if is_gzipped {
+            let decoder = GzDecoder::new(file);
+            let mut archive = TarArchive::new(decoder);
+            
+            // ファイル名を収集
+            for entry in archive.entries().map_err(|e| ThumbnailError {
+                message: format!("Failed to read tar.gz entries: {}", e),
+            })? {
+                let entry = entry.map_err(|e| ThumbnailError {
+                    message: format!("Failed to read tar.gz entry: {}", e),
+                })?;
+                
+                if entry.header().entry_type().is_file() {
+                    if let Ok(path) = entry.path() {
+                        file_names.push(path.to_string_lossy().to_string());
+                    }
+                }
+            }
+        } else {
+            let mut archive = TarArchive::new(file);
+            
+            // ファイル名を収集
+            for entry in archive.entries().map_err(|e| ThumbnailError {
+                message: format!("Failed to read tar entries: {}", e),
+            })? {
+                let entry = entry.map_err(|e| ThumbnailError {
+                    message: format!("Failed to read tar entry: {}", e),
+                })?;
+                
+                if entry.header().entry_type().is_file() {
+                    if let Ok(path) = entry.path() {
+                        file_names.push(path.to_string_lossy().to_string());
+                    }
+                }
+            }
+        }
+
+        // ファイル名でソート
+        file_names.sort();
+
+        // 最初の画像ファイルを探す
+        for file_name in file_names {
+            let file_path = Path::new(&file_name);
+            if Self::is_image_file(file_path) {
+                // tarファイルを再度開いて対象ファイルを抽出
+                let file = File::open(archive_path).map_err(|e| ThumbnailError {
+                    message: format!("Failed to reopen tar file: {}", e),
+                })?;
+
+                if is_gzipped {
+                    let decoder = GzDecoder::new(file);
+                    let mut archive = TarArchive::new(decoder);
+                    
+                    for entry in archive.entries().map_err(|e| ThumbnailError {
+                        message: format!("Failed to read tar.gz entries: {}", e),
+                    })? {
+                        let mut entry = entry.map_err(|e| ThumbnailError {
+                            message: format!("Failed to read tar.gz entry: {}", e),
+                        })?;
+                        
+                        if let Ok(path) = entry.path() {
+                            if path.to_string_lossy() == file_name {
+                                let mut buffer = Vec::new();
+                                entry.read_to_end(&mut buffer).map_err(|e| ThumbnailError {
+                                    message: format!("Failed to read tar.gz file contents: {}", e),
+                                })?;
+                                return Ok((file_name, buffer));
+                            }
+                        }
+                    }
+                } else {
+                    let mut archive = TarArchive::new(file);
+                    
+                    for entry in archive.entries().map_err(|e| ThumbnailError {
+                        message: format!("Failed to read tar entries: {}", e),
+                    })? {
+                        let mut entry = entry.map_err(|e| ThumbnailError {
+                            message: format!("Failed to read tar entry: {}", e),
+                        })?;
+                        
+                        if let Ok(path) = entry.path() {
+                            if path.to_string_lossy() == file_name {
+                                let mut buffer = Vec::new();
+                                entry.read_to_end(&mut buffer).map_err(|e| ThumbnailError {
+                                    message: format!("Failed to read tar file contents: {}", e),
+                                })?;
+                                return Ok((file_name, buffer));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Err(ThumbnailError {
+            message: "No image files found in tar archive".to_string(),
+        })
+    }
+
     pub fn generate_archive_thumbnail(&self, archive_path: &Path) -> Result<PathBuf, ThumbnailError> {
         let thumbnail_path = self.get_archive_thumbnail_path(archive_path);
 
@@ -324,60 +541,85 @@ impl ThumbnailGenerator {
             return Ok(thumbnail_path);
         }
 
-        // 現在はZIPファイルのみサポート
-        if let Some(extension) = archive_path.extension() {
-            if let Some(ext_str) = extension.to_str() {
-                if ext_str.to_lowercase() == "zip" {
-                    let (_file_name, image_data) = self.get_first_image_from_zip(archive_path)?;
-                    
-                    // 画像データを一時的にファイルに保存
-                    let temp_image_path = thumbnail_path.with_extension("temp");
-                    std::fs::write(&temp_image_path, image_data).map_err(|e| ThumbnailError {
-                        message: format!("Failed to write temporary image file: {}", e),
-                    })?;
+        // ファイル拡張子を取得
+        let extension = archive_path.extension()
+            .and_then(|ext| ext.to_str())
+            .map(|s| s.to_lowercase())
+            .ok_or_else(|| ThumbnailError {
+                message: "Invalid file extension".to_string(),
+            })?;
 
-                    // ffmpegを使用してサムネイルを生成
-                    let output = Command::new("ffmpeg")
-                        .args([
-                            "-i",
-                            temp_image_path.to_str().unwrap(),
-                            "-vf",
-                            "scale=192:192:force_original_aspect_ratio=increase,crop=192:192",
-                            "-frames:v",
-                            "1",
-                            "-q:v",
-                            "2",
-                            thumbnail_path.to_str().unwrap(),
-                        ])
-                        .output()
-                        .map_err(|e| ThumbnailError {
-                            message: format!("Failed to execute ffmpeg: {}", e),
-                        })?;
-
-                    // 一時ファイルを削除
-                    let _ = std::fs::remove_file(&temp_image_path);
-
-                    if !output.status.success() {
-                        let error_message = String::from_utf8_lossy(&output.stderr);
-                        return Err(ThumbnailError {
-                            message: format!("ffmpeg failed: {}", error_message),
-                        });
-                    }
-
-                    if !thumbnail_path.exists() {
-                        return Err(ThumbnailError {
-                            message: "Thumbnail file was not created".to_string(),
-                        });
-                    }
-
-                    return Ok(thumbnail_path);
+        // アーカイブの種類に応じて画像を抽出
+        let (_file_name, image_data) = match extension.as_str() {
+            "zip" => self.get_first_image_from_zip(archive_path)?,
+            "7z" => {
+                return Err(ThumbnailError {
+                    message: "7z format is not yet supported".to_string(),
+                });
+            },
+            "rar" => self.get_first_image_from_rar(archive_path)?,
+            "tar" => self.get_first_image_from_tar(archive_path, false)?,
+            "gz" => {
+                // .tar.gz形式かどうかチェック
+                let file_name = archive_path.file_name()
+                    .and_then(|name| name.to_str())
+                    .unwrap_or("");
+                if file_name.ends_with(".tar.gz") {
+                    self.get_first_image_from_tar(archive_path, true)?
+                } else {
+                    return Err(ThumbnailError {
+                        message: "Unsupported .gz format (only .tar.gz is supported)".to_string(),
+                    });
                 }
+            },
+            _ => {
+                return Err(ThumbnailError {
+                    message: format!("Unsupported archive format: {}", extension),
+                });
             }
+        };
+
+        // 画像データを一時的にファイルに保存
+        let temp_image_path = thumbnail_path.with_extension("temp");
+        std::fs::write(&temp_image_path, image_data).map_err(|e| ThumbnailError {
+            message: format!("Failed to write temporary image file: {}", e),
+        })?;
+
+        // ffmpegを使用してサムネイルを生成
+        let output = Command::new("ffmpeg")
+            .args([
+                "-i",
+                temp_image_path.to_str().unwrap(),
+                "-vf",
+                "scale=192:192:force_original_aspect_ratio=increase,crop=192:192",
+                "-frames:v",
+                "1",
+                "-q:v",
+                "2",
+                thumbnail_path.to_str().unwrap(),
+            ])
+            .output()
+            .map_err(|e| ThumbnailError {
+                message: format!("Failed to execute ffmpeg: {}", e),
+            })?;
+
+        // 一時ファイルを削除
+        let _ = std::fs::remove_file(&temp_image_path);
+
+        if !output.status.success() {
+            let error_message = String::from_utf8_lossy(&output.stderr);
+            return Err(ThumbnailError {
+                message: format!("ffmpeg failed: {}", error_message),
+            });
         }
 
-        Err(ThumbnailError {
-            message: "Unsupported archive format".to_string(),
-        })
+        if !thumbnail_path.exists() {
+            return Err(ThumbnailError {
+                message: "Thumbnail file was not created".to_string(),
+            });
+        }
+
+        Ok(thumbnail_path)
     }
 }
 
