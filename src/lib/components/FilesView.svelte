@@ -9,6 +9,7 @@
     currentPage: number;
     totalFiles: number;
     totalPages: number;
+    selectedDirectoryId: string | "all";
     onSelectFile: (file: File) => void;
     onSelectCategory: (category: FileCategory) => void;
     onGoToPage: (page: number) => void;
@@ -25,6 +26,7 @@
     currentPage,
     totalFiles,
     totalPages,
+    selectedDirectoryId,
     onSelectFile,
     onSelectCategory,
     onGoToPage,
@@ -215,9 +217,13 @@
         </div>
       </div>
     {/each}
-    {#if files.length === 0 && totalFiles === 0}
+    {#if files.length === 0}
       <div class="no-files">
-        ディレクトリを追加してファイルをスキャンしてください
+        {#if totalFiles === 0 && selectedDirectoryId === "all"}
+          ディレクトリを追加してファイルをスキャンしてください
+        {:else}
+          対象のファイルが存在しません
+        {/if}
       </div>
     {/if}
   </div>

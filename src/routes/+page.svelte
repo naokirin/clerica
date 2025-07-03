@@ -247,6 +247,7 @@
             currentPage={$currentPage}
             totalFiles={$filteredFiles.length}
             totalPages={$totalPages}
+            selectedDirectoryId={$selectedDirectoryId}
             onSelectFile={selectFile}
             onSelectCategory={(category) => fileViewModel.selectCategory(category)}
             onGoToPage={(page) => fileViewModel.goToPage(page)}
