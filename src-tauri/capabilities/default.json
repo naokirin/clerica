@@ -6,9 +6,20 @@
   ],
   "permissions": [
     "core:default",
+    "core:path:default",
+    "core:path:allow-resolve",
     "dialog:allow-open",
     "dialog:allow-confirm",
     "sql:default",
     "sql:allow-execute"
-  ]
+  ],
+  "path": {
+    "all": true
+  },
+  "fs": {
+    "all": true,
+    "scope": [
+      "**"
+    ]
+  }
 }

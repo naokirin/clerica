@@ -1,19 +1,21 @@
+import { convertFileSrc } from '@tauri-apps/api/core';
+
 export function formatFileSize(bytes: number): string {
   if (bytes === 0) return '0 Bytes';
-  
+
   const k = 1024;
   const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  
+
   // sizesの範囲を超えないように制限
   const sizeIndex = Math.min(i, sizes.length - 1);
-  
+
   return parseFloat((bytes / Math.pow(k, sizeIndex)).toFixed(2)) + ' ' + sizes[sizeIndex];
 }
 
 export function formatDate(dateString: string | null): string {
   if (!dateString) return 'N/A';
-  
+
   try {
     const date = new Date(dateString);
     return date.toLocaleString('ja-JP');
@@ -24,7 +26,7 @@ export function formatDate(dateString: string | null): string {
 
 export function getFileTypeIcon(fileType: string | null): string {
   if (!fileType) return '📄';
-  
+
   const iconMap: Record<string, string> = {
     'pdf': '📄',
     'txt': '📝',
@@ -62,8 +64,34 @@ export function getFileTypeIcon(fileType: string | null): string {
     'xml': '📋',
     'csv': '📊',
   };
-  
+
   return iconMap[fileType.toLowerCase()] || '📄';
+}
+
+export function isImageFile(file: { mime_type?: string | null; name: string }): boolean {
+  // MIMEタイプで判定
+  if (file.mime_type?.startsWith('image/')) {
+    return true;
+  }
+
+  // 拡張子で判定
+  const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'ico', 'tiff', 'raw'];
+  const extension = file.name.split('.').pop()?.toLowerCase();
+
+  return extension ? imageExtensions.includes(extension) : false;
+}
+
+export async function getImageUrl(filePath: string): Promise<string> {
+  try {
+    // Tauriの convertFileSrc を使用してファイルパスをURLに変換
+    // v2では asset プロトコルが使用される
+    const url = convertFileSrc(filePath);
+    console.log('Converted file URL:', url);
+    return url;
+  } catch (error) {
+    console.error('Failed to convert file src:', error);
+    throw error;
+  }
 }
 
 export function truncateText(text: string, maxLength: number): string {
@@ -76,7 +104,7 @@ export function debounce<T extends (...args: any[]) => any>(
   delay: number
 ): (...args: Parameters<T>) => void {
   let timeoutId: ReturnType<typeof setTimeout>;
-  
+
   return (...args: Parameters<T>) => {
     clearTimeout(timeoutId);
     timeoutId = setTimeout(() => func.apply(null, args), delay);
@@ -85,7 +113,7 @@ export function debounce<T extends (...args: any[]) => any>(
 
 export function validatePath(path: string): boolean {
   if (!path || path.trim().length === 0) return false;
-  
+
   // 基本的なパス検証
   const pathRegex = /^[a-zA-Z0-9\/\-_.\s~]+$/;
   return pathRegex.test(path);
@@ -96,7 +124,7 @@ export function generateColorFromString(str: string): string {
   for (let i = 0; i < str.length; i++) {
     hash = str.charCodeAt(i) + ((hash << 5) - hash);
   }
-  
+
   const hue = hash % 360;
   return `hsl(${hue}, 70%, 50%)`;
 }
@@ -109,20 +137,20 @@ export function sortByProperty<T>(
   return [...array].sort((a, b) => {
     const aVal = a[property];
     const bVal = b[property];
-    
+
     if (aVal === null || aVal === undefined) return 1;
     if (bVal === null || bVal === undefined) return -1;
-    
+
     if (typeof aVal === 'string' && typeof bVal === 'string') {
-      return direction === 'asc' 
+      return direction === 'asc'
         ? aVal.localeCompare(bVal)
         : bVal.localeCompare(aVal);
     }
-    
+
     if (typeof aVal === 'number' && typeof bVal === 'number') {
       return direction === 'asc' ? aVal - bVal : bVal - aVal;
     }
-    
+
     return 0;
   });
 }
@@ -131,10 +159,10 @@ import type { File, FileCategory, FileCategoryInfo } from './types.js';
 
 export function getFileCategory(file: File): FileCategory {
   if (file.is_directory) return "other";
-  
+
   const mimeType = file.mime_type?.toLowerCase() || "";
   const extension = file.file_type?.toLowerCase() || "";
-  
+
   const fileCategories: FileCategoryInfo[] = [
     {
       key: "image",
@@ -172,7 +200,7 @@ export function getFileCategory(file: File): FileCategory {
       extensions: ["zip", "rar", "7z", "tar", "gz", "bz2", "xz", "lzma"]
     }
   ];
-  
+
   for (const category of fileCategories) {
     // MIMEタイプでチェック
     for (const mime of category.mimeTypes) {
@@ -180,12 +208,12 @@ export function getFileCategory(file: File): FileCategory {
         return category.key;
       }
     }
-    
+
     // 拡張子でチェック
     if (category.extensions.includes(extension)) {
       return category.key;
     }
   }
-  
+
   return "other";
 }
