@@ -107,6 +107,23 @@ export function isAudioFile(file: { mime_type?: string | null; name: string }): 
   return extension ? audioExtensions.includes(extension) : false;
 }
 
+export function isArchiveFile(file: { mime_type?: string | null; name: string }): boolean {
+  // MIMEタイプで判定
+  if (file.mime_type?.includes('zip') || 
+      file.mime_type?.includes('rar') || 
+      file.mime_type?.includes('7z') || 
+      file.mime_type?.includes('tar') || 
+      file.mime_type?.includes('gzip')) {
+    return true;
+  }
+
+  // 拡張子で判定
+  const archiveExtensions = ['zip', 'rar', '7z', 'tar', 'gz', 'bz2', 'xz', 'lzma'];
+  const extension = file.name.split('.').pop()?.toLowerCase();
+
+  return extension ? archiveExtensions.includes(extension) : false;
+}
+
 export async function getImageUrl(filePath: string): Promise<string> {
   try {
     // Tauriの convertFileSrc を使用してファイルパスをURLに変換

@@ -2,6 +2,9 @@ use serde::{Deserialize, Serialize};
 use std::env;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::fs::File;
+use std::io::{BufReader, Read};
+use zip::ZipArchive;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ThumbnailError {
@@ -160,6 +163,34 @@ impl ThumbnailGenerator {
         false
     }
 
+    pub fn is_archive_file(path: &Path) -> bool {
+        let archive_extensions = [
+            "zip", "rar", "7z", "tar", "gz", "bz2", "xz", "lzma",
+        ];
+
+        if let Some(extension) = path.extension() {
+            if let Some(ext_str) = extension.to_str() {
+                return archive_extensions.contains(&ext_str.to_lowercase().as_str());
+            }
+        }
+
+        false
+    }
+
+    pub fn is_image_file(path: &Path) -> bool {
+        let image_extensions = [
+            "jpg", "jpeg", "png", "gif", "bmp", "webp", "svg", "ico", "tiff", "raw",
+        ];
+
+        if let Some(extension) = path.extension() {
+            if let Some(ext_str) = extension.to_str() {
+                return image_extensions.contains(&ext_str.to_lowercase().as_str());
+            }
+        }
+
+        false
+    }
+
     fn get_audio_thumbnail_path(&self, audio_path: &Path) -> PathBuf {
         let file_name = audio_path.file_name().unwrap_or_default().to_string_lossy();
         let hash = format!(
@@ -230,6 +261,124 @@ impl ThumbnailGenerator {
 
         Ok(total_size)
     }
+
+    fn get_archive_thumbnail_path(&self, archive_path: &Path) -> PathBuf {
+        let file_name = archive_path.file_name().unwrap_or_default().to_string_lossy();
+        let hash = format!(
+            "{:x}",
+            md5::compute(archive_path.to_string_lossy().as_bytes())
+        );
+        let thumbnail_name = format!("archive_{}_{}.jpg", file_name, hash);
+        self.cache_dir.join(thumbnail_name)
+    }
+
+    fn get_first_image_from_zip(&self, archive_path: &Path) -> Result<(String, Vec<u8>), ThumbnailError> {
+        let file = File::open(archive_path).map_err(|e| ThumbnailError {
+            message: format!("Failed to open archive file: {}", e),
+        })?;
+
+        let reader = BufReader::new(file);
+        let mut archive = ZipArchive::new(reader).map_err(|e| ThumbnailError {
+            message: format!("Failed to read ZIP archive: {}", e),
+        })?;
+
+        // アーカイブ内のファイル名を取得してソート
+        let mut file_names: Vec<String> = Vec::new();
+        for i in 0..archive.len() {
+            let file = archive.by_index(i).map_err(|e| ThumbnailError {
+                message: format!("Failed to read file from archive: {}", e),
+            })?;
+            file_names.push(file.name().to_string());
+        }
+
+        // ファイル名でソート
+        file_names.sort();
+
+        // 最初の画像ファイルを探す
+        for file_name in file_names {
+            let file_path = Path::new(&file_name);
+            if Self::is_image_file(file_path) {
+                let mut file = archive.by_name(&file_name).map_err(|e| ThumbnailError {
+                    message: format!("Failed to read file from archive: {}", e),
+                })?;
+
+                let mut buffer = Vec::new();
+                file.read_to_end(&mut buffer).map_err(|e| ThumbnailError {
+                    message: format!("Failed to read file contents: {}", e),
+                })?;
+
+                return Ok((file_name, buffer));
+            }
+        }
+
+        Err(ThumbnailError {
+            message: "No image files found in archive".to_string(),
+        })
+    }
+
+    pub fn generate_archive_thumbnail(&self, archive_path: &Path) -> Result<PathBuf, ThumbnailError> {
+        let thumbnail_path = self.get_archive_thumbnail_path(archive_path);
+
+        // 既にサムネイルが存在する場合はそれを返す
+        if thumbnail_path.exists() {
+            return Ok(thumbnail_path);
+        }
+
+        // 現在はZIPファイルのみサポート
+        if let Some(extension) = archive_path.extension() {
+            if let Some(ext_str) = extension.to_str() {
+                if ext_str.to_lowercase() == "zip" {
+                    let (_file_name, image_data) = self.get_first_image_from_zip(archive_path)?;
+                    
+                    // 画像データを一時的にファイルに保存
+                    let temp_image_path = thumbnail_path.with_extension("temp");
+                    std::fs::write(&temp_image_path, image_data).map_err(|e| ThumbnailError {
+                        message: format!("Failed to write temporary image file: {}", e),
+                    })?;
+
+                    // ffmpegを使用してサムネイルを生成
+                    let output = Command::new("ffmpeg")
+                        .args([
+                            "-i",
+                            temp_image_path.to_str().unwrap(),
+                            "-vf",
+                            "scale=192:192:force_original_aspect_ratio=increase,crop=192:192",
+                            "-frames:v",
+                            "1",
+                            "-q:v",
+                            "2",
+                            thumbnail_path.to_str().unwrap(),
+                        ])
+                        .output()
+                        .map_err(|e| ThumbnailError {
+                            message: format!("Failed to execute ffmpeg: {}", e),
+                        })?;
+
+                    // 一時ファイルを削除
+                    let _ = std::fs::remove_file(&temp_image_path);
+
+                    if !output.status.success() {
+                        let error_message = String::from_utf8_lossy(&output.stderr);
+                        return Err(ThumbnailError {
+                            message: format!("ffmpeg failed: {}", error_message),
+                        });
+                    }
+
+                    if !thumbnail_path.exists() {
+                        return Err(ThumbnailError {
+                            message: "Thumbnail file was not created".to_string(),
+                        });
+                    }
+
+                    return Ok(thumbnail_path);
+                }
+            }
+        }
+
+        Err(ThumbnailError {
+            message: "Unsupported archive format".to_string(),
+        })
+    }
 }
 
 // Tauriコマンド関数
@@ -286,6 +435,27 @@ pub async fn extract_audio_album_art(file_path: String) -> Result<String, String
 
     let thumbnail_path = generator
         .extract_album_art(audio_path)
+        .map_err(|e| e.message)?;
+
+    Ok(thumbnail_path.to_string_lossy().to_string())
+}
+
+#[tauri::command]
+pub async fn generate_archive_thumbnail(file_path: String) -> Result<String, String> {
+    let archive_path = Path::new(&file_path);
+
+    if !archive_path.exists() {
+        return Err("Archive file does not exist".to_string());
+    }
+
+    if !ThumbnailGenerator::is_archive_file(archive_path) {
+        return Err("File is not an archive".to_string());
+    }
+
+    let generator = ThumbnailGenerator::new().map_err(|e| e.message)?;
+
+    let thumbnail_path = generator
+        .generate_archive_thumbnail(archive_path)
         .map_err(|e| e.message)?;
 
     Ok(thumbnail_path.to_string_lossy().to_string())

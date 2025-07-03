@@ -20,3 +20,15 @@ export async function revealInFinder(filePath: string): Promise<void> {
 export async function deleteFile(filePath: string): Promise<void> {
   return await invoke("delete_file", { filePath });
 }
+
+export async function generateVideoThumbnail(filePath: string): Promise<string> {
+  return await invoke("generate_video_thumbnail", { filePath });
+}
+
+export async function extractAudioAlbumArt(filePath: string): Promise<string> {
+  return await invoke("extract_audio_album_art", { filePath });
+}
+
+export async function generateArchiveThumbnail(filePath: string): Promise<string> {
+  return await invoke("generate_archive_thumbnail", { filePath });
+}

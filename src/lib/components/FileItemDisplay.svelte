@@ -6,6 +6,7 @@
     isImageFile,
     isVideoFile,
     isAudioFile,
+    isArchiveFile,
     getImageUrl,
   } from "../utils.js";
   import { onMount } from "svelte";
@@ -54,6 +55,20 @@
       return await getImageUrl(thumbnailPath);
     } catch (error) {
       console.error("Failed to extract album art:", error);
+      throw error;
+    }
+  }
+
+  async function loadArchiveThumbnail(filePath: string): Promise<string> {
+    // アーカイブファイルのサムネイルを生成するTauri関数を呼び出す
+    try {
+      const { invoke } = await import("@tauri-apps/api/core");
+      const thumbnailPath = await invoke("generate_archive_thumbnail", {
+        filePath,
+      });
+      return await getImageUrl(thumbnailPath);
+    } catch (error) {
+      console.error("Failed to generate archive thumbnail:", error);
       throw error;
     }
   }
@@ -127,6 +142,29 @@
           <span class="icon-emoji fallback" style="display: none;">🎵</span>
         {:catch}
           <span class="icon-emoji">🎵</span>
+        {/await}
+      </div>
+    {:else if isArchiveFile(file)}
+      <div class="archive-preview">
+        {#await loadArchiveThumbnail(file.path)}
+          <span class="icon-emoji loading">📦</span>
+        {:then thumbnailUrl}
+          <img
+            src={thumbnailUrl}
+            alt={file.name}
+            class="thumbnail archive-thumbnail"
+            onerror={(e) => {
+              console.error("Failed to load archive thumbnail:", thumbnailUrl);
+              e.currentTarget.style.display = "none";
+              e.currentTarget.nextElementSibling.style.display = "block";
+            }}
+          />
+          <div class="archive-overlay">
+            <span class="archive-icon">📦</span>
+          </div>
+          <span class="icon-emoji fallback" style="display: none;">📦</span>
+        {:catch}
+          <span class="icon-emoji">📦</span>
         {/await}
       </div>
     {:else if file.mime_type?.includes("pdf")}
@@ -204,7 +242,8 @@
 
   .image-preview,
   .video-preview,
-  .audio-preview {
+  .audio-preview,
+  .archive-preview {
     width: 48px;
     height: 48px;
     display: flex;
@@ -233,7 +272,8 @@
   }
 
   .video-overlay,
-  .audio-overlay {
+  .audio-overlay,
+  .archive-overlay {
     position: absolute;
     top: 0;
     left: 0;
@@ -249,13 +289,15 @@
   }
 
   .play-icon,
-  .music-icon {
+  .music-icon,
+  .archive-icon {
     font-size: 12px;
     opacity: 0.9;
     color: white;
   }
 
-  .album-art {
+  .album-art,
+  .archive-thumbnail {
     filter: brightness(0.8);
   }
 
