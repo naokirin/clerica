@@ -28,7 +28,10 @@ describe('files API', () => {
 
       const result = await getFiles();
 
-      expect(mockInvoke).toHaveBeenCalledWith('get_files');
+      expect(mockInvoke).toHaveBeenCalledWith('get_files', {
+        sortField: 'modified_at',
+        sortOrder: 'desc'
+      });
       expect(result).toEqual(mockFiles);
     });
 
@@ -37,6 +40,10 @@ describe('files API', () => {
 
       const result = await getFiles();
 
+      expect(mockInvoke).toHaveBeenCalledWith('get_files', {
+        sortField: 'modified_at',
+        sortOrder: 'desc'
+      });
       expect(result).toEqual([]);
     });
 
@@ -45,6 +52,10 @@ describe('files API', () => {
       mockInvoke.mockRejectedValue(error);
 
       await expect(getFiles()).rejects.toThrow('Failed to get files');
+      expect(mockInvoke).toHaveBeenCalledWith('get_files', {
+        sortField: 'modified_at',
+        sortOrder: 'desc'
+      });
     });
   });
 

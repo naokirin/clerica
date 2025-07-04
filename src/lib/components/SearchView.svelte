@@ -658,6 +658,11 @@
     align-items: center;
     margin: 1rem 0;
   }
+  
+  .pagination-bottom {
+    justify-content: center;
+    gap: 0.5rem;
+  }
 
   .pagination-buttons {
     display: flex;

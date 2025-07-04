@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
   import { open, confirm } from "@tauri-apps/plugin-dialog";
-  import { FileText, Search, Tag } from "lucide-svelte";
+  import { FileText, Search, Tag, Settings } from "lucide-svelte";
 
   // コンポーネントのインポート
   import LoadingScreen from "../lib/components/LoadingScreen.svelte";
@@ -11,6 +11,7 @@
   import TagsView from "../lib/components/TagsView.svelte";
   import FileDetailModal from "../lib/components/FileDetailModal.svelte";
   import CustomMetadataKeyManager from "../lib/components/CustomMetadataKeyManager.svelte";
+  import SettingsModal from "../lib/components/SettingsModal.svelte";
 
   // ViewModel のインポート
   import { AppViewModel, type ActiveTab } from "../lib/viewmodels/AppViewModel.js";
@@ -60,6 +61,17 @@
     sortOptions: searchSortOptions
   } = searchViewModel;
   const { tags, customMetadataKeys } = tagViewModel;
+
+  // 設定モーダルの状態管理
+  let isSettingsModalOpen = false;
+
+  const openSettingsModal = () => {
+    isSettingsModalOpen = true;
+  };
+
+  const closeSettingsModal = () => {
+    isSettingsModalOpen = false;
+  };
 
   onMount(async () => {
     // ViewModelが自動的に初期化するため、特別な処理は不要
@@ -225,32 +237,41 @@
 
     <div class="main-content">
       <div class="tabs">
+        <div class="tab-group">
+          <button
+            class="tab {$activeTab === 'files' ? 'active' : ''}"
+            onclick={() => appViewModel.setActiveTab('files')}
+          >
+            <FileText size={16} />
+            ファイル
+          </button>
+          <button
+            class="tab {$activeTab === 'search' ? 'active' : ''}"
+            onclick={() => appViewModel.setActiveTab('search')}
+          >
+            <Search size={16} />
+            検索
+          </button>
+          <button
+            class="tab {$activeTab === 'tags' ? 'active' : ''}"
+            onclick={() => appViewModel.setActiveTab('tags')}
+          >
+            <Tag size={16} />
+            タグ管理
+          </button>
+          <button
+            class="tab {$activeTab === 'metadata' ? 'active' : ''}"
+            onclick={() => appViewModel.setActiveTab('metadata')}
+          >
+            🏷️ メタデータ
+          </button>
+        </div>
         <button
-          class="tab {$activeTab === 'files' ? 'active' : ''}"
-          onclick={() => appViewModel.setActiveTab('files')}
+          class="settings-button"
+          onclick={openSettingsModal}
+          title="設定"
         >
-          <FileText size={16} />
-          ファイル
-        </button>
-        <button
-          class="tab {$activeTab === 'search' ? 'active' : ''}"
-          onclick={() => appViewModel.setActiveTab('search')}
-        >
-          <Search size={16} />
-          検索
-        </button>
-        <button
-          class="tab {$activeTab === 'tags' ? 'active' : ''}"
-          onclick={() => appViewModel.setActiveTab('tags')}
-        >
-          <Tag size={16} />
-          タグ管理
-        </button>
-        <button
-          class="tab {$activeTab === 'metadata' ? 'active' : ''}"
-          onclick={() => appViewModel.setActiveTab('metadata')}
-        >
-          🏷️ メタデータ
+          <Settings size={16} />
         </button>
       </div>
 
@@ -326,4 +347,7 @@
     onDeleteFile={deleteFile}
     onClose={closeFileDetails}
   />
+
+  <!-- 設定モーダル -->
+  <SettingsModal isOpen={isSettingsModalOpen} onClose={closeSettingsModal} />
 </div>

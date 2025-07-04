@@ -194,7 +194,8 @@ describe('SearchViewModel', () => {
         ['tag1'],
         [{ field: 'size', operator: 'greater_than', value: '1000' }],
         'AND',
-        'all'
+        'all',
+        { field: 'modified_at', order: 'desc' }
       );
       expect(get(searchViewModel.searchResults)).toEqual(mockSearchResults);
       expect(get(searchViewModel.currentPage)).toBe(1);

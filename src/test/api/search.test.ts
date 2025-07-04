@@ -44,7 +44,9 @@ describe('search API', () => {
         tagIds,
         metadataFilters,
         metadataLogic: 'AND',
-        directoryId: undefined
+        directoryId: undefined,
+        sortField: 'modified_at',
+        sortOrder: 'desc'
       });
       expect(result).toEqual(mockResults);
     });
@@ -59,7 +61,9 @@ describe('search API', () => {
         tagIds: [],
         metadataFilters: [],
         metadataLogic: 'AND',
-        directoryId: undefined
+        directoryId: undefined,
+        sortField: 'modified_at',
+        sortOrder: 'desc'
       });
       expect(result).toEqual([]);
     });
@@ -88,7 +92,9 @@ describe('search API', () => {
         tagIds: ['important'],
         metadataFilters: [],
         metadataLogic: 'AND',
-        directoryId: undefined
+        directoryId: undefined,
+        sortField: 'modified_at',
+        sortOrder: 'desc'
       });
       expect(result).toEqual(mockResults);
     });
@@ -108,7 +114,9 @@ describe('search API', () => {
         tagIds: [],
         metadataFilters,
         metadataLogic: 'AND',
-        directoryId: undefined
+        directoryId: undefined,
+        sortField: 'modified_at',
+        sortOrder: 'desc'
       });
     });
 
@@ -143,7 +151,9 @@ describe('search API', () => {
         tagIds,
         metadataFilters,
         metadataLogic: 'AND',
-        directoryId: undefined
+        directoryId: undefined,
+        sortField: 'modified_at',
+        sortOrder: 'desc'
       });
       expect(result).toEqual(mockResults);
     });
@@ -153,6 +163,15 @@ describe('search API', () => {
       mockInvoke.mockRejectedValue(error);
 
       await expect(searchFiles('test', [], [])).rejects.toThrow('Search failed');
+      expect(mockInvoke).toHaveBeenCalledWith('search_files', {
+        query: 'test',
+        tagIds: [],
+        metadataFilters: [],
+        metadataLogic: 'AND',
+        directoryId: undefined,
+        sortField: 'modified_at',
+        sortOrder: 'desc'
+      });
     });
 
     it('should handle special characters in query', async () => {
@@ -167,7 +186,9 @@ describe('search API', () => {
         tagIds: [],
         metadataFilters: [],
         metadataLogic: 'AND',
-        directoryId: undefined
+        directoryId: undefined,
+        sortField: 'modified_at',
+        sortOrder: 'desc'
       });
     });
   });
