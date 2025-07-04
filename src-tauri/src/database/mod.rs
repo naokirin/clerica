@@ -1,6 +1,6 @@
+use chrono::{DateTime, Utc};
 use sqlx::{Row, SqlitePool};
 use uuid::Uuid;
-use chrono::{DateTime, Utc};
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone, PartialEq)]
 pub struct Directory {
@@ -75,35 +75,118 @@ use mockall::predicate::*;
 #[cfg_attr(test, mockall::automock)]
 pub trait DatabaseTrait {
     async fn init_database(&self, pool: &SqlitePool) -> Result<(), sqlx::Error>;
-    async fn add_directory(&self, pool: &SqlitePool, path: &str, name: &str) -> Result<Directory, sqlx::Error>;
+    async fn add_directory(
+        &self,
+        pool: &SqlitePool,
+        path: &str,
+        name: &str,
+    ) -> Result<Directory, sqlx::Error>;
     async fn get_directories(&self, pool: &SqlitePool) -> Result<Vec<Directory>, sqlx::Error>;
     async fn remove_directory(&self, pool: &SqlitePool, id: &str) -> Result<(), sqlx::Error>;
     async fn add_file(&self, pool: &SqlitePool, file: &File) -> Result<(), sqlx::Error>;
-    async fn get_files_by_directory(&self, pool: &SqlitePool, directory_id: &str) -> Result<Vec<File>, sqlx::Error>;
+    async fn get_files_by_directory(
+        &self,
+        pool: &SqlitePool,
+        directory_id: &str,
+    ) -> Result<Vec<File>, sqlx::Error>;
     async fn get_all_files(&self, pool: &SqlitePool) -> Result<Vec<File>, sqlx::Error>;
     async fn get_all_tags(&self, pool: &SqlitePool) -> Result<Vec<Tag>, sqlx::Error>;
-    async fn create_tag(&self, pool: &SqlitePool, name: &str, color: &str) -> Result<Tag, sqlx::Error>;
-    async fn add_file_tag(&self, pool: &SqlitePool, file_id: &str, tag_id: &str) -> Result<(), sqlx::Error>;
-    async fn remove_file_tag(&self, pool: &SqlitePool, file_id: &str, tag_id: &str) -> Result<(), sqlx::Error>;  
-    async fn get_file_tags(&self, pool: &SqlitePool, file_id: &str) -> Result<Vec<Tag>, sqlx::Error>;
+    async fn create_tag(
+        &self,
+        pool: &SqlitePool,
+        name: &str,
+        color: &str,
+    ) -> Result<Tag, sqlx::Error>;
+    async fn add_file_tag(
+        &self,
+        pool: &SqlitePool,
+        file_id: &str,
+        tag_id: &str,
+    ) -> Result<(), sqlx::Error>;
+    async fn remove_file_tag(
+        &self,
+        pool: &SqlitePool,
+        file_id: &str,
+        tag_id: &str,
+    ) -> Result<(), sqlx::Error>;
+    async fn get_file_tags(
+        &self,
+        pool: &SqlitePool,
+        file_id: &str,
+    ) -> Result<Vec<Tag>, sqlx::Error>;
     // カスタムメタデータキー管理
-    async fn create_custom_metadata_key(&self, pool: &SqlitePool, key: &CustomMetadataKey) -> Result<CustomMetadataKey, sqlx::Error>;
-    async fn get_all_custom_metadata_keys(&self, pool: &SqlitePool) -> Result<Vec<CustomMetadataKey>, sqlx::Error>;
-    async fn update_custom_metadata_key(&self, pool: &SqlitePool, key: &CustomMetadataKey) -> Result<CustomMetadataKey, sqlx::Error>;
-    async fn delete_custom_metadata_key(&self, pool: &SqlitePool, key_id: &str) -> Result<(), sqlx::Error>;
-    async fn get_custom_metadata_key_by_name(&self, pool: &SqlitePool, name: &str) -> Result<Option<CustomMetadataKey>, sqlx::Error>;
+    async fn create_custom_metadata_key(
+        &self,
+        pool: &SqlitePool,
+        key: &CustomMetadataKey,
+    ) -> Result<CustomMetadataKey, sqlx::Error>;
+    async fn get_all_custom_metadata_keys(
+        &self,
+        pool: &SqlitePool,
+    ) -> Result<Vec<CustomMetadataKey>, sqlx::Error>;
+    async fn update_custom_metadata_key(
+        &self,
+        pool: &SqlitePool,
+        key: &CustomMetadataKey,
+    ) -> Result<CustomMetadataKey, sqlx::Error>;
+    async fn delete_custom_metadata_key(
+        &self,
+        pool: &SqlitePool,
+        key_id: &str,
+    ) -> Result<(), sqlx::Error>;
+    async fn get_custom_metadata_key_by_name(
+        &self,
+        pool: &SqlitePool,
+        name: &str,
+    ) -> Result<Option<CustomMetadataKey>, sqlx::Error>;
     // カスタムメタデータ値管理
-    async fn set_custom_metadata_value(&self, pool: &SqlitePool, file_id: &str, key_id: &str, value: Option<String>) -> Result<CustomMetadataValue, sqlx::Error>;
-    async fn get_custom_metadata_values_by_file(&self, pool: &SqlitePool, file_id: &str) -> Result<Vec<CustomMetadataValue>, sqlx::Error>;
-    async fn get_custom_metadata_value(&self, pool: &SqlitePool, file_id: &str, key_id: &str) -> Result<Option<CustomMetadataValue>, sqlx::Error>;
-    async fn delete_custom_metadata_value(&self, pool: &SqlitePool, file_id: &str, key_id: &str) -> Result<(), sqlx::Error>;
+    async fn set_custom_metadata_value(
+        &self,
+        pool: &SqlitePool,
+        file_id: &str,
+        key_id: &str,
+        value: Option<String>,
+    ) -> Result<CustomMetadataValue, sqlx::Error>;
+    async fn get_custom_metadata_values_by_file(
+        &self,
+        pool: &SqlitePool,
+        file_id: &str,
+    ) -> Result<Vec<CustomMetadataValue>, sqlx::Error>;
+    async fn get_custom_metadata_value(
+        &self,
+        pool: &SqlitePool,
+        file_id: &str,
+        key_id: &str,
+    ) -> Result<Option<CustomMetadataValue>, sqlx::Error>;
+    async fn delete_custom_metadata_value(
+        &self,
+        pool: &SqlitePool,
+        file_id: &str,
+        key_id: &str,
+    ) -> Result<(), sqlx::Error>;
     // ファイル監視に必要な関数
-    async fn get_all_directories(&self, pool: &SqlitePool) -> Result<Vec<Directory>, sqlx::Error>;
     async fn remove_file_by_path(&self, pool: &SqlitePool, path: &str) -> Result<(), sqlx::Error>;
-    async fn update_file_metadata(&self, pool: &SqlitePool, path: &str, metadata: &std::fs::Metadata) -> Result<(), sqlx::Error>;
-    async fn file_exists_by_path(&self, pool: &SqlitePool, path: &str) -> Result<bool, sqlx::Error>;
-    async fn find_file_by_inode(&self, pool: &SqlitePool, inode: i64, device_id: Option<i64>) -> Result<Option<File>, sqlx::Error>;
-    async fn update_file_path(&self, pool: &SqlitePool, file_id: &str, new_path: &str, new_name: &str) -> Result<(), sqlx::Error>;
+    async fn update_file_metadata(
+        &self,
+        pool: &SqlitePool,
+        path: &str,
+        metadata: &std::fs::Metadata,
+    ) -> Result<(), sqlx::Error>;
+    async fn file_exists_by_path(&self, pool: &SqlitePool, path: &str)
+        -> Result<bool, sqlx::Error>;
+    async fn find_file_by_inode(
+        &self,
+        pool: &SqlitePool,
+        inode: i64,
+        device_id: Option<i64>,
+    ) -> Result<Option<File>, sqlx::Error>;
+    async fn update_file_path(
+        &self,
+        pool: &SqlitePool,
+        file_id: &str,
+        new_path: &str,
+        new_name: &str,
+    ) -> Result<(), sqlx::Error>;
 }
 
 pub struct Database;
@@ -114,10 +197,15 @@ impl DatabaseTrait for Database {
         Ok(())
     }
 
-    async fn add_directory(&self, pool: &SqlitePool, path: &str, name: &str) -> Result<Directory, sqlx::Error> {
+    async fn add_directory(
+        &self,
+        pool: &SqlitePool,
+        path: &str,
+        name: &str,
+    ) -> Result<Directory, sqlx::Error> {
         let id = Uuid::new_v4().to_string();
         let now = Utc::now();
-        
+
         sqlx::query(
             "INSERT INTO directories (id, path, name, created_at, updated_at) VALUES (?, ?, ?, ?, ?)"
         )
@@ -128,7 +216,7 @@ impl DatabaseTrait for Database {
         .bind(now)
         .execute(pool)
         .await?;
-        
+
         Ok(Directory {
             id,
             path: path.to_string(),
@@ -142,7 +230,7 @@ impl DatabaseTrait for Database {
         let rows = sqlx::query("SELECT * FROM directories ORDER BY name")
             .fetch_all(pool)
             .await?;
-        
+
         let mut directories = Vec::new();
         for row in rows {
             directories.push(Directory {
@@ -153,7 +241,7 @@ impl DatabaseTrait for Database {
                 updated_at: row.get("updated_at"),
             });
         }
-        
+
         Ok(directories)
     }
 
@@ -162,7 +250,7 @@ impl DatabaseTrait for Database {
             .bind(id)
             .execute(pool)
             .await?;
-        
+
         Ok(())
     }
 
@@ -194,16 +282,20 @@ impl DatabaseTrait for Database {
         .bind(&file.metadata)
         .execute(pool)
         .await?;
-        
+
         Ok(())
     }
 
-    async fn get_files_by_directory(&self, pool: &SqlitePool, directory_id: &str) -> Result<Vec<File>, sqlx::Error> {
+    async fn get_files_by_directory(
+        &self,
+        pool: &SqlitePool,
+        directory_id: &str,
+    ) -> Result<Vec<File>, sqlx::Error> {
         let rows = sqlx::query("SELECT * FROM files WHERE directory_id = ? ORDER BY name")
             .bind(directory_id)
             .fetch_all(pool)
             .await?;
-        
+
         let mut files = Vec::new();
         for row in rows {
             files.push(File {
@@ -231,7 +323,7 @@ impl DatabaseTrait for Database {
                 metadata: row.get("metadata"),
             });
         }
-        
+
         Ok(files)
     }
 
@@ -239,7 +331,7 @@ impl DatabaseTrait for Database {
         let rows = sqlx::query("SELECT * FROM files ORDER BY name")
             .fetch_all(pool)
             .await?;
-        
+
         let mut files = Vec::new();
         for row in rows {
             files.push(File {
@@ -267,7 +359,7 @@ impl DatabaseTrait for Database {
                 metadata: row.get("metadata"),
             });
         }
-        
+
         Ok(files)
     }
 
@@ -275,7 +367,7 @@ impl DatabaseTrait for Database {
         let rows = sqlx::query("SELECT * FROM tags ORDER BY name")
             .fetch_all(pool)
             .await?;
-        
+
         let mut tags = Vec::new();
         for row in rows {
             tags.push(Tag {
@@ -285,14 +377,19 @@ impl DatabaseTrait for Database {
                 created_at: row.get("created_at"),
             });
         }
-        
+
         Ok(tags)
     }
 
-    async fn create_tag(&self, pool: &SqlitePool, name: &str, color: &str) -> Result<Tag, sqlx::Error> {
+    async fn create_tag(
+        &self,
+        pool: &SqlitePool,
+        name: &str,
+        color: &str,
+    ) -> Result<Tag, sqlx::Error> {
         let id = Uuid::new_v4().to_string();
         let now = Utc::now();
-        
+
         sqlx::query("INSERT INTO tags (id, name, color, created_at) VALUES (?, ?, ?, ?)")
             .bind(&id)
             .bind(name)
@@ -300,7 +397,7 @@ impl DatabaseTrait for Database {
             .bind(now)
             .execute(pool)
             .await?;
-        
+
         Ok(Tag {
             id,
             name: name.to_string(),
@@ -309,37 +406,51 @@ impl DatabaseTrait for Database {
         })
     }
 
-    async fn add_file_tag(&self, pool: &SqlitePool, file_id: &str, tag_id: &str) -> Result<(), sqlx::Error> {
+    async fn add_file_tag(
+        &self,
+        pool: &SqlitePool,
+        file_id: &str,
+        tag_id: &str,
+    ) -> Result<(), sqlx::Error> {
         sqlx::query("INSERT OR IGNORE INTO file_tags (file_id, tag_id) VALUES (?, ?)")
             .bind(file_id)
             .bind(tag_id)
             .execute(pool)
             .await?;
-        
+
         Ok(())
     }
 
-    async fn remove_file_tag(&self, pool: &SqlitePool, file_id: &str, tag_id: &str) -> Result<(), sqlx::Error> {
+    async fn remove_file_tag(
+        &self,
+        pool: &SqlitePool,
+        file_id: &str,
+        tag_id: &str,
+    ) -> Result<(), sqlx::Error> {
         sqlx::query("DELETE FROM file_tags WHERE file_id = ? AND tag_id = ?")
             .bind(file_id)
             .bind(tag_id)
             .execute(pool)
             .await?;
-        
+
         Ok(())
     }
 
-    async fn get_file_tags(&self, pool: &SqlitePool, file_id: &str) -> Result<Vec<Tag>, sqlx::Error> {
+    async fn get_file_tags(
+        &self,
+        pool: &SqlitePool,
+        file_id: &str,
+    ) -> Result<Vec<Tag>, sqlx::Error> {
         let rows = sqlx::query(
             "SELECT t.* FROM tags t 
              INNER JOIN file_tags ft ON t.id = ft.tag_id 
              WHERE ft.file_id = ? 
-             ORDER BY t.name"
+             ORDER BY t.name",
         )
         .bind(file_id)
         .fetch_all(pool)
         .await?;
-        
+
         let mut tags = Vec::new();
         for row in rows {
             tags.push(Tag {
@@ -349,14 +460,18 @@ impl DatabaseTrait for Database {
                 created_at: row.get("created_at"),
             });
         }
-        
+
         Ok(tags)
     }
 
-    async fn create_custom_metadata_key(&self, pool: &SqlitePool, key: &CustomMetadataKey) -> Result<CustomMetadataKey, sqlx::Error> {
+    async fn create_custom_metadata_key(
+        &self,
+        pool: &SqlitePool,
+        key: &CustomMetadataKey,
+    ) -> Result<CustomMetadataKey, sqlx::Error> {
         let id = Uuid::new_v4().to_string();
         let now = Utc::now();
-        
+
         sqlx::query(
             "INSERT INTO custom_metadata_keys (id, name, display_name, data_type, description, is_required, default_value, validation_pattern, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
         )
@@ -372,7 +487,7 @@ impl DatabaseTrait for Database {
         .bind(now)
         .execute(pool)
         .await?;
-        
+
         Ok(CustomMetadataKey {
             id,
             name: key.name.clone(),
@@ -387,11 +502,14 @@ impl DatabaseTrait for Database {
         })
     }
 
-    async fn get_all_custom_metadata_keys(&self, pool: &SqlitePool) -> Result<Vec<CustomMetadataKey>, sqlx::Error> {
+    async fn get_all_custom_metadata_keys(
+        &self,
+        pool: &SqlitePool,
+    ) -> Result<Vec<CustomMetadataKey>, sqlx::Error> {
         let rows = sqlx::query("SELECT * FROM custom_metadata_keys ORDER BY name")
             .fetch_all(pool)
             .await?;
-        
+
         let mut keys = Vec::new();
         for row in rows {
             keys.push(CustomMetadataKey {
@@ -407,13 +525,17 @@ impl DatabaseTrait for Database {
                 updated_at: row.get("updated_at"),
             });
         }
-        
+
         Ok(keys)
     }
 
-    async fn update_custom_metadata_key(&self, pool: &SqlitePool, key: &CustomMetadataKey) -> Result<CustomMetadataKey, sqlx::Error> {
+    async fn update_custom_metadata_key(
+        &self,
+        pool: &SqlitePool,
+        key: &CustomMetadataKey,
+    ) -> Result<CustomMetadataKey, sqlx::Error> {
         let now = Utc::now();
-        
+
         sqlx::query(
             "UPDATE custom_metadata_keys SET display_name = ?, data_type = ?, description = ?, is_required = ?, default_value = ?, validation_pattern = ?, updated_at = ? WHERE id = ?"
         )
@@ -427,7 +549,7 @@ impl DatabaseTrait for Database {
         .bind(&key.id)
         .execute(pool)
         .await?;
-        
+
         Ok(CustomMetadataKey {
             id: key.id.clone(),
             name: key.name.clone(),
@@ -442,21 +564,29 @@ impl DatabaseTrait for Database {
         })
     }
 
-    async fn delete_custom_metadata_key(&self, pool: &SqlitePool, key_id: &str) -> Result<(), sqlx::Error> {
+    async fn delete_custom_metadata_key(
+        &self,
+        pool: &SqlitePool,
+        key_id: &str,
+    ) -> Result<(), sqlx::Error> {
         sqlx::query("DELETE FROM custom_metadata_keys WHERE id = ?")
             .bind(key_id)
             .execute(pool)
             .await?;
-        
+
         Ok(())
     }
 
-    async fn get_custom_metadata_key_by_name(&self, pool: &SqlitePool, name: &str) -> Result<Option<CustomMetadataKey>, sqlx::Error> {
+    async fn get_custom_metadata_key_by_name(
+        &self,
+        pool: &SqlitePool,
+        name: &str,
+    ) -> Result<Option<CustomMetadataKey>, sqlx::Error> {
         let row = sqlx::query("SELECT * FROM custom_metadata_keys WHERE name = ?")
             .bind(name)
             .fetch_optional(pool)
             .await?;
-        
+
         match row {
             Some(row) => Ok(Some(CustomMetadataKey {
                 id: row.get("id"),
@@ -474,10 +604,16 @@ impl DatabaseTrait for Database {
         }
     }
 
-    async fn set_custom_metadata_value(&self, pool: &SqlitePool, file_id: &str, key_id: &str, value: Option<String>) -> Result<CustomMetadataValue, sqlx::Error> {
+    async fn set_custom_metadata_value(
+        &self,
+        pool: &SqlitePool,
+        file_id: &str,
+        key_id: &str,
+        value: Option<String>,
+    ) -> Result<CustomMetadataValue, sqlx::Error> {
         let id = Uuid::new_v4().to_string();
         let now = Utc::now();
-        
+
         sqlx::query(
             "INSERT OR REPLACE INTO custom_metadata_values (id, file_id, key_id, value, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)"
         )
@@ -489,7 +625,7 @@ impl DatabaseTrait for Database {
         .bind(now)
         .execute(pool)
         .await?;
-        
+
         Ok(CustomMetadataValue {
             id,
             file_id: file_id.to_string(),
@@ -500,12 +636,16 @@ impl DatabaseTrait for Database {
         })
     }
 
-    async fn get_custom_metadata_values_by_file(&self, pool: &SqlitePool, file_id: &str) -> Result<Vec<CustomMetadataValue>, sqlx::Error> {
+    async fn get_custom_metadata_values_by_file(
+        &self,
+        pool: &SqlitePool,
+        file_id: &str,
+    ) -> Result<Vec<CustomMetadataValue>, sqlx::Error> {
         let rows = sqlx::query("SELECT * FROM custom_metadata_values WHERE file_id = ?")
             .bind(file_id)
             .fetch_all(pool)
             .await?;
-        
+
         let mut values = Vec::new();
         for row in rows {
             values.push(CustomMetadataValue {
@@ -517,17 +657,23 @@ impl DatabaseTrait for Database {
                 updated_at: row.get("updated_at"),
             });
         }
-        
+
         Ok(values)
     }
 
-    async fn get_custom_metadata_value(&self, pool: &SqlitePool, file_id: &str, key_id: &str) -> Result<Option<CustomMetadataValue>, sqlx::Error> {
-        let row = sqlx::query("SELECT * FROM custom_metadata_values WHERE file_id = ? AND key_id = ?")
-            .bind(file_id)
-            .bind(key_id)
-            .fetch_optional(pool)
-            .await?;
-        
+    async fn get_custom_metadata_value(
+        &self,
+        pool: &SqlitePool,
+        file_id: &str,
+        key_id: &str,
+    ) -> Result<Option<CustomMetadataValue>, sqlx::Error> {
+        let row =
+            sqlx::query("SELECT * FROM custom_metadata_values WHERE file_id = ? AND key_id = ?")
+                .bind(file_id)
+                .bind(key_id)
+                .fetch_optional(pool)
+                .await?;
+
         match row {
             Some(row) => Ok(Some(CustomMetadataValue {
                 id: row.get("id"),
@@ -541,33 +687,19 @@ impl DatabaseTrait for Database {
         }
     }
 
-    async fn delete_custom_metadata_value(&self, pool: &SqlitePool, file_id: &str, key_id: &str) -> Result<(), sqlx::Error> {
+    async fn delete_custom_metadata_value(
+        &self,
+        pool: &SqlitePool,
+        file_id: &str,
+        key_id: &str,
+    ) -> Result<(), sqlx::Error> {
         sqlx::query("DELETE FROM custom_metadata_values WHERE file_id = ? AND key_id = ?")
             .bind(file_id)
             .bind(key_id)
             .execute(pool)
             .await?;
-        
-        Ok(())
-    }
 
-    async fn get_all_directories(&self, pool: &SqlitePool) -> Result<Vec<Directory>, sqlx::Error> {
-        let rows = sqlx::query("SELECT * FROM directories ORDER BY name")
-            .fetch_all(pool)
-            .await?;
-        
-        let mut directories = Vec::new();
-        for row in rows {
-            directories.push(Directory {
-                id: row.get("id"),
-                path: row.get("path"),
-                name: row.get("name"),
-                created_at: row.get("created_at"),
-                updated_at: row.get("updated_at"),
-            });
-        }
-        
-        Ok(directories)
+        Ok(())
     }
 
     async fn remove_file_by_path(&self, pool: &SqlitePool, path: &str) -> Result<(), sqlx::Error> {
@@ -575,30 +707,47 @@ impl DatabaseTrait for Database {
             .bind(path)
             .execute(pool)
             .await?;
-        
+
         Ok(())
     }
 
-    async fn update_file_metadata(&self, pool: &SqlitePool, path: &str, metadata: &std::fs::Metadata) -> Result<(), sqlx::Error> {
-        use std::os::unix::fs::MetadataExt;
+    async fn update_file_metadata(
+        &self,
+        pool: &SqlitePool,
+        path: &str,
+        metadata: &std::fs::Metadata,
+    ) -> Result<(), sqlx::Error> {
         use chrono::{DateTime, Utc};
-        
+        use std::os::unix::fs::MetadataExt;
+
         let now = Utc::now();
         let size = metadata.len() as i64;
-        let modified_at = metadata.modified().ok()
-            .and_then(|st| DateTime::from_timestamp(st.duration_since(std::time::UNIX_EPOCH).ok()?.as_secs() as i64, 0));
-        let created_at = metadata.created().ok()
-            .and_then(|st| DateTime::from_timestamp(st.duration_since(std::time::UNIX_EPOCH).ok()?.as_secs() as i64, 0));
-        let last_accessed = metadata.accessed().ok()
-            .and_then(|st| DateTime::from_timestamp(st.duration_since(std::time::UNIX_EPOCH).ok()?.as_secs() as i64, 0));
-        
+        let modified_at = metadata.modified().ok().and_then(|st| {
+            DateTime::from_timestamp(
+                st.duration_since(std::time::UNIX_EPOCH).ok()?.as_secs() as i64,
+                0,
+            )
+        });
+        let created_at = metadata.created().ok().and_then(|st| {
+            DateTime::from_timestamp(
+                st.duration_since(std::time::UNIX_EPOCH).ok()?.as_secs() as i64,
+                0,
+            )
+        });
+        let last_accessed = metadata.accessed().ok().and_then(|st| {
+            DateTime::from_timestamp(
+                st.duration_since(std::time::UNIX_EPOCH).ok()?.as_secs() as i64,
+                0,
+            )
+        });
+
         let inode = metadata.ino() as i64;
         let owner_uid = metadata.uid() as i64;
         let group_gid = metadata.gid() as i64;
         let hard_links = metadata.nlink() as i64;
         let device_id = metadata.dev() as i64;
         let permissions = format!("{:o}", metadata.mode() & 0o777);
-        
+
         sqlx::query(
             "UPDATE files SET 
                 size = ?, 
@@ -612,7 +761,7 @@ impl DatabaseTrait for Database {
                 device_id = ?, 
                 permissions = ?, 
                 updated_at_db = ?
-            WHERE path = ?"
+            WHERE path = ?",
         )
         .bind(size)
         .bind(modified_at)
@@ -628,26 +777,35 @@ impl DatabaseTrait for Database {
         .bind(path)
         .execute(pool)
         .await?;
-        
+
         Ok(())
     }
 
-    async fn file_exists_by_path(&self, pool: &SqlitePool, path: &str) -> Result<bool, sqlx::Error> {
+    async fn file_exists_by_path(
+        &self,
+        pool: &SqlitePool,
+        path: &str,
+    ) -> Result<bool, sqlx::Error> {
         let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM files WHERE path = ?")
             .bind(path)
             .fetch_one(pool)
             .await?;
-        
+
         Ok(count > 0)
     }
 
-    async fn find_file_by_inode(&self, pool: &SqlitePool, inode: i64, device_id: Option<i64>) -> Result<Option<File>, sqlx::Error> {
-        let query = if let Some(device_id) = device_id {
+    async fn find_file_by_inode(
+        &self,
+        pool: &SqlitePool,
+        inode: i64,
+        device_id: Option<i64>,
+    ) -> Result<Option<File>, sqlx::Error> {
+        let query = if let Some(_device_id) = device_id {
             "SELECT * FROM files WHERE inode = ? AND device_id = ?"
         } else {
             "SELECT * FROM files WHERE inode = ? AND device_id IS NULL"
         };
-        
+
         let row = if let Some(device_id) = device_id {
             sqlx::query(query)
                 .bind(inode)
@@ -660,7 +818,7 @@ impl DatabaseTrait for Database {
                 .fetch_optional(pool)
                 .await?
         };
-        
+
         match row {
             Some(row) => Ok(Some(File {
                 id: row.get("id"),
@@ -690,9 +848,15 @@ impl DatabaseTrait for Database {
         }
     }
 
-    async fn update_file_path(&self, pool: &SqlitePool, file_id: &str, new_path: &str, new_name: &str) -> Result<(), sqlx::Error> {
+    async fn update_file_path(
+        &self,
+        pool: &SqlitePool,
+        file_id: &str,
+        new_path: &str,
+        new_name: &str,
+    ) -> Result<(), sqlx::Error> {
         let now = Utc::now();
-        
+
         sqlx::query("UPDATE files SET path = ?, name = ?, updated_at_db = ? WHERE id = ?")
             .bind(new_path)
             .bind(new_name)
@@ -700,7 +864,7 @@ impl DatabaseTrait for Database {
             .bind(file_id)
             .execute(pool)
             .await?;
-        
+
         Ok(())
     }
 }
@@ -708,12 +872,12 @@ impl DatabaseTrait for Database {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use sqlx::SqlitePool;
     use chrono::Utc;
+    use sqlx::SqlitePool;
 
     async fn setup_test_db() -> SqlitePool {
         let pool = SqlitePool::connect(":memory:").await.unwrap();
-        
+
         // テスト用のテーブル作成
         sqlx::query(
             "CREATE TABLE directories (
@@ -722,7 +886,7 @@ mod tests {
                 name TEXT NOT NULL,
                 created_at TIMESTAMP NOT NULL,
                 updated_at TIMESTAMP NOT NULL
-            )"
+            )",
         )
         .execute(&pool)
         .await
@@ -753,7 +917,7 @@ mod tests {
                 last_accessed TIMESTAMP,
                 metadata TEXT DEFAULT '{}',
                 FOREIGN KEY (directory_id) REFERENCES directories (id) ON DELETE CASCADE
-            )"
+            )",
         )
         .execute(&pool)
         .await
@@ -765,7 +929,7 @@ mod tests {
                 name TEXT NOT NULL UNIQUE,
                 color TEXT NOT NULL,
                 created_at TIMESTAMP NOT NULL
-            )"
+            )",
         )
         .execute(&pool)
         .await
@@ -778,7 +942,7 @@ mod tests {
                 PRIMARY KEY (file_id, tag_id),
                 FOREIGN KEY (file_id) REFERENCES files (id) ON DELETE CASCADE,
                 FOREIGN KEY (tag_id) REFERENCES tags (id) ON DELETE CASCADE
-            )"
+            )",
         )
         .execute(&pool)
         .await
@@ -791,10 +955,10 @@ mod tests {
     async fn test_add_directory() {
         let pool = setup_test_db().await;
         let db = Database;
-        
+
         let result = db.add_directory(&pool, "/test/path", "test_dir").await;
         assert!(result.is_ok());
-        
+
         let directory = result.unwrap();
         assert_eq!(directory.path, "/test/path");
         assert_eq!(directory.name, "test_dir");
@@ -804,10 +968,14 @@ mod tests {
     async fn test_get_directories() {
         let pool = setup_test_db().await;
         let db = Database;
-        
-        db.add_directory(&pool, "/test/path1", "dir1").await.unwrap();
-        db.add_directory(&pool, "/test/path2", "dir2").await.unwrap();
-        
+
+        db.add_directory(&pool, "/test/path1", "dir1")
+            .await
+            .unwrap();
+        db.add_directory(&pool, "/test/path2", "dir2")
+            .await
+            .unwrap();
+
         let directories = db.get_directories(&pool).await.unwrap();
         assert_eq!(directories.len(), 2);
         assert_eq!(directories[0].name, "dir1"); // ORDER BY name
@@ -818,10 +986,10 @@ mod tests {
     async fn test_create_tag() {
         let pool = setup_test_db().await;
         let db = Database;
-        
+
         let result = db.create_tag(&pool, "important", "#ff0000").await;
         assert!(result.is_ok());
-        
+
         let tag = result.unwrap();
         assert_eq!(tag.name, "important");
         assert_eq!(tag.color, "#ff0000");
@@ -831,11 +999,11 @@ mod tests {
     async fn test_file_tag_operations() {
         let pool = setup_test_db().await;
         let db = Database;
-        
+
         // ディレクトリとタグを作成
         let dir = db.add_directory(&pool, "/test", "test").await.unwrap();
         let tag = db.create_tag(&pool, "test_tag", "#ff0000").await.unwrap();
-        
+
         // ファイルを作成
         let file = File {
             id: "test_file_id".to_string(),
@@ -861,20 +1029,20 @@ mod tests {
             last_accessed: None,
             metadata: None,
         };
-        
+
         db.add_file(&pool, &file).await.unwrap();
-        
+
         // ファイルにタグを追加
         db.add_file_tag(&pool, &file.id, &tag.id).await.unwrap();
-        
+
         // ファイルのタグを取得
         let file_tags = db.get_file_tags(&pool, &file.id).await.unwrap();
         assert_eq!(file_tags.len(), 1);
         assert_eq!(file_tags[0].name, "test_tag");
-        
+
         // ファイルからタグを削除
         db.remove_file_tag(&pool, &file.id, &tag.id).await.unwrap();
-        
+
         let file_tags = db.get_file_tags(&pool, &file.id).await.unwrap();
         assert_eq!(file_tags.len(), 0);
     }
@@ -883,11 +1051,14 @@ mod tests {
     async fn test_remove_directory() {
         let pool = setup_test_db().await;
         let db = Database;
-        
-        let dir = db.add_directory(&pool, "/test/remove", "remove_dir").await.unwrap();
+
+        let dir = db
+            .add_directory(&pool, "/test/remove", "remove_dir")
+            .await
+            .unwrap();
         let result = db.remove_directory(&pool, &dir.id).await;
         assert!(result.is_ok());
-        
+
         let directories = db.get_directories(&pool).await.unwrap();
         assert_eq!(directories.len(), 0);
     }
@@ -896,9 +1067,9 @@ mod tests {
     async fn test_get_files_by_directory() {
         let pool = setup_test_db().await;
         let db = Database;
-        
+
         let dir = db.add_directory(&pool, "/test", "test").await.unwrap();
-        
+
         let file1 = File {
             id: "file1".to_string(),
             path: "/test/file1.txt".to_string(),
@@ -923,7 +1094,7 @@ mod tests {
             last_accessed: None,
             metadata: None,
         };
-        
+
         let file2 = File {
             id: "file2".to_string(),
             path: "/test/file2.txt".to_string(),
@@ -948,10 +1119,10 @@ mod tests {
             last_accessed: None,
             metadata: None,
         };
-        
+
         db.add_file(&pool, &file1).await.unwrap();
         db.add_file(&pool, &file2).await.unwrap();
-        
+
         let files = db.get_files_by_directory(&pool, &dir.id).await.unwrap();
         assert_eq!(files.len(), 2);
     }
@@ -960,10 +1131,10 @@ mod tests {
     async fn test_get_all_tags() {
         let pool = setup_test_db().await;
         let db = Database;
-        
+
         db.create_tag(&pool, "tag1", "#ff0000").await.unwrap();
         db.create_tag(&pool, "tag2", "#00ff00").await.unwrap();
-        
+
         let tags = db.get_all_tags(&pool).await.unwrap();
         assert_eq!(tags.len(), 2);
     }
@@ -972,11 +1143,11 @@ mod tests {
     async fn test_get_all_files() {
         let pool = setup_test_db().await;
         let db = Database;
-        
+
         // ディレクトリを作成
         let dir1 = db.add_directory(&pool, "/test/dir1", "dir1").await.unwrap();
         let dir2 = db.add_directory(&pool, "/test/dir2", "dir2").await.unwrap();
-        
+
         // ファイルを作成
         let file1 = File {
             id: "file1".to_string(),
@@ -1002,7 +1173,7 @@ mod tests {
             last_accessed: None,
             metadata: None,
         };
-        
+
         let file2 = File {
             id: "file2".to_string(),
             path: "/test/dir2/file2.txt".to_string(),
@@ -1027,18 +1198,18 @@ mod tests {
             last_accessed: None,
             metadata: None,
         };
-        
+
         db.add_file(&pool, &file1).await.unwrap();
         db.add_file(&pool, &file2).await.unwrap();
-        
+
         // 全ファイルを取得
         let all_files = db.get_all_files(&pool).await.unwrap();
         assert_eq!(all_files.len(), 2);
-        
+
         // ファイル名でソートされていることを確認
         assert_eq!(all_files[0].name, "file1.txt");
         assert_eq!(all_files[1].name, "file2.txt");
-        
+
         // 異なるディレクトリのファイルが含まれていることを確認
         assert_eq!(all_files[0].directory_id, dir1.id);
         assert_eq!(all_files[1].directory_id, dir2.id);
@@ -1048,7 +1219,7 @@ mod tests {
     async fn test_get_all_files_empty() {
         let pool = setup_test_db().await;
         let db = Database;
-        
+
         let all_files = db.get_all_files(&pool).await.unwrap();
         assert_eq!(all_files.len(), 0);
     }
@@ -1057,9 +1228,9 @@ mod tests {
     async fn test_get_all_files_mixed_types() {
         let pool = setup_test_db().await;
         let db = Database;
-        
+
         let dir = db.add_directory(&pool, "/test", "test").await.unwrap();
-        
+
         // 通常ファイル
         let file = File {
             id: "file1".to_string(),
@@ -1085,7 +1256,7 @@ mod tests {
             last_accessed: None,
             metadata: None,
         };
-        
+
         // ディレクトリファイル
         let subdir = File {
             id: "dir1".to_string(),
@@ -1111,16 +1282,16 @@ mod tests {
             last_accessed: None,
             metadata: None,
         };
-        
+
         db.add_file(&pool, &file).await.unwrap();
         db.add_file(&pool, &subdir).await.unwrap();
-        
+
         let all_files = db.get_all_files(&pool).await.unwrap();
         assert_eq!(all_files.len(), 2);
-        
+
         // ファイルとディレクトリが両方含まれていることを確認
         let file_types: Vec<bool> = all_files.iter().map(|f| f.is_directory).collect();
-        assert!(file_types.contains(&true));  // ディレクトリが含まれている
+        assert!(file_types.contains(&true)); // ディレクトリが含まれている
         assert!(file_types.contains(&false)); // 通常ファイルが含まれている
     }
 
@@ -1128,34 +1299,18 @@ mod tests {
     async fn test_init_database() {
         let pool = setup_test_db().await;
         let db = Database;
-        
+
         let result = db.init_database(&pool).await;
         assert!(result.is_ok());
-    }
-
-    #[tokio::test]
-    async fn test_get_all_directories() {
-        let pool = setup_test_db().await;
-        let db = Database;
-        
-        // ディレクトリを追加
-        db.add_directory(&pool, "/test/dir1", "dir1").await.unwrap();
-        db.add_directory(&pool, "/test/dir2", "dir2").await.unwrap();
-        
-        // 全ディレクトリを取得
-        let directories = db.get_all_directories(&pool).await.unwrap();
-        assert_eq!(directories.len(), 2);
-        assert_eq!(directories[0].name, "dir1");
-        assert_eq!(directories[1].name, "dir2");
     }
 
     #[tokio::test]
     async fn test_remove_file_by_path() {
         let pool = setup_test_db().await;
         let db = Database;
-        
+
         let dir = db.add_directory(&pool, "/test", "test").await.unwrap();
-        
+
         let file = File {
             id: "test_file".to_string(),
             path: "/test/file.txt".to_string(),
@@ -1180,17 +1335,19 @@ mod tests {
             last_accessed: None,
             metadata: None,
         };
-        
+
         // ファイルを追加
         db.add_file(&pool, &file).await.unwrap();
-        
+
         // ファイルが存在することを確認
         let files = db.get_files_by_directory(&pool, &dir.id).await.unwrap();
         assert_eq!(files.len(), 1);
-        
+
         // パスでファイルを削除
-        db.remove_file_by_path(&pool, "/test/file.txt").await.unwrap();
-        
+        db.remove_file_by_path(&pool, "/test/file.txt")
+            .await
+            .unwrap();
+
         // ファイルが削除されていることを確認
         let files = db.get_files_by_directory(&pool, &dir.id).await.unwrap();
         assert_eq!(files.len(), 0);
@@ -1200,9 +1357,9 @@ mod tests {
     async fn test_update_file_metadata() {
         let pool = setup_test_db().await;
         let db = Database;
-        
+
         let dir = db.add_directory(&pool, "/test", "test").await.unwrap();
-        
+
         let file = File {
             id: "test_file".to_string(),
             path: "/test/file.txt".to_string(),
@@ -1227,28 +1384,30 @@ mod tests {
             last_accessed: None,
             metadata: None,
         };
-        
+
         // ファイルを追加
         db.add_file(&pool, &file).await.unwrap();
-        
+
         // テスト用の一時ファイルを作成
         let temp_file = std::env::temp_dir().join("test_file.txt");
         std::fs::write(&temp_file, "test content").unwrap();
-        
+
         // ファイルメタデータを取得
         let metadata = std::fs::metadata(&temp_file).unwrap();
-        
+
         // メタデータを更新
-        let result = db.update_file_metadata(&pool, "/test/file.txt", &metadata).await;
+        let result = db
+            .update_file_metadata(&pool, "/test/file.txt", &metadata)
+            .await;
         assert!(result.is_ok());
-        
+
         // 更新されたファイルを取得
         let updated_files = db.get_files_by_directory(&pool, &dir.id).await.unwrap();
         assert_eq!(updated_files.len(), 1);
-        
+
         let updated_file = &updated_files[0];
         assert_eq!(updated_file.size, metadata.len() as i64);
-        
+
         // 一時ファイルを削除
         std::fs::remove_file(&temp_file).unwrap();
     }
@@ -1257,9 +1416,9 @@ mod tests {
     async fn test_add_file_with_various_types() {
         let pool = setup_test_db().await;
         let db = Database;
-        
+
         let dir = db.add_directory(&pool, "/test", "test").await.unwrap();
-        
+
         // ディレクトリファイル
         let dir_file = File {
             id: "dir_file".to_string(),
@@ -1285,7 +1444,7 @@ mod tests {
             last_accessed: None,
             metadata: None,
         };
-        
+
         let result = db.add_file(&pool, &dir_file).await;
         assert!(result.is_ok());
     }
@@ -1294,10 +1453,10 @@ mod tests {
     async fn test_add_file_tag_duplicate() {
         let pool = setup_test_db().await;
         let db = Database;
-        
+
         let dir = db.add_directory(&pool, "/test", "test").await.unwrap();
         let tag = db.create_tag(&pool, "test_tag", "#ff0000").await.unwrap();
-        
+
         let file = File {
             id: "test_file".to_string(),
             path: "/test/file.txt".to_string(),
@@ -1322,13 +1481,13 @@ mod tests {
             last_accessed: None,
             metadata: None,
         };
-        
+
         db.add_file(&pool, &file).await.unwrap();
-        
+
         // 同じファイル・タグの組み合わせを複数回追加（IGNORE句でエラーにならない）
         db.add_file_tag(&pool, &file.id, &tag.id).await.unwrap();
         db.add_file_tag(&pool, &file.id, &tag.id).await.unwrap();
-        
+
         let file_tags = db.get_file_tags(&pool, &file.id).await.unwrap();
         assert_eq!(file_tags.len(), 1);
     }
@@ -1337,9 +1496,11 @@ mod tests {
     async fn test_remove_nonexistent_file_tag() {
         let pool = setup_test_db().await;
         let db = Database;
-        
+
         // 存在しないファイル・タグの組み合わせを削除（エラーにならない）
-        let result = db.remove_file_tag(&pool, "nonexistent_file", "nonexistent_tag").await;
+        let result = db
+            .remove_file_tag(&pool, "nonexistent_file", "nonexistent_tag")
+            .await;
         assert!(result.is_ok());
     }
 
@@ -1347,7 +1508,7 @@ mod tests {
     async fn test_get_file_tags_nonexistent_file() {
         let pool = setup_test_db().await;
         let db = Database;
-        
+
         let file_tags = db.get_file_tags(&pool, "nonexistent_file").await.unwrap();
         assert_eq!(file_tags.len(), 0);
     }
@@ -1356,9 +1517,9 @@ mod tests {
     async fn test_file_exists_by_path() {
         let pool = setup_test_db().await;
         let db = Database;
-        
+
         let dir = db.add_directory(&pool, "/test", "test").await.unwrap();
-        
+
         let file = File {
             id: "test_file".to_string(),
             path: "/test/file.txt".to_string(),
@@ -1383,16 +1544,22 @@ mod tests {
             last_accessed: None,
             metadata: None,
         };
-        
+
         // ファイルを追加
         db.add_file(&pool, &file).await.unwrap();
-        
+
         // ファイルが存在することを確認
-        let exists = db.file_exists_by_path(&pool, "/test/file.txt").await.unwrap();
+        let exists = db
+            .file_exists_by_path(&pool, "/test/file.txt")
+            .await
+            .unwrap();
         assert!(exists);
-        
+
         // 存在しないファイルを確認
-        let not_exists = db.file_exists_by_path(&pool, "/test/nonexistent.txt").await.unwrap();
+        let not_exists = db
+            .file_exists_by_path(&pool, "/test/nonexistent.txt")
+            .await
+            .unwrap();
         assert!(!not_exists);
     }
 
@@ -1400,9 +1567,9 @@ mod tests {
     async fn test_find_file_by_inode() {
         let pool = setup_test_db().await;
         let db = Database;
-        
+
         let dir = db.add_directory(&pool, "/test", "test").await.unwrap();
-        
+
         let file = File {
             id: "test_file".to_string(),
             path: "/test/file.txt".to_string(),
@@ -1427,21 +1594,30 @@ mod tests {
             last_accessed: None,
             metadata: None,
         };
-        
+
         // ファイルを追加
         db.add_file(&pool, &file).await.unwrap();
-        
+
         // inode番号とdevice_idでファイルを検索
-        let found_file = db.find_file_by_inode(&pool, 12345, Some(67890)).await.unwrap();
+        let found_file = db
+            .find_file_by_inode(&pool, 12345, Some(67890))
+            .await
+            .unwrap();
         assert!(found_file.is_some());
         assert_eq!(found_file.unwrap().id, "test_file");
-        
+
         // 存在しないinode番号で検索
-        let not_found = db.find_file_by_inode(&pool, 99999, Some(67890)).await.unwrap();
+        let not_found = db
+            .find_file_by_inode(&pool, 99999, Some(67890))
+            .await
+            .unwrap();
         assert!(not_found.is_none());
-        
+
         // 存在しないdevice_idで検索
-        let not_found = db.find_file_by_inode(&pool, 12345, Some(99999)).await.unwrap();
+        let not_found = db
+            .find_file_by_inode(&pool, 12345, Some(99999))
+            .await
+            .unwrap();
         assert!(not_found.is_none());
     }
 
@@ -1449,9 +1625,9 @@ mod tests {
     async fn test_update_file_path() {
         let pool = setup_test_db().await;
         let db = Database;
-        
+
         let dir = db.add_directory(&pool, "/test", "test").await.unwrap();
-        
+
         let file = File {
             id: "test_file".to_string(),
             path: "/test/file.txt".to_string(),
@@ -1476,25 +1652,38 @@ mod tests {
             last_accessed: None,
             metadata: None,
         };
-        
+
         // ファイルを追加
         db.add_file(&pool, &file).await.unwrap();
-        
+
         // ファイルパスを更新
-        db.update_file_path(&pool, "test_file", "/test/renamed_file.txt", "renamed_file.txt").await.unwrap();
-        
+        db.update_file_path(
+            &pool,
+            "test_file",
+            "/test/renamed_file.txt",
+            "renamed_file.txt",
+        )
+        .await
+        .unwrap();
+
         // 更新されたファイルを取得
         let updated_files = db.get_files_by_directory(&pool, &dir.id).await.unwrap();
         assert_eq!(updated_files.len(), 1);
         assert_eq!(updated_files[0].path, "/test/renamed_file.txt");
         assert_eq!(updated_files[0].name, "renamed_file.txt");
-        
+
         // 元のパスでは見つからないことを確認
-        let exists = db.file_exists_by_path(&pool, "/test/file.txt").await.unwrap();
+        let exists = db
+            .file_exists_by_path(&pool, "/test/file.txt")
+            .await
+            .unwrap();
         assert!(!exists);
-        
+
         // 新しいパスでは見つかることを確認
-        let exists = db.file_exists_by_path(&pool, "/test/renamed_file.txt").await.unwrap();
+        let exists = db
+            .file_exists_by_path(&pool, "/test/renamed_file.txt")
+            .await
+            .unwrap();
         assert!(exists);
     }
 }

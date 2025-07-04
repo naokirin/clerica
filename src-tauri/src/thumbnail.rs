@@ -1,14 +1,14 @@
 use serde::{Deserialize, Serialize};
 use std::env;
-use std::path::{Path, PathBuf};
-use std::process::Command;
 use std::fs::File;
 use std::io::{BufReader, Read};
+use std::path::{Path, PathBuf};
+use std::process::Command;
 use zip::ZipArchive;
 // use sevenz_rust::SevenZReader;  // 7zサポートは一時的に無効化
-use unrar::Archive as RarArchive;
-use tar::Archive as TarArchive;
 use flate2::read::GzDecoder;
+use tar::Archive as TarArchive;
+use unrar::Archive as RarArchive;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ThumbnailError {
@@ -154,9 +154,7 @@ impl ThumbnailGenerator {
     }
 
     pub fn is_audio_file(path: &Path) -> bool {
-        let audio_extensions = [
-            "mp3", "wav", "ogg", "flac", "aac", "m4a", "wma", "opus",
-        ];
+        let audio_extensions = ["mp3", "wav", "ogg", "flac", "aac", "m4a", "wma", "opus"];
 
         if let Some(extension) = path.extension() {
             if let Some(ext_str) = extension.to_str() {
@@ -168,9 +166,7 @@ impl ThumbnailGenerator {
     }
 
     pub fn is_archive_file(path: &Path) -> bool {
-        let archive_extensions = [
-            "zip", "rar", "7z", "tar", "gz", "bz2", "xz", "lzma",
-        ];
+        let archive_extensions = ["zip", "rar", "7z", "tar", "gz", "bz2", "xz", "lzma"];
 
         if let Some(extension) = path.extension() {
             if let Some(ext_str) = extension.to_str() {
@@ -235,10 +231,9 @@ impl ThumbnailGenerator {
             })?;
 
         // 画像データをファイルに保存
-        std::fs::write(&thumbnail_path, picture.data())
-            .map_err(|e| ThumbnailError {
-                message: format!("Failed to write album art: {}", e),
-            })?;
+        std::fs::write(&thumbnail_path, picture.data()).map_err(|e| ThumbnailError {
+            message: format!("Failed to write album art: {}", e),
+        })?;
 
         Ok(thumbnail_path)
     }
@@ -267,7 +262,10 @@ impl ThumbnailGenerator {
     }
 
     fn get_archive_thumbnail_path(&self, archive_path: &Path) -> PathBuf {
-        let file_name = archive_path.file_name().unwrap_or_default().to_string_lossy();
+        let file_name = archive_path
+            .file_name()
+            .unwrap_or_default()
+            .to_string_lossy();
         let hash = format!(
             "{:x}",
             md5::compute(archive_path.to_string_lossy().as_bytes())
@@ -276,7 +274,10 @@ impl ThumbnailGenerator {
         self.cache_dir.join(thumbnail_name)
     }
 
-    fn get_first_image_from_zip(&self, archive_path: &Path) -> Result<(String, Vec<u8>), ThumbnailError> {
+    fn get_first_image_from_zip(
+        &self,
+        archive_path: &Path,
+    ) -> Result<(String, Vec<u8>), ThumbnailError> {
         let file = File::open(archive_path).map_err(|e| ThumbnailError {
             message: format!("Failed to open archive file: {}", e),
         })?;
@@ -320,57 +321,10 @@ impl ThumbnailGenerator {
         })
     }
 
-    // 7zサポートは一時的に無効化
-    /*
-    fn get_first_image_from_7z(&self, archive_path: &Path) -> Result<(String, Vec<u8>), ThumbnailError> {
-        let file = File::open(archive_path).map_err(|e| ThumbnailError {
-            message: format!("Failed to open 7z file: {}", e),
-        })?;
-
-        let mut reader = SevenZReader::new(file).map_err(|e| ThumbnailError {
-            message: format!("Failed to read 7z archive: {}", e),
-        })?;
-
-        // アーカイブ内のファイル名を取得してソート
-        let mut file_names: Vec<String> = Vec::new();
-        for entry in reader.archive().files.iter() {
-            if !entry.is_directory() {
-                file_names.push(entry.name().to_string());
-            }
-        }
-
-        // ファイル名でソート
-        file_names.sort();
-
-        // 最初の画像ファイルを探す
-        for file_name in file_names {
-            let file_path = Path::new(&file_name);
-            if Self::is_image_file(file_path) {
-                let mut buffer = Vec::new();
-                reader.for_each_entries(|entry, reader| {
-                    if entry.name() == file_name {
-                        reader.read_to_end(&mut buffer).map_err(|e| ThumbnailError {
-                            message: format!("Failed to read file contents: {}", e),
-                        })?;
-                    }
-                    Ok(true)
-                }).map_err(|e| ThumbnailError {
-                    message: format!("Failed to extract from 7z: {}", e),
-                })?;
-
-                if !buffer.is_empty() {
-                    return Ok((file_name, buffer));
-                }
-            }
-        }
-
-        Err(ThumbnailError {
-            message: "No image files found in 7z archive".to_string(),
-        })
-    }
-    */
-
-    fn get_first_image_from_rar(&self, archive_path: &Path) -> Result<(String, Vec<u8>), ThumbnailError> {
+    fn get_first_image_from_rar(
+        &self,
+        archive_path: &Path,
+    ) -> Result<(String, Vec<u8>), ThumbnailError> {
         // まずアーカイブを開いてファイル名を収集
         let archive = RarArchive::new(archive_path.to_str().unwrap())
             .open_for_processing()
@@ -381,7 +335,7 @@ impl ThumbnailGenerator {
         // アーカイブ内のファイル名を取得してソート
         let mut file_names: Vec<String> = Vec::new();
         let mut archive_cursor = archive;
-        
+
         loop {
             match archive_cursor.read_header() {
                 Ok(Some(header)) => {
@@ -393,9 +347,11 @@ impl ThumbnailGenerator {
                     })?;
                 }
                 Ok(None) => break, // アーカイブの終端
-                Err(e) => return Err(ThumbnailError {
-                    message: format!("Failed to read RAR header: {}", e),
-                }),
+                Err(e) => {
+                    return Err(ThumbnailError {
+                        message: format!("Failed to read RAR header: {}", e),
+                    })
+                }
             }
         }
 
@@ -414,7 +370,7 @@ impl ThumbnailGenerator {
                     })?;
 
                 let mut archive_cursor = archive;
-                
+
                 loop {
                     match archive_cursor.read_header() {
                         Ok(Some(header)) => {
@@ -430,9 +386,11 @@ impl ThumbnailGenerator {
                             }
                         }
                         Ok(None) => break,
-                        Err(e) => return Err(ThumbnailError {
-                            message: format!("Failed to read RAR header: {}", e),
-                        }),
+                        Err(e) => {
+                            return Err(ThumbnailError {
+                                message: format!("Failed to read RAR header: {}", e),
+                            })
+                        }
                     }
                 }
             }
@@ -443,17 +401,21 @@ impl ThumbnailGenerator {
         })
     }
 
-    fn get_first_image_from_tar(&self, archive_path: &Path, is_gzipped: bool) -> Result<(String, Vec<u8>), ThumbnailError> {
+    fn get_first_image_from_tar(
+        &self,
+        archive_path: &Path,
+        is_gzipped: bool,
+    ) -> Result<(String, Vec<u8>), ThumbnailError> {
         let file = File::open(archive_path).map_err(|e| ThumbnailError {
             message: format!("Failed to open tar file: {}", e),
         })?;
 
         let mut file_names: Vec<String> = Vec::new();
-        
+
         if is_gzipped {
             let decoder = GzDecoder::new(file);
             let mut archive = TarArchive::new(decoder);
-            
+
             // ファイル名を収集
             for entry in archive.entries().map_err(|e| ThumbnailError {
                 message: format!("Failed to read tar.gz entries: {}", e),
@@ -461,7 +423,7 @@ impl ThumbnailGenerator {
                 let entry = entry.map_err(|e| ThumbnailError {
                     message: format!("Failed to read tar.gz entry: {}", e),
                 })?;
-                
+
                 if entry.header().entry_type().is_file() {
                     if let Ok(path) = entry.path() {
                         file_names.push(path.to_string_lossy().to_string());
@@ -470,7 +432,7 @@ impl ThumbnailGenerator {
             }
         } else {
             let mut archive = TarArchive::new(file);
-            
+
             // ファイル名を収集
             for entry in archive.entries().map_err(|e| ThumbnailError {
                 message: format!("Failed to read tar entries: {}", e),
@@ -478,7 +440,7 @@ impl ThumbnailGenerator {
                 let entry = entry.map_err(|e| ThumbnailError {
                     message: format!("Failed to read tar entry: {}", e),
                 })?;
-                
+
                 if entry.header().entry_type().is_file() {
                     if let Ok(path) = entry.path() {
                         file_names.push(path.to_string_lossy().to_string());
@@ -502,14 +464,14 @@ impl ThumbnailGenerator {
                 if is_gzipped {
                     let decoder = GzDecoder::new(file);
                     let mut archive = TarArchive::new(decoder);
-                    
+
                     for entry in archive.entries().map_err(|e| ThumbnailError {
                         message: format!("Failed to read tar.gz entries: {}", e),
                     })? {
                         let mut entry = entry.map_err(|e| ThumbnailError {
                             message: format!("Failed to read tar.gz entry: {}", e),
                         })?;
-                        
+
                         if let Ok(path) = entry.path() {
                             if path.to_string_lossy() == file_name {
                                 let mut buffer = Vec::new();
@@ -522,14 +484,14 @@ impl ThumbnailGenerator {
                     }
                 } else {
                     let mut archive = TarArchive::new(file);
-                    
+
                     for entry in archive.entries().map_err(|e| ThumbnailError {
                         message: format!("Failed to read tar entries: {}", e),
                     })? {
                         let mut entry = entry.map_err(|e| ThumbnailError {
                             message: format!("Failed to read tar entry: {}", e),
                         })?;
-                        
+
                         if let Ok(path) = entry.path() {
                             if path.to_string_lossy() == file_name {
                                 let mut buffer = Vec::new();
@@ -549,7 +511,10 @@ impl ThumbnailGenerator {
         })
     }
 
-    pub fn generate_archive_thumbnail(&self, archive_path: &Path) -> Result<PathBuf, ThumbnailError> {
+    pub fn generate_archive_thumbnail(
+        &self,
+        archive_path: &Path,
+    ) -> Result<PathBuf, ThumbnailError> {
         let thumbnail_path = self.get_archive_thumbnail_path(archive_path);
 
         // 既にサムネイルが存在する場合はそれを返す
@@ -558,7 +523,8 @@ impl ThumbnailGenerator {
         }
 
         // ファイル拡張子を取得
-        let extension = archive_path.extension()
+        let extension = archive_path
+            .extension()
             .and_then(|ext| ext.to_str())
             .map(|s| s.to_lowercase())
             .ok_or_else(|| ThumbnailError {
@@ -572,12 +538,13 @@ impl ThumbnailGenerator {
                 return Err(ThumbnailError {
                     message: "7z format is not yet supported".to_string(),
                 });
-            },
+            }
             "rar" => self.get_first_image_from_rar(archive_path)?,
             "tar" => self.get_first_image_from_tar(archive_path, false)?,
             "gz" => {
                 // .tar.gz形式かどうかチェック
-                let file_name = archive_path.file_name()
+                let file_name = archive_path
+                    .file_name()
                     .and_then(|name| name.to_str())
                     .unwrap_or("");
                 if file_name.ends_with(".tar.gz") {
@@ -587,7 +554,7 @@ impl ThumbnailGenerator {
                         message: "Unsupported .gz format (only .tar.gz is supported)".to_string(),
                     });
                 }
-            },
+            }
             _ => {
                 return Err(ThumbnailError {
                     message: format!("Unsupported archive format: {}", extension),
@@ -722,8 +689,6 @@ pub async fn generate_archive_thumbnail(file_path: String) -> Result<String, Str
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::fs;
-    use tempfile::TempDir;
 
     #[test]
     fn test_is_video_file() {

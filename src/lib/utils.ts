@@ -1,4 +1,5 @@
 import { convertFileSrc } from '@tauri-apps/api/core';
+import type { File, FileCategory, FileCategoryInfo } from './types.js';
 
 export function formatFileSize(bytes: number): string {
   if (bytes === 0) return '0 Bytes';
@@ -203,8 +204,6 @@ export function sortByProperty<T>(
     return 0;
   });
 }
-
-import type { File, FileCategory, FileCategoryInfo } from './types.js';
 
 export function getFileCategory(file: File): FileCategory {
   if (file.is_directory) return "other";

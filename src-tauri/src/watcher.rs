@@ -9,7 +9,6 @@ use std::path::{Path, PathBuf};
 use std::sync::{mpsc, Arc, Mutex};
 use std::collections::HashMap;
 use std::thread;
-use serde_json;
 
 pub struct FileWatcher {
     watcher: notify::FsEventWatcher,
@@ -60,14 +59,6 @@ impl FileWatcher {
         Ok(())
     }
     
-    pub fn get_directory_id_for_path(&self, path: &Path) -> Option<String> {
-        for (dir_id, dir_path) in &self.watched_directories {
-            if path.starts_with(dir_path) {
-                return Some(dir_id.clone());
-            }
-        }
-        None
-    }
 }
 
 #[tauri::command]
@@ -358,27 +349,27 @@ mod tests {
     use sqlx::SqlitePool;
     
 
-    #[test]
-    fn test_file_watcher_creation() {
-        let pool = std::sync::Arc::new(sqlx::SqlitePool::connect_lazy(":memory:").unwrap());
-        let result = FileWatcher::new(pool);
+    #[tokio::test]
+    async fn test_file_watcher_creation() {
+        let pool = std::sync::Arc::new(SqlitePool::connect(":memory:").await.unwrap());
+        let result = FileWatcher::new(pool, None);
         assert!(result.is_ok());
     }
 
-    #[test]
-    fn test_file_watcher_watch_directory() {
-        let pool = std::sync::Arc::new(sqlx::SqlitePool::connect_lazy(":memory:").unwrap());
-        let mut watcher = FileWatcher::new(pool).unwrap();
+    #[tokio::test]
+    async fn test_file_watcher_watch_directory() {
+        let pool = std::sync::Arc::new(SqlitePool::connect(":memory:").await.unwrap());
+        let mut watcher = FileWatcher::new(pool, None).unwrap();
         
         // 存在しないディレクトリをwatch
         let result = watcher.watch_directory("test_id", "/nonexistent/path");
         assert!(result.is_err());
     }
 
-    #[test]
-    fn test_file_watcher_unwatch_directory() {
-        let pool = std::sync::Arc::new(sqlx::SqlitePool::connect_lazy(":memory:").unwrap());
-        let mut watcher = FileWatcher::new(pool).unwrap();
+    #[tokio::test]
+    async fn test_file_watcher_unwatch_directory() {
+        let pool = std::sync::Arc::new(SqlitePool::connect(":memory:").await.unwrap());
+        let mut watcher = FileWatcher::new(pool, None).unwrap();
         
         // 存在しないディレクトリをunwatch
         let result = watcher.unwatch_directory("test_id");
@@ -397,7 +388,7 @@ mod tests {
             attrs: Default::default(),
         };
         
-        let result = handle_file_event(&pool, event).await;
+        let result = handle_file_event(&pool, event, None).await;
         // メタデータ取得に失敗するためエラーは発生しない（pathが存在しないため）
         assert!(result.is_ok());
     }
@@ -412,7 +403,7 @@ mod tests {
             attrs: Default::default(),
         };
         
-        let result = handle_file_event(&pool, event).await;
+        let result = handle_file_event(&pool, event, None).await;
         assert!(result.is_ok());
     }
 
@@ -426,7 +417,7 @@ mod tests {
             attrs: Default::default(),
         };
         
-        let result = handle_file_event(&pool, event).await;
+        let result = handle_file_event(&pool, event, None).await;
         assert!(result.is_ok());
     }
 
@@ -440,7 +431,7 @@ mod tests {
             attrs: Default::default(),
         };
         
-        let result = handle_file_event(&pool, event).await;
+        let result = handle_file_event(&pool, event, None).await;
         assert!(result.is_ok());
     }
 } 
