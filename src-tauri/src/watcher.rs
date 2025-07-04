@@ -112,21 +112,64 @@ pub async fn handle_file_event(
             for path in &event.paths {
                 match fs::metadata(&path) {
                     Ok(metadata) => {
+                        use std::os::unix::fs::MetadataExt;
+                        let inode = metadata.ino() as i64;
+                        let device_id = Some(metadata.dev() as i64);
                         
-                        match find_directory_id_for_path(pool, &path).await {
-                            Ok(directory_id) => {
+                        // inode番号による既存ファイル検索（ファイル名変更の検知）
+                        match db.find_file_by_inode(pool, inode, device_id).await {
+                            Ok(Some(existing_file)) => {
+                                // ファイル名変更として処理
+                                let new_path = path.to_string_lossy().to_string();
+                                let new_name = path.file_name()
+                                    .and_then(|n| n.to_str())
+                                    .unwrap_or("unknown")
+                                    .to_string();
                                 
-                                let file = create_file_from_metadata(&path, &metadata, &directory_id);
-                                
-                                match db.add_file(pool, &file).await {
+                                match db.update_file_path(pool, &existing_file.id, &new_path, &new_name).await {
                                     Ok(()) => {
-                                        notify_ui(&app_handle, "file_created", &file.path);
+                                        println!("ファイル名変更検知: {} -> {}", existing_file.path, new_path);
+                                        notify_ui(&app_handle, "file_renamed", &new_path);
                                     },
-                                    Err(e) => eprintln!("ファイル追加エラー: {}", e),
+                                    Err(e) => eprintln!("ファイル名変更更新エラー: {}", e),
+                                }
+                            }
+                            Ok(None) => {
+                                // 新規ファイル作成として処理
+                                match find_directory_id_for_path(pool, &path).await {
+                                    Ok(directory_id) => {
+                                        let file = create_file_from_metadata(&path, &metadata, &directory_id);
+                                        
+                                        match db.add_file(pool, &file).await {
+                                            Ok(()) => {
+                                                notify_ui(&app_handle, "file_created", &file.path);
+                                            },
+                                            Err(e) => eprintln!("ファイル追加エラー: {}", e),
+                                        }
+                                    }
+                                    Err(e) => {
+                                        eprintln!("ディレクトリID特定エラー: {} (パス: {})", e, path.display());
+                                    }
                                 }
                             }
                             Err(e) => {
-                                eprintln!("ディレクトリID特定エラー: {} (パス: {})", e, path.display());
+                                eprintln!("inode検索エラー: {} (パス: {})", e, path.display());
+                                // エラーの場合は新規ファイルとして処理
+                                match find_directory_id_for_path(pool, &path).await {
+                                    Ok(directory_id) => {
+                                        let file = create_file_from_metadata(&path, &metadata, &directory_id);
+                                        
+                                        match db.add_file(pool, &file).await {
+                                            Ok(()) => {
+                                                notify_ui(&app_handle, "file_created", &file.path);
+                                            },
+                                            Err(e) => eprintln!("ファイル追加エラー（inode検索失敗後）: {}", e),
+                                        }
+                                    }
+                                    Err(e) => {
+                                        eprintln!("ディレクトリID特定エラー（inode検索失敗後）: {} (パス: {})", e, path.display());
+                                    }
+                                }
                             }
                         }
                     }

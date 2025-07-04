@@ -102,6 +102,8 @@ pub trait DatabaseTrait {
     async fn remove_file_by_path(&self, pool: &SqlitePool, path: &str) -> Result<(), sqlx::Error>;
     async fn update_file_metadata(&self, pool: &SqlitePool, path: &str, metadata: &std::fs::Metadata) -> Result<(), sqlx::Error>;
     async fn file_exists_by_path(&self, pool: &SqlitePool, path: &str) -> Result<bool, sqlx::Error>;
+    async fn find_file_by_inode(&self, pool: &SqlitePool, inode: i64, device_id: Option<i64>) -> Result<Option<File>, sqlx::Error>;
+    async fn update_file_path(&self, pool: &SqlitePool, file_id: &str, new_path: &str, new_name: &str) -> Result<(), sqlx::Error>;
 }
 
 pub struct Database;
@@ -637,6 +639,69 @@ impl DatabaseTrait for Database {
             .await?;
         
         Ok(count > 0)
+    }
+
+    async fn find_file_by_inode(&self, pool: &SqlitePool, inode: i64, device_id: Option<i64>) -> Result<Option<File>, sqlx::Error> {
+        let query = if let Some(device_id) = device_id {
+            "SELECT * FROM files WHERE inode = ? AND device_id = ?"
+        } else {
+            "SELECT * FROM files WHERE inode = ? AND device_id IS NULL"
+        };
+        
+        let row = if let Some(device_id) = device_id {
+            sqlx::query(query)
+                .bind(inode)
+                .bind(device_id)
+                .fetch_optional(pool)
+                .await?
+        } else {
+            sqlx::query("SELECT * FROM files WHERE inode = ?")
+                .bind(inode)
+                .fetch_optional(pool)
+                .await?
+        };
+        
+        match row {
+            Some(row) => Ok(Some(File {
+                id: row.get("id"),
+                path: row.get("path"),
+                name: row.get("name"),
+                directory_id: row.get("directory_id"),
+                size: row.get("size"),
+                file_type: row.get("file_type"),
+                created_at: row.get("created_at"),
+                modified_at: row.get("modified_at"),
+                birth_time: row.get("birth_time"),
+                inode: row.get("inode"),
+                is_directory: row.get("is_directory"),
+                created_at_db: row.get("created_at_db"),
+                updated_at_db: row.get("updated_at_db"),
+                file_size: row.get("file_size"),
+                mime_type: row.get("mime_type"),
+                permissions: row.get("permissions"),
+                owner_uid: row.get("owner_uid"),
+                group_gid: row.get("group_gid"),
+                hard_links: row.get("hard_links"),
+                device_id: row.get("device_id"),
+                last_accessed: row.get("last_accessed"),
+                metadata: row.get("metadata"),
+            })),
+            None => Ok(None),
+        }
+    }
+
+    async fn update_file_path(&self, pool: &SqlitePool, file_id: &str, new_path: &str, new_name: &str) -> Result<(), sqlx::Error> {
+        let now = Utc::now();
+        
+        sqlx::query("UPDATE files SET path = ?, name = ?, updated_at_db = ? WHERE id = ?")
+            .bind(new_path)
+            .bind(new_name)
+            .bind(now)
+            .bind(file_id)
+            .execute(pool)
+            .await?;
+        
+        Ok(())
     }
 }
 
@@ -1329,5 +1394,107 @@ mod tests {
         // 存在しないファイルを確認
         let not_exists = db.file_exists_by_path(&pool, "/test/nonexistent.txt").await.unwrap();
         assert!(!not_exists);
+    }
+
+    #[tokio::test]
+    async fn test_find_file_by_inode() {
+        let pool = setup_test_db().await;
+        let db = Database;
+        
+        let dir = db.add_directory(&pool, "/test", "test").await.unwrap();
+        
+        let file = File {
+            id: "test_file".to_string(),
+            path: "/test/file.txt".to_string(),
+            name: "file.txt".to_string(),
+            directory_id: dir.id.clone(),
+            size: 1024,
+            file_type: Some("txt".to_string()),
+            created_at: Some(Utc::now()),
+            modified_at: Some(Utc::now()),
+            birth_time: None,
+            inode: Some(12345),
+            is_directory: false,
+            created_at_db: Utc::now(),
+            updated_at_db: Utc::now(),
+            file_size: Some(1024),
+            mime_type: Some("text/plain".to_string()),
+            permissions: Some("644".to_string()),
+            owner_uid: Some(1000),
+            group_gid: Some(1000),
+            hard_links: Some(1),
+            device_id: Some(67890),
+            last_accessed: None,
+            metadata: None,
+        };
+        
+        // ファイルを追加
+        db.add_file(&pool, &file).await.unwrap();
+        
+        // inode番号とdevice_idでファイルを検索
+        let found_file = db.find_file_by_inode(&pool, 12345, Some(67890)).await.unwrap();
+        assert!(found_file.is_some());
+        assert_eq!(found_file.unwrap().id, "test_file");
+        
+        // 存在しないinode番号で検索
+        let not_found = db.find_file_by_inode(&pool, 99999, Some(67890)).await.unwrap();
+        assert!(not_found.is_none());
+        
+        // 存在しないdevice_idで検索
+        let not_found = db.find_file_by_inode(&pool, 12345, Some(99999)).await.unwrap();
+        assert!(not_found.is_none());
+    }
+
+    #[tokio::test]
+    async fn test_update_file_path() {
+        let pool = setup_test_db().await;
+        let db = Database;
+        
+        let dir = db.add_directory(&pool, "/test", "test").await.unwrap();
+        
+        let file = File {
+            id: "test_file".to_string(),
+            path: "/test/file.txt".to_string(),
+            name: "file.txt".to_string(),
+            directory_id: dir.id.clone(),
+            size: 1024,
+            file_type: Some("txt".to_string()),
+            created_at: Some(Utc::now()),
+            modified_at: Some(Utc::now()),
+            birth_time: None,
+            inode: Some(12345),
+            is_directory: false,
+            created_at_db: Utc::now(),
+            updated_at_db: Utc::now(),
+            file_size: Some(1024),
+            mime_type: Some("text/plain".to_string()),
+            permissions: Some("644".to_string()),
+            owner_uid: Some(1000),
+            group_gid: Some(1000),
+            hard_links: Some(1),
+            device_id: Some(12345),
+            last_accessed: None,
+            metadata: None,
+        };
+        
+        // ファイルを追加
+        db.add_file(&pool, &file).await.unwrap();
+        
+        // ファイルパスを更新
+        db.update_file_path(&pool, "test_file", "/test/renamed_file.txt", "renamed_file.txt").await.unwrap();
+        
+        // 更新されたファイルを取得
+        let updated_files = db.get_files_by_directory(&pool, &dir.id).await.unwrap();
+        assert_eq!(updated_files.len(), 1);
+        assert_eq!(updated_files[0].path, "/test/renamed_file.txt");
+        assert_eq!(updated_files[0].name, "renamed_file.txt");
+        
+        // 元のパスでは見つからないことを確認
+        let exists = db.file_exists_by_path(&pool, "/test/file.txt").await.unwrap();
+        assert!(!exists);
+        
+        // 新しいパスでは見つかることを確認
+        let exists = db.file_exists_by_path(&pool, "/test/renamed_file.txt").await.unwrap();
+        assert!(exists);
     }
 }
