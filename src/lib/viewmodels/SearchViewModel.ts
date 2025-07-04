@@ -1,13 +1,14 @@
 import { writable, derived, type Writable, type Readable } from 'svelte/store';
 import { BaseViewModel } from './BaseViewModel.js';
 import { searchFiles } from '../api/search.js';
-import type { SearchResult, FileCategory, MetadataSearchFilter } from '../types.js';
+import type { SearchResult, FileCategory, MetadataSearchFilter, MetadataSearchLogic } from '../types.js';
 import { getFileCategory } from '../utils.js';
 
 export class SearchViewModel extends BaseViewModel {
   private _searchQuery: Writable<string> = writable("");
   private _selectedTags: Writable<string[]> = writable([]);
   private _metadataSearchFilters: Writable<MetadataSearchFilter[]> = writable([]);
+  private _metadataLogic: Writable<MetadataSearchLogic> = writable("AND");
   private _searchResults: Writable<SearchResult[]> = writable([]);
   private _selectedCategory: Writable<FileCategory> = writable("all");
   private _currentPage: Writable<number> = writable(1);
@@ -17,6 +18,7 @@ export class SearchViewModel extends BaseViewModel {
   public readonly searchQuery = this._searchQuery;
   public readonly selectedTags = this._selectedTags;
   public readonly metadataSearchFilters = this._metadataSearchFilters;
+  public readonly metadataLogic = this._metadataLogic;
   public readonly searchResults = this._searchResults;
   public readonly selectedCategory = this._selectedCategory;
   public readonly currentPage = this._currentPage;
@@ -85,6 +87,10 @@ export class SearchViewModel extends BaseViewModel {
     this._metadataSearchFilters.set(filters);
   }
 
+  public setMetadataLogic(logic: MetadataSearchLogic): void {
+    this._metadataLogic.set(logic);
+  }
+
   public selectCategory(category: FileCategory): void {
     this._selectedCategory.set(category);
     this._currentPage.set(1);
@@ -125,21 +131,24 @@ export class SearchViewModel extends BaseViewModel {
       let query: string;
       let tags: string[];
       let filters: MetadataSearchFilter[];
+      let logic: MetadataSearchLogic;
       let directoryId: string | "all";
 
       // 現在の値を取得
       const queryUnsub = this._searchQuery.subscribe(q => query = q);
       const tagsUnsub = this._selectedTags.subscribe(t => tags = t);
       const filtersUnsub = this._metadataSearchFilters.subscribe(f => filters = f);
+      const logicUnsub = this._metadataLogic.subscribe(l => logic = l);
       const dirUnsub = this._selectedDirectoryId.subscribe(d => directoryId = d);
 
       // 購読を即座に解除
       queryUnsub();
       tagsUnsub();
       filtersUnsub();
+      logicUnsub();
       dirUnsub();
 
-      return await searchFiles(query!, tags!, filters!, directoryId!);
+      return await searchFiles(query!, tags!, filters!, logic!, directoryId!);
     });
 
     if (result) {
@@ -152,6 +161,7 @@ export class SearchViewModel extends BaseViewModel {
     this._searchQuery.set("");
     this._selectedTags.set([]);
     this._metadataSearchFilters.set([]);
+    this._metadataLogic.set("AND");
     this._searchResults.set([]);
     this._selectedCategory.set("all");
     this._currentPage.set(1);

@@ -48,6 +48,7 @@
     searchQuery, 
     selectedTags, 
     metadataSearchFilters, 
+    metadataLogic,
     searchResults,
     selectedCategory: searchSelectedCategory,
     currentPage: searchCurrentPage,
@@ -282,6 +283,7 @@
             totalPages={$searchTotalPages}
             bind:metadataSearchFilters={$metadataSearchFilters}
             availableMetadataKeys={$customMetadataKeys}
+            metadataLogic={$metadataLogic}
             onSearchQueryChange={(query) => searchViewModel.setSearchQuery(query)}
             onSearch={searchFiles}
             onSelectFile={selectFile}
@@ -291,6 +293,7 @@
             onGoToNextPage={() => searchViewModel.goToNextPage()}
             onGoToFirstPage={() => searchViewModel.goToFirstPage()}
             onGoToLastPage={() => searchViewModel.goToLastPage($searchTotalPages)}
+            onMetadataLogicChange={(logic) => searchViewModel.setMetadataLogic(logic)}
           />
         {/if}
 

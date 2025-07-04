@@ -71,6 +71,7 @@ describe('SearchViewModel', () => {
       expect(get(searchViewModel.searchQuery)).toBe('');
       expect(get(searchViewModel.selectedTags)).toEqual([]);
       expect(get(searchViewModel.metadataSearchFilters)).toEqual([]);
+      expect(get(searchViewModel.metadataLogic)).toBe('AND');
       expect(get(searchViewModel.searchResults)).toEqual([]);
       expect(get(searchViewModel.selectedCategory)).toBe('all');
       expect(get(searchViewModel.currentPage)).toBe(1);
@@ -95,6 +96,11 @@ describe('SearchViewModel', () => {
       ];
       searchViewModel.setMetadataSearchFilters(filters);
       expect(get(searchViewModel.metadataSearchFilters)).toEqual(filters);
+    });
+
+    it('should set metadata logic', () => {
+      searchViewModel.setMetadataLogic('OR');
+      expect(get(searchViewModel.metadataLogic)).toBe('OR');
     });
   });
 
@@ -187,6 +193,7 @@ describe('SearchViewModel', () => {
         'test',
         ['tag1'],
         [{ field: 'size', operator: 'greater_than', value: '1000' }],
+        'AND',
         'all'
       );
       expect(get(searchViewModel.searchResults)).toEqual(mockSearchResults);
@@ -218,6 +225,7 @@ describe('SearchViewModel', () => {
       searchViewModel.setMetadataSearchFilters([
         { field: 'size', operator: 'greater_than', value: '1000' }
       ]);
+      searchViewModel.setMetadataLogic('OR');
       searchViewModel.selectCategory('image');
       searchViewModel.goToPage(3);
 
@@ -226,6 +234,7 @@ describe('SearchViewModel', () => {
       expect(get(searchViewModel.searchQuery)).toBe('');
       expect(get(searchViewModel.selectedTags)).toEqual([]);
       expect(get(searchViewModel.metadataSearchFilters)).toEqual([]);
+      expect(get(searchViewModel.metadataLogic)).toBe('AND');
       expect(get(searchViewModel.searchResults)).toEqual([]);
       expect(get(searchViewModel.selectedCategory)).toBe('all');
       expect(get(searchViewModel.currentPage)).toBe(1);

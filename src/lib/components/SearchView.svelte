@@ -19,6 +19,7 @@
     totalPages: number;
     metadataSearchFilters: MetadataSearchFilter[];
     availableMetadataKeys: CustomMetadataKey[];
+    metadataLogic: 'AND' | 'OR';
     onSearchQueryChange: (query: string) => void;
     onSearch: () => void;
     onSelectFile: (file: any) => void;
@@ -28,6 +29,7 @@
     onGoToNextPage: () => void;
     onGoToFirstPage: () => void;
     onGoToLastPage: () => void;
+    onMetadataLogicChange: (logic: 'AND' | 'OR') => void;
   }
 
   let {
@@ -40,6 +42,7 @@
     totalPages,
     metadataSearchFilters = $bindable(),
     availableMetadataKeys,
+    metadataLogic,
     onSearchQueryChange,
     onSearch,
     onSelectFile,
@@ -49,6 +52,7 @@
     onGoToNextPage,
     onGoToFirstPage,
     onGoToLastPage,
+    onMetadataLogicChange,
   }: Props = $props();
 
   const fileCategories: FileCategoryInfo[] = [
@@ -154,6 +158,8 @@
   ];
 
   const itemsPerPage = 25;
+  
+  // メタデータ検索のロジック（AND/OR）はpropsから受け取る
 
   function getOperatorLabel(operator: string): string {
     switch (operator) {
@@ -259,6 +265,34 @@
         フィルタを追加
       </button>
     </div>
+
+    {#if metadataSearchFilters.length > 1}
+      <div class="metadata-logic-section">
+        <label class="metadata-logic-label">検索条件の結合方法:</label>
+        <div class="metadata-logic-options">
+          <label class="metadata-logic-option">
+            <input
+              type="radio"
+              value="AND"
+              checked={metadataLogic === 'AND'}
+              onchange={() => onMetadataLogicChange('AND')}
+              class="metadata-logic-radio"
+            />
+            すべての条件に一致 (AND)
+          </label>
+          <label class="metadata-logic-option">
+            <input
+              type="radio"
+              value="OR"
+              checked={metadataLogic === 'OR'}
+              onchange={() => onMetadataLogicChange('OR')}
+              class="metadata-logic-radio"
+            />
+            いずれかの条件に一致 (OR)
+          </label>
+        </div>
+      </div>
+    {/if}
 
     {#if metadataSearchFilters.length > 0}
       <div class="metadata-filters">

@@ -42,7 +42,9 @@ describe('search API', () => {
       expect(mockInvoke).toHaveBeenCalledWith('search_files', {
         query,
         tagIds,
-        metadataFilters
+        metadataFilters,
+        metadataLogic: 'AND',
+        directoryId: undefined
       });
       expect(result).toEqual(mockResults);
     });
@@ -55,7 +57,9 @@ describe('search API', () => {
       expect(mockInvoke).toHaveBeenCalledWith('search_files', {
         query: '',
         tagIds: [],
-        metadataFilters: []
+        metadataFilters: [],
+        metadataLogic: 'AND',
+        directoryId: undefined
       });
       expect(result).toEqual([]);
     });
@@ -82,7 +86,9 @@ describe('search API', () => {
       expect(mockInvoke).toHaveBeenCalledWith('search_files', {
         query: '',
         tagIds: ['important'],
-        metadataFilters: []
+        metadataFilters: [],
+        metadataLogic: 'AND',
+        directoryId: undefined
       });
       expect(result).toEqual(mockResults);
     });
@@ -100,7 +106,9 @@ describe('search API', () => {
       expect(mockInvoke).toHaveBeenCalledWith('search_files', {
         query: '',
         tagIds: [],
-        metadataFilters
+        metadataFilters,
+        metadataLogic: 'AND',
+        directoryId: undefined
       });
     });
 
@@ -133,7 +141,9 @@ describe('search API', () => {
       expect(mockInvoke).toHaveBeenCalledWith('search_files', {
         query,
         tagIds,
-        metadataFilters
+        metadataFilters,
+        metadataLogic: 'AND',
+        directoryId: undefined
       });
       expect(result).toEqual(mockResults);
     });
@@ -155,7 +165,9 @@ describe('search API', () => {
       expect(mockInvoke).toHaveBeenCalledWith('search_files', {
         query: specialQuery,
         tagIds: [],
-        metadataFilters: []
+        metadataFilters: [],
+        metadataLogic: 'AND',
+        directoryId: undefined
       });
     });
   });
