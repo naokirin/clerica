@@ -1,5 +1,6 @@
 use crate::database::{Database, DatabaseTrait, Directory, File};
 use crate::watcher::FileWatcher;
+use crate::settings;
 use sqlx::SqlitePool;
 use tauri::State;
 use uuid::Uuid;
@@ -80,9 +81,19 @@ pub async fn get_files(
     sort_order: Option<String>,
 ) -> Result<Vec<File>, String> {
     let db = Database;
-    db.get_all_files_sorted(&pool, sort_field, sort_order)
+    let mut files = db.get_all_files_sorted(&pool, sort_field, sort_order)
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|e| e.to_string())?;
+    
+    // 設定を取得して隠しファイルを除外するかどうかを決定
+    let settings = settings::get_all_settings(&pool).await
+        .map_err(|e| e.to_string())?;
+    
+    if !settings.show_hidden_files {
+        files.retain(|file| !settings::is_hidden_file(&file.path));
+    }
+    
+    Ok(files)
 }
 
 #[tauri::command]

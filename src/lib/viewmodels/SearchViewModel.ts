@@ -1,6 +1,7 @@
 import { writable, derived, type Writable, type Readable } from 'svelte/store';
 import { BaseViewModel } from './BaseViewModel.js';
 import { searchFiles } from '../api/search.js';
+import { getSettings } from '../api/settings.js';
 import type { SearchResult, FileCategory, MetadataSearchFilter, MetadataSearchLogic, SortOptions } from '../types.js';
 import { getFileCategory } from '../utils.js';
 
@@ -12,7 +13,7 @@ export class SearchViewModel extends BaseViewModel {
   private _searchResults: Writable<SearchResult[]> = writable([]);
   private _selectedCategory: Writable<FileCategory> = writable("all");
   private _currentPage: Writable<number> = writable(1);
-  private _itemsPerPage = 25;
+  private _itemsPerPage: Writable<number> = writable(20);
   private _selectedDirectoryId: Writable<string | "all"> = writable("all");
   private _sortOptions: Writable<SortOptions> = writable({ field: "modified_at", order: "desc" });
 
@@ -23,6 +24,7 @@ export class SearchViewModel extends BaseViewModel {
   public readonly searchResults = this._searchResults;
   public readonly selectedCategory = this._selectedCategory;
   public readonly currentPage = this._currentPage;
+  public readonly itemsPerPage = this._itemsPerPage;
   public readonly selectedDirectoryId = this._selectedDirectoryId;
   public readonly sortOptions = this._sortOptions;
 
@@ -60,21 +62,36 @@ export class SearchViewModel extends BaseViewModel {
   );
 
   public readonly searchTotalPages: Readable<number> = derived(
-    this.filteredSearchResults,
-    (filteredResults) => Math.ceil(filteredResults.length / this._itemsPerPage)
+    [this.filteredSearchResults, this._itemsPerPage],
+    ([filteredResults, itemsPerPage]) => Math.ceil(filteredResults.length / itemsPerPage)
   );
 
   public readonly paginatedSearchResults: Readable<SearchResult[]> = derived(
-    [this.filteredSearchResults, this._currentPage],
-    ([filteredResults, currentPage]) => {
-      const startIndex = (currentPage - 1) * this._itemsPerPage;
-      const endIndex = startIndex + this._itemsPerPage;
+    [this.filteredSearchResults, this._currentPage, this._itemsPerPage],
+    ([filteredResults, currentPage, itemsPerPage]) => {
+      const startIndex = (currentPage - 1) * itemsPerPage;
+      const endIndex = startIndex + itemsPerPage;
       return filteredResults.slice(startIndex, endIndex);
     }
   );
 
   constructor() {
     super();
+    this.loadSettings();
+  }
+
+  private async loadSettings(): Promise<void> {
+    try {
+      const settings = await getSettings();
+      this._itemsPerPage.set(settings.files_per_page);
+    } catch (error) {
+      console.error('設定の読み込みに失敗しました:', error);
+    }
+  }
+
+  public async updateItemsPerPage(): Promise<void> {
+    await this.loadSettings();
+    this._currentPage.set(1); // ページをリセット
   }
 
   public setSearchQuery(query: string): void {

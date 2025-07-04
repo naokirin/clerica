@@ -19,6 +19,7 @@
     categoryCounts: Record<FileCategory, number>;
     currentPage: number;
     totalPages: number;
+    itemsPerPage: number;
     metadataSearchFilters: MetadataSearchFilter[];
     metadataLogic: 'AND' | 'OR';
     availableMetadataKeys: CustomMetadataKey[];
@@ -44,6 +45,7 @@
     categoryCounts,
     currentPage,
     totalPages,
+    itemsPerPage,
     metadataSearchFilters = $bindable(),
     metadataLogic,
     availableMetadataKeys,
@@ -162,8 +164,6 @@
       extensions: [],
     },
   ];
-
-  const itemsPerPage = 25;
 
   function getOperatorLabel(operator: string): string {
     switch (operator) {

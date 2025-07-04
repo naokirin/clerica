@@ -1,16 +1,46 @@
 <script lang="ts">
   import { X } from "lucide-svelte";
+  import { onMount } from "svelte";
+  import { getSettings, updateSettingBool, updateSettingInt } from "../api/settings";
 
   export let isOpen = false;
   export let onClose: () => void;
+  export let onSettingsChanged: (() => void) | undefined = undefined;
 
   // 設定の状態管理
   let darkMode = false;
   let detailViewDefault = false;
-  let filesPerPage = "20";
+  let filesPerPage = 20;
   let showHiddenFiles = false;
   let useFuzzySearch = true;
   let highlightSearchResults = true;
+  let isLoading = false;
+
+  // 設定を読み込み
+  onMount(async () => {
+    try {
+      const settings = await getSettings();
+      showHiddenFiles = settings.show_hidden_files;
+      filesPerPage = settings.files_per_page;
+    } catch (error) {
+      console.error('設定の読み込みに失敗しました:', error);
+    }
+  });
+
+  // モーダルが開かれるたびに設定を再読み込み
+  $: if (isOpen) {
+    loadSettings();
+  }
+
+  const loadSettings = async () => {
+    try {
+      const settings = await getSettings();
+      showHiddenFiles = settings.show_hidden_files;
+      filesPerPage = settings.files_per_page;
+    } catch (error) {
+      console.error('設定の読み込みに失敗しました:', error);
+    }
+  };
 
   const handleClose = () => {
     onClose();
@@ -22,17 +52,31 @@
     }
   };
 
-  const handleSave = () => {
-    // TODO: 設定の保存処理を実装
-    console.log("Settings saved:", {
-      darkMode,
-      detailViewDefault,
-      filesPerPage,
-      showHiddenFiles,
-      useFuzzySearch,
-      highlightSearchResults,
-    });
-    handleClose();
+  const handleSave = async () => {
+    isLoading = true;
+    try {
+      await updateSettingBool('show_hidden_files', showHiddenFiles);
+      await updateSettingInt('files_per_page', filesPerPage);
+      console.log("Settings saved:", {
+        darkMode,
+        detailViewDefault,
+        filesPerPage,
+        showHiddenFiles,
+        useFuzzySearch,
+        highlightSearchResults,
+      });
+      
+      // 設定が変更されたことを通知
+      if (onSettingsChanged) {
+        onSettingsChanged();
+      }
+      
+      handleClose();
+    } catch (error) {
+      console.error('設定の保存に失敗しました:', error);
+    } finally {
+      isLoading = false;
+    }
   };
 </script>
 
@@ -62,9 +106,11 @@
             <label class="setting-label">
               1ページあたりのファイル数:
               <select class="setting-select" bind:value={filesPerPage}>
-                <option value="20">20</option>
-                <option value="50">50</option>
-                <option value="100">100</option>
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+                <option value={200}>200</option>
               </select>
             </label>
           </div>
@@ -81,10 +127,10 @@
         </div>
 
         <div class="settings-actions">
-          <button class="save-button" on:click={handleSave}>
-            設定を保存
+          <button class="save-button" on:click={handleSave} disabled={isLoading}>
+            {isLoading ? '保存中...' : '設定を保存'}
           </button>
-          <button class="cancel-button" on:click={handleClose}>
+          <button class="cancel-button" on:click={handleClose} disabled={isLoading}>
             キャンセル
           </button>
         </div>
@@ -176,9 +222,16 @@
     border-color: #3b82f6;
   }
 
-  .save-button:hover {
+  .save-button:hover:not(:disabled) {
     background-color: #2563eb;
     border-color: #2563eb;
+  }
+
+  .save-button:disabled {
+    background-color: #9ca3af;
+    border-color: #9ca3af;
+    cursor: not-allowed;
+    opacity: 0.6;
   }
 
   .cancel-button {
@@ -187,8 +240,13 @@
     border-color: #d1d5db;
   }
 
-  .cancel-button:hover {
+  .cancel-button:hover:not(:disabled) {
     background-color: #f9fafb;
     border-color: #9ca3af;
+  }
+
+  .cancel-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 </style>

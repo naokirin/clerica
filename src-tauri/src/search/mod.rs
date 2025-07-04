@@ -1,4 +1,5 @@
 use crate::database::{Database, DatabaseTrait, File, Tag};
+use crate::settings;
 use chrono::Utc;
 use sqlx::{Row, SqlitePool};
 use tauri::State;
@@ -219,6 +220,14 @@ pub async fn search_files(
         let score = 1.0;
 
         results.push(SearchResult { file, tags, score });
+    }
+
+    // 設定を取得して隠しファイルを除外するかどうかを決定
+    let settings = settings::get_all_settings(&pool).await
+        .map_err(|e| e.to_string())?;
+    
+    if !settings.show_hidden_files {
+        results.retain(|result| !settings::is_hidden_file(&result.file.path));
     }
 
     Ok(results)

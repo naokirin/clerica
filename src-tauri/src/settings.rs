@@ -1,0 +1,109 @@
+use serde::{Deserialize, Serialize};
+use sqlx::SqlitePool;
+use std::error::Error;
+use std::path::Path;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Setting {
+    pub id: i64,
+    pub key: String,
+    pub value: String,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AppSettings {
+    pub show_hidden_files: bool,
+    pub files_per_page: i32,
+}
+
+impl Default for AppSettings {
+    fn default() -> Self {
+        Self {
+            show_hidden_files: false,
+            files_per_page: 20,
+        }
+    }
+}
+
+pub async fn get_setting(pool: &SqlitePool, key: &str) -> Result<Option<String>, Box<dyn Error>> {
+    let result = sqlx::query_scalar::<_, String>(
+        "SELECT value FROM settings WHERE key = ?"
+    )
+    .bind(key)
+    .fetch_optional(pool)
+    .await?;
+
+    Ok(result)
+}
+
+pub async fn set_setting(pool: &SqlitePool, key: &str, value: &str) -> Result<(), Box<dyn Error>> {
+    sqlx::query(
+        "INSERT INTO settings (key, value) VALUES (?, ?) 
+         ON CONFLICT(key) DO UPDATE SET value = ?, updated_at = CURRENT_TIMESTAMP"
+    )
+    .bind(key)
+    .bind(value)
+    .bind(value)
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+pub async fn get_all_settings(pool: &SqlitePool) -> Result<AppSettings, Box<dyn Error>> {
+    let show_hidden_files = get_setting(pool, "show_hidden_files").await?
+        .unwrap_or_else(|| "false".to_string());
+    
+    let files_per_page = get_setting(pool, "files_per_page").await?
+        .unwrap_or_else(|| "20".to_string());
+
+    Ok(AppSettings {
+        show_hidden_files: show_hidden_files == "true",
+        files_per_page: files_per_page.parse().unwrap_or(20),
+    })
+}
+
+pub async fn update_setting_bool(pool: &SqlitePool, key: &str, value: bool) -> Result<(), Box<dyn Error>> {
+    let value_str = if value { "true" } else { "false" };
+    set_setting(pool, key, value_str).await
+}
+
+pub async fn update_setting_int(pool: &SqlitePool, key: &str, value: i32) -> Result<(), Box<dyn Error>> {
+    set_setting(pool, key, &value.to_string()).await
+}
+
+#[tauri::command]
+pub async fn get_settings(pool: tauri::State<'_, SqlitePool>) -> Result<AppSettings, String> {
+    get_all_settings(&pool).await
+        .map_err(|e| format!("Failed to get settings: {}", e))
+}
+
+#[tauri::command]
+pub async fn update_setting_bool_cmd(
+    pool: tauri::State<'_, SqlitePool>,
+    key: String,
+    value: bool,
+) -> Result<(), String> {
+    update_setting_bool(&pool, &key, value).await
+        .map_err(|e| format!("Failed to update setting: {}", e))
+}
+
+#[tauri::command]
+pub async fn update_setting_int_cmd(
+    pool: tauri::State<'_, SqlitePool>,
+    key: String,
+    value: i32,
+) -> Result<(), String> {
+    update_setting_int(&pool, &key, value).await
+        .map_err(|e| format!("Failed to update setting: {}", e))
+}
+
+pub fn is_hidden_file(path: &str) -> bool {
+    Path::new(path)
+        .file_name()
+        .and_then(|name| name.to_str())
+        .map(|name| name.starts_with('.'))
+        .unwrap_or(false)
+}

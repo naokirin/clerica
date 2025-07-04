@@ -15,6 +15,7 @@
     currentPage: number;
     totalFiles: number;
     totalPages: number;
+    itemsPerPage: number;
     selectedDirectoryId: string | "all";
     sortOptions: SortOptions;
     onSelectFile: (file: File) => void;
@@ -34,6 +35,7 @@
     currentPage,
     totalFiles,
     totalPages,
+    itemsPerPage,
     selectedDirectoryId,
     sortOptions,
     onSelectFile,
@@ -147,8 +149,6 @@
       extensions: [],
     },
   ];
-
-  const itemsPerPage = 25;
 </script>
 
 <div class="files-view">

@@ -1,6 +1,7 @@
 import { writable, derived, type Writable, type Readable } from 'svelte/store';
 import { BaseViewModel } from './BaseViewModel.js';
 import { getFiles, getFilesByDirectory, openFile, revealInFinder, deleteFile } from '../api/files.js';
+import { getSettings } from '../api/settings.js';
 import type { File, FileCategory, SortOptions } from '../types.js';
 import { getFileCategory } from '../utils.js';
 
@@ -9,7 +10,7 @@ export class FileViewModel extends BaseViewModel {
   private _selectedFile: Writable<File | null> = writable(null);
   private _selectedCategory: Writable<FileCategory> = writable("all");
   private _currentPage: Writable<number> = writable(1);
-  private _itemsPerPage = 25;
+  private _itemsPerPage: Writable<number> = writable(20);
   private _isDeleting: Writable<boolean> = writable(false);
   private _selectedDirectoryId: Writable<string | "all"> = writable("all");
   private _sortOptions: Writable<SortOptions> = writable({ field: "modified_at", order: "desc" });
@@ -18,6 +19,7 @@ export class FileViewModel extends BaseViewModel {
   public readonly selectedFile = this._selectedFile;
   public readonly selectedCategory = this._selectedCategory;
   public readonly currentPage = this._currentPage;
+  public readonly itemsPerPage = this._itemsPerPage;
   public readonly isDeleting = this._isDeleting;
   public readonly selectedDirectoryId = this._selectedDirectoryId;
   public readonly sortOptions = this._sortOptions;
@@ -56,22 +58,37 @@ export class FileViewModel extends BaseViewModel {
   );
 
   public readonly totalPages: Readable<number> = derived(
-    this.filteredFiles,
-    (filteredFiles) => Math.ceil(filteredFiles.length / this._itemsPerPage)
+    [this.filteredFiles, this._itemsPerPage],
+    ([filteredFiles, itemsPerPage]) => Math.ceil(filteredFiles.length / itemsPerPage)
   );
 
   public readonly paginatedFiles: Readable<File[]> = derived(
-    [this.filteredFiles, this._currentPage],
-    ([filteredFiles, currentPage]) => {
-      const startIndex = (currentPage - 1) * this._itemsPerPage;
-      const endIndex = startIndex + this._itemsPerPage;
+    [this.filteredFiles, this._currentPage, this._itemsPerPage],
+    ([filteredFiles, currentPage, itemsPerPage]) => {
+      const startIndex = (currentPage - 1) * itemsPerPage;
+      const endIndex = startIndex + itemsPerPage;
       return filteredFiles.slice(startIndex, endIndex);
     }
   );
 
   constructor() {
     super();
+    this.loadSettings();
     this.loadFiles();
+  }
+
+  private async loadSettings(): Promise<void> {
+    try {
+      const settings = await getSettings();
+      this._itemsPerPage.set(settings.files_per_page);
+    } catch (error) {
+      console.error('設定の読み込みに失敗しました:', error);
+    }
+  }
+
+  public async updateItemsPerPage(): Promise<void> {
+    await this.loadSettings();
+    this._currentPage.set(1); // ページをリセット
   }
 
   public async loadFiles(directoryId?: string | "all"): Promise<void> {

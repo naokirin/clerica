@@ -20,6 +20,7 @@ mod custom_metadata;
 mod exif_config;
 mod exif_constants;
 mod thumbnail;
+mod settings;
 
 #[tokio::main]
 async fn main() {
@@ -154,6 +155,9 @@ async fn main() {
             thumbnail::get_thumbnail_cache_size,
             thumbnail::extract_audio_album_art,
             thumbnail::generate_archive_thumbnail,
+            settings::get_settings,
+            settings::update_setting_bool_cmd,
+            settings::update_setting_int_cmd,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

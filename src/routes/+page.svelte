@@ -44,6 +44,7 @@
     filteredFiles,
     totalPages,
     paginatedFiles,
+    itemsPerPage,
     sortOptions 
   } = fileViewModel;
   const { 
@@ -58,6 +59,7 @@
     filteredSearchResults,
     searchTotalPages,
     paginatedSearchResults,
+    itemsPerPage: searchItemsPerPage,
     sortOptions: searchSortOptions
   } = searchViewModel;
   const { tags, customMetadataKeys } = tagViewModel;
@@ -209,6 +211,14 @@
   const handleCustomMetadataKeysUpdated = async () => {
     await tagViewModel.loadCustomMetadataKeys();
   };
+
+  // 設定が変更された時の処理
+  const handleSettingsChanged = async () => {
+    await fileViewModel.updateItemsPerPage();
+    await searchViewModel.updateItemsPerPage();
+    await fileViewModel.loadFiles();
+    await searchViewModel.performSearch();
+  };
 </script>
 
 <div class="app">
@@ -284,6 +294,7 @@
             currentPage={$currentPage}
             totalFiles={$filteredFiles.length}
             totalPages={$totalPages}
+            itemsPerPage={$itemsPerPage}
             selectedDirectoryId={$selectedDirectoryId}
             sortOptions={$sortOptions}
             onSelectFile={selectFile}
@@ -306,6 +317,7 @@
             categoryCounts={$searchCategoryCounts}
             currentPage={$searchCurrentPage}
             totalPages={$searchTotalPages}
+            itemsPerPage={$searchItemsPerPage}
             bind:metadataSearchFilters={$metadataSearchFilters}
             availableMetadataKeys={$customMetadataKeys}
             metadataLogic={$metadataLogic}
@@ -349,5 +361,9 @@
   />
 
   <!-- 設定モーダル -->
-  <SettingsModal isOpen={isSettingsModalOpen} onClose={closeSettingsModal} />
+  <SettingsModal
+    isOpen={isSettingsModalOpen}
+    onClose={closeSettingsModal}
+    onSettingsChanged={handleSettingsChanged}
+  />
 </div>
