@@ -6,20 +6,25 @@ import { AppViewModel } from '../../lib/viewmodels/AppViewModel.js';
 vi.mock('../../lib/viewmodels/DirectoryViewModel.js', () => ({
   DirectoryViewModel: vi.fn().mockImplementation(() => ({
     loadDirectories: vi.fn().mockResolvedValue(undefined),
-    dispose: vi.fn()
+    dispose: vi.fn(),
+    selectedDirectoryId: {
+      subscribe: vi.fn().mockReturnValue(() => {})
+    }
   }))
 }));
 
 vi.mock('../../lib/viewmodels/FileViewModel.js', () => ({
   FileViewModel: vi.fn().mockImplementation(() => ({
     loadFiles: vi.fn().mockResolvedValue(undefined),
-    dispose: vi.fn()
+    dispose: vi.fn(),
+    setSelectedDirectoryId: vi.fn()
   }))
 }));
 
 vi.mock('../../lib/viewmodels/SearchViewModel.js', () => ({
   SearchViewModel: vi.fn().mockImplementation(() => ({
-    dispose: vi.fn()
+    dispose: vi.fn(),
+    setSelectedDirectoryId: vi.fn()
   }))
 }));
 

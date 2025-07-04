@@ -186,7 +186,8 @@ describe('SearchViewModel', () => {
       expect(mockSearchFiles).toHaveBeenCalledWith(
         'test',
         ['tag1'],
-        [{ field: 'size', operator: 'greater_than', value: '1000' }]
+        [{ field: 'size', operator: 'greater_than', value: '1000' }],
+        'all'
       );
       expect(get(searchViewModel.searchResults)).toEqual(mockSearchResults);
       expect(get(searchViewModel.currentPage)).toBe(1);
