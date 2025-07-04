@@ -1,6 +1,7 @@
 <script lang="ts">
-  import type { File, FileCategory, FileCategoryInfo } from "../types.js";
+  import type { File, FileCategory, FileCategoryInfo, SortOptions } from "../types.js";
   import FileItemDisplay from "./FileItemDisplay.svelte";
+  import SortControl from "./SortControl.svelte";
 
   interface Props {
     files: File[];
@@ -10,6 +11,7 @@
     totalFiles: number;
     totalPages: number;
     selectedDirectoryId: string | "all";
+    sortOptions: SortOptions;
     onSelectFile: (file: File) => void;
     onSelectCategory: (category: FileCategory) => void;
     onGoToPage: (page: number) => void;
@@ -17,6 +19,7 @@
     onGoToNextPage: () => void;
     onGoToFirstPage: () => void;
     onGoToLastPage: () => void;
+    onSortChange: (options: SortOptions) => void;
   }
 
   let {
@@ -27,13 +30,15 @@
     totalFiles,
     totalPages,
     selectedDirectoryId,
+    sortOptions,
     onSelectFile,
     onSelectCategory,
     onGoToPage,
     onGoToPreviousPage,
     onGoToNextPage,
     onGoToFirstPage,
-    onGoToLastPage
+    onGoToLastPage,
+    onSortChange
   }: Props = $props();
 
   const fileCategories: FileCategoryInfo[] = [
@@ -125,49 +130,58 @@
 
   {#if totalPages > 1}
     <div class="pagination-controls">
-      <button 
-        class="pagination-btn" 
-        onclick={onGoToFirstPage} 
-        disabled={currentPage === 1}
-      >
-        ≪
-      </button>
-      <button 
-        class="pagination-btn" 
-        onclick={onGoToPreviousPage} 
-        disabled={currentPage === 1}
-      >
-        ‹
-      </button>
-      
-      {#each Array.from({length: Math.min(7, totalPages)}, (_, i) => {
-        let start = Math.max(1, currentPage - 3);
-        let end = Math.min(totalPages, start + 6);
-        start = Math.max(1, end - 6);
-        return start + i;
-      }).filter(page => page <= totalPages) as page}
+      <div class="pagination-buttons">
         <button 
-          class="pagination-btn {currentPage === page ? 'active' : ''}" 
-          onclick={() => onGoToPage(page)}
+          class="pagination-btn" 
+          onclick={onGoToFirstPage} 
+          disabled={currentPage === 1}
         >
-          {page}
+          ≪
         </button>
-      {/each}
-      
-      <button 
-        class="pagination-btn" 
-        onclick={onGoToNextPage} 
-        disabled={currentPage === totalPages}
-      >
-        ›
-      </button>
-      <button 
-        class="pagination-btn" 
-        onclick={onGoToLastPage} 
-        disabled={currentPage === totalPages}
-      >
-        ≫
-      </button>
+        <button 
+          class="pagination-btn" 
+          onclick={onGoToPreviousPage} 
+          disabled={currentPage === 1}
+        >
+          ‹
+        </button>
+        
+        {#each Array.from({length: Math.min(7, totalPages)}, (_, i) => {
+          let start = Math.max(1, currentPage - 3);
+          let end = Math.min(totalPages, start + 6);
+          start = Math.max(1, end - 6);
+          return start + i;
+        }).filter(page => page <= totalPages) as page}
+          <button 
+            class="pagination-btn {currentPage === page ? 'active' : ''}" 
+            onclick={() => onGoToPage(page)}
+          >
+            {page}
+          </button>
+        {/each}
+        
+        <button 
+          class="pagination-btn" 
+          onclick={onGoToNextPage} 
+          disabled={currentPage === totalPages}
+        >
+          ›
+        </button>
+        <button 
+          class="pagination-btn" 
+          onclick={onGoToLastPage} 
+          disabled={currentPage === totalPages}
+        >
+          ≫
+        </button>
+      </div>
+      <div class="sort-section">
+        <SortControl 
+          sortField={sortOptions.field}
+          sortOrder={sortOptions.order}
+          onSortChange={onSortChange}
+        />
+      </div>
     </div>
   {/if}
 
@@ -239,4 +253,23 @@
 </div>
 
 <style>
+  .files-header h2 {
+    margin: 0 0 1rem 0;
+  }
+
+  .pagination-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 1rem 0;
+  }
+
+  .pagination-buttons {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .sort-section {
+    /* Sort control positioned on the right of pagination */
+  }
 </style>

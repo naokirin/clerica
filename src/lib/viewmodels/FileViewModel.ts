@@ -1,7 +1,7 @@
 import { writable, derived, type Writable, type Readable } from 'svelte/store';
 import { BaseViewModel } from './BaseViewModel.js';
 import { getFiles, getFilesByDirectory, openFile, revealInFinder, deleteFile } from '../api/files.js';
-import type { File, FileCategory } from '../types.js';
+import type { File, FileCategory, SortOptions } from '../types.js';
 import { getFileCategory } from '../utils.js';
 
 export class FileViewModel extends BaseViewModel {
@@ -12,6 +12,7 @@ export class FileViewModel extends BaseViewModel {
   private _itemsPerPage = 25;
   private _isDeleting: Writable<boolean> = writable(false);
   private _selectedDirectoryId: Writable<string | "all"> = writable("all");
+  private _sortOptions: Writable<SortOptions> = writable({ field: "modified_at", order: "desc" });
 
   public readonly files = this._files;
   public readonly selectedFile = this._selectedFile;
@@ -19,6 +20,7 @@ export class FileViewModel extends BaseViewModel {
   public readonly currentPage = this._currentPage;
   public readonly isDeleting = this._isDeleting;
   public readonly selectedDirectoryId = this._selectedDirectoryId;
+  public readonly sortOptions = this._sortOptions;
 
   // 派生ストア
   public readonly categoryCounts: Readable<Record<FileCategory, number>> = derived(
@@ -76,16 +78,23 @@ export class FileViewModel extends BaseViewModel {
     const targetDirectoryId = directoryId || "all";
     
     const result = await this.executeAsync(async () => {
+      const currentSortOptions = this.getCurrentSortOptions();
       if (targetDirectoryId === "all") {
-        return await getFiles();
+        return await getFiles(currentSortOptions);
       } else {
-        return await getFilesByDirectory(targetDirectoryId);
+        return await getFilesByDirectory(targetDirectoryId, currentSortOptions);
       }
     });
 
     if (result) {
       this._files.set(result);
     }
+  }
+
+  private getCurrentSortOptions(): SortOptions {
+    let currentOptions: SortOptions = { field: "modified_at", order: "desc" };
+    this._sortOptions.subscribe(options => currentOptions = options)();
+    return currentOptions;
   }
 
   public setSelectedDirectoryId(directoryId: string | "all"): void {
@@ -164,5 +173,10 @@ export class FileViewModel extends BaseViewModel {
     
     this._isDeleting.set(false);
     return result !== null;
+  }
+
+  public setSortOptions(options: SortOptions): void {
+    this._sortOptions.set(options);
+    this.loadFiles(); // ソート変更時にファイルを再読み込み
   }
 }

@@ -1,12 +1,13 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { SearchResult, MetadataSearchFilter, MetadataSearchLogic } from "../types.js";
+import type { SearchResult, MetadataSearchFilter, MetadataSearchLogic, SortOptions } from "../types.js";
 
 export async function searchFiles(
   query: string,
   tagIds: string[],
   metadataFilters: MetadataSearchFilter[],
   metadataLogic: MetadataSearchLogic = 'AND',
-  directoryId?: string
+  directoryId?: string,
+  sortOptions?: SortOptions
 ): Promise<SearchResult[]> {
   return await invoke("search_files", {
     query,
@@ -14,5 +15,7 @@ export async function searchFiles(
     metadataFilters,
     metadataLogic,
     directoryId,
+    sortField: sortOptions?.field || "modified_at",
+    sortOrder: sortOptions?.order || "desc"
   });
 }

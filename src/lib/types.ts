@@ -130,3 +130,12 @@ export interface MetadataSearchOptions {
   filters: MetadataSearchFilter[];
   logic: MetadataSearchLogic;
 }
+
+export type SortField = "name" | "size" | "created_at" | "modified_at" | "last_accessed" | "file_type";
+
+export type SortOrder = "asc" | "desc";
+
+export interface SortOptions {
+  field: SortField;
+  order: SortOrder;
+}

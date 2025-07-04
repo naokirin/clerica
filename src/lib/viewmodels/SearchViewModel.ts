@@ -1,7 +1,7 @@
 import { writable, derived, type Writable, type Readable } from 'svelte/store';
 import { BaseViewModel } from './BaseViewModel.js';
 import { searchFiles } from '../api/search.js';
-import type { SearchResult, FileCategory, MetadataSearchFilter, MetadataSearchLogic } from '../types.js';
+import type { SearchResult, FileCategory, MetadataSearchFilter, MetadataSearchLogic, SortOptions } from '../types.js';
 import { getFileCategory } from '../utils.js';
 
 export class SearchViewModel extends BaseViewModel {
@@ -14,6 +14,7 @@ export class SearchViewModel extends BaseViewModel {
   private _currentPage: Writable<number> = writable(1);
   private _itemsPerPage = 25;
   private _selectedDirectoryId: Writable<string | "all"> = writable("all");
+  private _sortOptions: Writable<SortOptions> = writable({ field: "modified_at", order: "desc" });
 
   public readonly searchQuery = this._searchQuery;
   public readonly selectedTags = this._selectedTags;
@@ -23,6 +24,7 @@ export class SearchViewModel extends BaseViewModel {
   public readonly selectedCategory = this._selectedCategory;
   public readonly currentPage = this._currentPage;
   public readonly selectedDirectoryId = this._selectedDirectoryId;
+  public readonly sortOptions = this._sortOptions;
 
   // 派生ストア
   public readonly searchCategoryCounts: Readable<Record<FileCategory, number>> = derived(
@@ -148,7 +150,8 @@ export class SearchViewModel extends BaseViewModel {
       logicUnsub();
       dirUnsub();
 
-      return await searchFiles(query!, tags!, filters!, logic!, directoryId!);
+      const currentSortOptions = this.getCurrentSortOptions();
+      return await searchFiles(query!, tags!, filters!, logic!, directoryId!, currentSortOptions);
     });
 
     if (result) {
@@ -165,5 +168,16 @@ export class SearchViewModel extends BaseViewModel {
     this._searchResults.set([]);
     this._selectedCategory.set("all");
     this._currentPage.set(1);
+  }
+
+  private getCurrentSortOptions(): SortOptions {
+    let currentOptions: SortOptions = { field: "modified_at", order: "desc" };
+    this._sortOptions.subscribe(options => currentOptions = options)();
+    return currentOptions;
+  }
+
+  public setSortOptions(options: SortOptions): void {
+    this._sortOptions.set(options);
+    this.performSearch(); // ソート変更時に検索を再実行
   }
 }

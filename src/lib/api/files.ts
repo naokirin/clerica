@@ -1,12 +1,19 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { File } from "../types.js";
+import type { File, SortOptions } from "../types.js";
 
-export async function getFiles(): Promise<File[]> {
-  return await invoke("get_files");
+export async function getFiles(sortOptions?: SortOptions): Promise<File[]> {
+  return await invoke("get_files", { 
+    sortField: sortOptions?.field || "modified_at",
+    sortOrder: sortOptions?.order || "desc"
+  });
 }
 
-export async function getFilesByDirectory(directoryId: string): Promise<File[]> {
-  return await invoke("get_files_by_directory", { directoryId });
+export async function getFilesByDirectory(directoryId: string, sortOptions?: SortOptions): Promise<File[]> {
+  return await invoke("get_files_by_directory", { 
+    directoryId,
+    sortField: sortOptions?.field || "modified_at",
+    sortOrder: sortOptions?.order || "desc"
+  });
 }
 
 export async function openFile(filePath: string): Promise<void> {

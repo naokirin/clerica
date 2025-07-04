@@ -89,7 +89,20 @@ pub trait DatabaseTrait {
         pool: &SqlitePool,
         directory_id: &str,
     ) -> Result<Vec<File>, sqlx::Error>;
+    async fn get_files_by_directory_sorted(
+        &self,
+        pool: &SqlitePool,
+        directory_id: &str,
+        sort_field: Option<String>,
+        sort_order: Option<String>,
+    ) -> Result<Vec<File>, sqlx::Error>;
     async fn get_all_files(&self, pool: &SqlitePool) -> Result<Vec<File>, sqlx::Error>;
+    async fn get_all_files_sorted(
+        &self,
+        pool: &SqlitePool,
+        sort_field: Option<String>,
+        sort_order: Option<String>,
+    ) -> Result<Vec<File>, sqlx::Error>;
     async fn get_all_tags(&self, pool: &SqlitePool) -> Result<Vec<Tag>, sqlx::Error>;
     async fn create_tag(
         &self,
@@ -329,6 +342,134 @@ impl DatabaseTrait for Database {
 
     async fn get_all_files(&self, pool: &SqlitePool) -> Result<Vec<File>, sqlx::Error> {
         let rows = sqlx::query("SELECT * FROM files ORDER BY name")
+            .fetch_all(pool)
+            .await?;
+
+        let mut files = Vec::new();
+        for row in rows {
+            files.push(File {
+                id: row.get("id"),
+                path: row.get("path"),
+                name: row.get("name"),
+                directory_id: row.get("directory_id"),
+                size: row.get("size"),
+                file_type: row.get("file_type"),
+                created_at: row.get("created_at"),
+                modified_at: row.get("modified_at"),
+                birth_time: row.get("birth_time"),
+                inode: row.get("inode"),
+                is_directory: row.get("is_directory"),
+                created_at_db: row.get("created_at_db"),
+                updated_at_db: row.get("updated_at_db"),
+                file_size: row.get("file_size"),
+                mime_type: row.get("mime_type"),
+                permissions: row.get("permissions"),
+                owner_uid: row.get("owner_uid"),
+                group_gid: row.get("group_gid"),
+                hard_links: row.get("hard_links"),
+                device_id: row.get("device_id"),
+                last_accessed: row.get("last_accessed"),
+                metadata: row.get("metadata"),
+            });
+        }
+
+        Ok(files)
+    }
+
+    async fn get_all_files_sorted(
+        &self,
+        pool: &SqlitePool,
+        sort_field: Option<String>,
+        sort_order: Option<String>,
+    ) -> Result<Vec<File>, sqlx::Error> {
+        let sort_field = sort_field.as_deref().unwrap_or("modified_at");
+        let sort_order = sort_order.as_deref().unwrap_or("desc");
+        
+        let sort_column = match sort_field {
+            "name" => "name",
+            "size" => "size",
+            "created_at" => "created_at",
+            "modified_at" => "modified_at",
+            "last_accessed" => "last_accessed",
+            "file_type" => "file_type",
+            _ => "modified_at",
+        };
+        
+        let order_direction = match sort_order {
+            "asc" => "ASC",
+            _ => "DESC",
+        };
+        
+        let query = format!(
+            "SELECT * FROM files ORDER BY {} {} NULLS LAST",
+            sort_column, order_direction
+        );
+        
+        let rows = sqlx::query(&query).fetch_all(pool).await?;
+
+        let mut files = Vec::new();
+        for row in rows {
+            files.push(File {
+                id: row.get("id"),
+                path: row.get("path"),
+                name: row.get("name"),
+                directory_id: row.get("directory_id"),
+                size: row.get("size"),
+                file_type: row.get("file_type"),
+                created_at: row.get("created_at"),
+                modified_at: row.get("modified_at"),
+                birth_time: row.get("birth_time"),
+                inode: row.get("inode"),
+                is_directory: row.get("is_directory"),
+                created_at_db: row.get("created_at_db"),
+                updated_at_db: row.get("updated_at_db"),
+                file_size: row.get("file_size"),
+                mime_type: row.get("mime_type"),
+                permissions: row.get("permissions"),
+                owner_uid: row.get("owner_uid"),
+                group_gid: row.get("group_gid"),
+                hard_links: row.get("hard_links"),
+                device_id: row.get("device_id"),
+                last_accessed: row.get("last_accessed"),
+                metadata: row.get("metadata"),
+            });
+        }
+
+        Ok(files)
+    }
+
+    async fn get_files_by_directory_sorted(
+        &self,
+        pool: &SqlitePool,
+        directory_id: &str,
+        sort_field: Option<String>,
+        sort_order: Option<String>,
+    ) -> Result<Vec<File>, sqlx::Error> {
+        let sort_field = sort_field.as_deref().unwrap_or("modified_at");
+        let sort_order = sort_order.as_deref().unwrap_or("desc");
+        
+        let sort_column = match sort_field {
+            "name" => "name",
+            "size" => "size",
+            "created_at" => "created_at",
+            "modified_at" => "modified_at",
+            "last_accessed" => "last_accessed",
+            "file_type" => "file_type",
+            _ => "modified_at",
+        };
+        
+        let order_direction = match sort_order {
+            "asc" => "ASC",
+            _ => "DESC",
+        };
+        
+        let query = format!(
+            "SELECT * FROM files WHERE directory_id = ? ORDER BY {} {} NULLS LAST",
+            sort_column, order_direction
+        );
+        
+        let rows = sqlx::query(&query)
+            .bind(directory_id)
             .fetch_all(pool)
             .await?;
 

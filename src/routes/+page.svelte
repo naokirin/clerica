@@ -42,7 +42,8 @@
     categoryCounts,
     filteredFiles,
     totalPages,
-    paginatedFiles 
+    paginatedFiles,
+    sortOptions 
   } = fileViewModel;
   const { 
     searchQuery, 
@@ -55,7 +56,8 @@
     searchCategoryCounts,
     filteredSearchResults,
     searchTotalPages,
-    paginatedSearchResults
+    paginatedSearchResults,
+    sortOptions: searchSortOptions
   } = searchViewModel;
   const { tags, customMetadataKeys } = tagViewModel;
 
@@ -262,6 +264,7 @@
             totalFiles={$filteredFiles.length}
             totalPages={$totalPages}
             selectedDirectoryId={$selectedDirectoryId}
+            sortOptions={$sortOptions}
             onSelectFile={selectFile}
             onSelectCategory={(category) => fileViewModel.selectCategory(category)}
             onGoToPage={(page) => fileViewModel.goToPage(page)}
@@ -269,6 +272,7 @@
             onGoToNextPage={() => fileViewModel.goToNextPage()}
             onGoToFirstPage={() => fileViewModel.goToFirstPage()}
             onGoToLastPage={() => fileViewModel.goToLastPage($totalPages)}
+            onSortChange={(options) => fileViewModel.setSortOptions(options)}
           />
         {/if}
 
@@ -284,6 +288,7 @@
             bind:metadataSearchFilters={$metadataSearchFilters}
             availableMetadataKeys={$customMetadataKeys}
             metadataLogic={$metadataLogic}
+            sortOptions={$searchSortOptions}
             onSearchQueryChange={(query) => searchViewModel.setSearchQuery(query)}
             onSearch={searchFiles}
             onSelectFile={selectFile}
@@ -294,6 +299,7 @@
             onGoToFirstPage={() => searchViewModel.goToFirstPage()}
             onGoToLastPage={() => searchViewModel.goToLastPage($searchTotalPages)}
             onMetadataLogicChange={(logic) => searchViewModel.setMetadataLogic(logic)}
+            onSortChange={(options) => searchViewModel.setSortOptions(options)}
           />
         {/if}
 

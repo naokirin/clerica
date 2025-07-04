@@ -35,7 +35,8 @@ pub async fn search_files(
     tag_ids: Option<Vec<String>>,
     metadata_filters: Vec<MetadataSearchFilter>,
     metadata_logic: Option<String>,
-    sort_by: Option<String>,
+    sort_field: Option<String>,
+    sort_order: Option<String>,
     directory_id: Option<String>,
 ) -> Result<Vec<SearchResult>, String> {
 
@@ -139,13 +140,25 @@ pub async fn search_files(
     sql.push_str(" GROUP BY f.id");
 
     // ソート
-    match sort_by.as_deref() {
-        Some("name") => sql.push_str(" ORDER BY f.name"),
-        Some("modified") => sql.push_str(" ORDER BY f.modified_at DESC"),
-        Some("created") => sql.push_str(" ORDER BY f.created_at DESC"),
-        Some("size") => sql.push_str(" ORDER BY f.size DESC"),
-        _ => sql.push_str(" ORDER BY f.name"),
-    }
+    let sort_field = sort_field.as_deref().unwrap_or("modified_at");
+    let sort_order = sort_order.as_deref().unwrap_or("desc");
+    
+    let sort_column = match sort_field {
+        "name" => "f.name",
+        "size" => "f.size",
+        "created_at" => "f.created_at",
+        "modified_at" => "f.modified_at", 
+        "last_accessed" => "f.last_accessed",
+        "file_type" => "f.file_type",
+        _ => "f.modified_at",
+    };
+    
+    let order_direction = match sort_order {
+        "asc" => "ASC",
+        _ => "DESC",
+    };
+    
+    sql.push_str(&format!(" ORDER BY {} {} NULLS LAST", sort_column, order_direction));
 
 
     // クエリ実行

@@ -76,9 +76,11 @@ pub async fn get_directories(
 #[tauri::command]
 pub async fn get_files(
     pool: State<'_, SqlitePool>,
+    sort_field: Option<String>,
+    sort_order: Option<String>,
 ) -> Result<Vec<File>, String> {
     let db = Database;
-    db.get_all_files(&pool)
+    db.get_all_files_sorted(&pool, sort_field, sort_order)
         .await
         .map_err(|e| e.to_string())
 }
@@ -317,9 +319,11 @@ pub async fn scan_directory(pool: &SqlitePool, directory_id: &str, path: &str) -
 pub async fn get_files_by_directory(
     pool: State<'_, SqlitePool>,
     directory_id: String,
+    sort_field: Option<String>,
+    sort_order: Option<String>,
 ) -> Result<Vec<File>, String> {
     let db = Database;
-    db.get_files_by_directory(&pool, &directory_id)
+    db.get_files_by_directory_sorted(&pool, &directory_id, sort_field, sort_order)
         .await
         .map_err(|e| e.to_string())
 }
