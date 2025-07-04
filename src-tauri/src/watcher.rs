@@ -1,7 +1,7 @@
 use crate::database::{Database, DatabaseTrait, File};
 use sqlx::SqlitePool;
 use notify::{Watcher, RecursiveMode, Event, EventKind};
-use tauri::State;
+use tauri::{State, AppHandle, Emitter};
 use uuid::Uuid;
 use chrono::Utc;
 use std::fs;
@@ -9,6 +9,7 @@ use std::path::{Path, PathBuf};
 use std::sync::{mpsc, Arc, Mutex};
 use std::collections::HashMap;
 use std::thread;
+use serde_json;
 
 pub struct FileWatcher {
     watcher: notify::FsEventWatcher,
@@ -16,14 +17,14 @@ pub struct FileWatcher {
 }
 
 impl FileWatcher {
-    pub fn new(pool: Arc<SqlitePool>) -> Result<Self, notify::Error> {
+    pub fn new(pool: Arc<SqlitePool>, app_handle: Option<AppHandle>) -> Result<Self, notify::Error> {
         let (tx, rx) = mpsc::channel();
         let pool_clone = Arc::clone(&pool);
         
         thread::spawn(move || {
             let rt = tokio::runtime::Runtime::new().unwrap();
             while let Ok(event) = rx.recv() {
-                if let Err(e) = rt.block_on(handle_file_event(&pool_clone, event)) {
+                if let Err(e) = rt.block_on(handle_file_event(&pool_clone, event, app_handle.clone())) {
                     eprintln!("ファイルイベント処理エラー: {}", e);
                 }
             }
@@ -102,84 +103,190 @@ pub async fn stop_watching(
 pub async fn handle_file_event(
     pool: &SqlitePool,
     event: Event,
+    app_handle: Option<AppHandle>,
 ) -> Result<(), String> {
     let db = Database;
     
     match event.kind {
         EventKind::Create(_) => {
-            for path in event.paths {
-                if let Ok(metadata) = fs::metadata(&path) {
-                    let directory_id = find_directory_id_for_path(pool, &path).await?;
-                    
-                    let file = File {
-                        id: Uuid::new_v4().to_string(),
-                        path: path.to_string_lossy().to_string(),
-                        name: path.file_name()
-                            .and_then(|n| n.to_str())
-                            .unwrap_or("unknown")
-                            .to_string(),
-                        directory_id,
-                        size: metadata.len() as i64,
-                        file_type: path.extension()
-                            .and_then(|ext| ext.to_str())
-                            .map(|s| s.to_string()),
-                        created_at: metadata.created()
-                            .ok()
-                            .map(chrono::DateTime::from),
-                        modified_at: metadata.modified()
-                            .ok()
-                            .map(chrono::DateTime::from),
-                        birth_time: None,
-                        inode: None,
-                        is_directory: metadata.is_dir(),
-                        created_at_db: Utc::now(),
-                        updated_at_db: Utc::now(),
-                        file_size: Some(metadata.len() as i64),
-                        mime_type: None,
-                        permissions: None,
-                        owner_uid: None,
-                        group_gid: None,
-                        hard_links: None,
-                        device_id: None,
-                        last_accessed: metadata.accessed()
-                            .ok()
-                            .map(chrono::DateTime::from),
-                        metadata: None,
-                    };
-                    
-                    if let Err(e) = db.add_file(pool, &file).await {
-                        eprintln!("ファイル追加エラー: {}", e);
+            for path in &event.paths {
+                match fs::metadata(&path) {
+                    Ok(metadata) => {
+                        
+                        match find_directory_id_for_path(pool, &path).await {
+                            Ok(directory_id) => {
+                                
+                                let file = create_file_from_metadata(&path, &metadata, &directory_id);
+                                
+                                match db.add_file(pool, &file).await {
+                                    Ok(()) => {
+                                        notify_ui(&app_handle, "file_created", &file.path);
+                                    },
+                                    Err(e) => eprintln!("ファイル追加エラー: {}", e),
+                                }
+                            }
+                            Err(e) => {
+                                eprintln!("ディレクトリID特定エラー: {} (パス: {})", e, path.display());
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        eprintln!("メタデータ取得エラー: {} (パス: {})", e, path.display());
                     }
                 }
             }
         },
         EventKind::Remove(_) => {
-            for path in event.paths {
+            for path in &event.paths {
                 let path_str = path.to_string_lossy().to_string();
-                if let Err(e) = db.remove_file_by_path(pool, &path_str).await {
-                    eprintln!("ファイル削除エラー: {}", e);
+                match db.remove_file_by_path(pool, &path_str).await {
+                    Ok(()) => {
+                        notify_ui(&app_handle, "file_deleted", &path_str);
+                    },
+                    Err(e) => eprintln!("ファイル削除エラー: {}", e),
                 }
             }
         },
         EventKind::Modify(_) => {
-            for path in event.paths {
-                if let Ok(metadata) = fs::metadata(&path) {
-                    let path_str = path.to_string_lossy().to_string();
-                    if let Err(e) = db.update_file_metadata(pool, &path_str, &metadata).await {
-                        eprintln!("ファイル更新エラー: {}", e);
+            for path in &event.paths {
+                match fs::metadata(&path) {
+                    Ok(metadata) => {
+                        let path_str = path.to_string_lossy().to_string();
+                        
+                        // ファイルがデータベースに存在するか確認
+                        match db.file_exists_by_path(pool, &path_str).await {
+                            Ok(exists) => {
+                                if exists {
+                                    // 既存ファイルの更新
+                                    match db.update_file_metadata(pool, &path_str, &metadata).await {
+                                        Ok(()) => {
+                                            notify_ui(&app_handle, "file_modified", &path_str);
+                                        },
+                                        Err(e) => eprintln!("ファイル更新エラー: {}", e),
+                                    }
+                                } else {
+                                    // ディレクトリ外からの移動による新規ファイル
+                                    match find_directory_id_for_path(pool, &path).await {
+                                        Ok(directory_id) => {
+                                            let file = create_file_from_metadata(&path, &metadata, &directory_id);
+                                            match db.add_file(pool, &file).await {
+                                                Ok(()) => {
+                                                    notify_ui(&app_handle, "file_created", &file.path);
+                                                },
+                                                Err(e) => eprintln!("移動ファイル追加エラー: {}", e),
+                                            }
+                                        }
+                                        Err(e) => {
+                                            eprintln!("移動ファイルのディレクトリID特定エラー: {} (パス: {})", e, path.display());
+                                        }
+                                    }
+                                }
+                            }
+                            Err(e) => {
+                                eprintln!("ファイル存在確認エラー: {} (パス: {})", e, path_str);
+                                // エラーの場合は更新を試行
+                                match db.update_file_metadata(pool, &path_str, &metadata).await {
+                                    Ok(()) => {
+                                        notify_ui(&app_handle, "file_modified", &path_str);
+                                    },
+                                    Err(e) => eprintln!("ファイル更新エラー（存在確認失敗後）: {}", e),
+                                }
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        eprintln!("メタデータ取得エラー: {} (パス: {})", e, path.display());
                     }
                 }
             }
         },
-        _ => {},
+        _ => {
+            // 他のイベントは無視
+        },
     }
     
     Ok(())
 }
 
+fn create_file_from_metadata(path: &PathBuf, metadata: &fs::Metadata, directory_id: &str) -> File {
+    use std::os::unix::fs::MetadataExt;
+    
+    File {
+        id: Uuid::new_v4().to_string(),
+        path: path.to_string_lossy().to_string(),
+        name: path.file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("unknown")
+            .to_string(),
+        directory_id: directory_id.to_string(),
+        size: metadata.len() as i64,
+        file_type: path.extension()
+            .and_then(|ext| ext.to_str())
+            .map(|s| s.to_string()),
+        created_at: metadata.created()
+            .ok()
+            .map(chrono::DateTime::from),
+        modified_at: metadata.modified()
+            .ok()
+            .map(chrono::DateTime::from),
+        birth_time: None,
+        inode: Some(metadata.ino() as i64),
+        is_directory: metadata.is_dir(),
+        created_at_db: Utc::now(),
+        updated_at_db: Utc::now(),
+        file_size: Some(metadata.len() as i64),
+        mime_type: infer_mime_type_from_path(path),
+        permissions: Some(format!("{:o}", metadata.mode() & 0o777)),
+        owner_uid: Some(metadata.uid() as i64),
+        group_gid: Some(metadata.gid() as i64),
+        hard_links: Some(metadata.nlink() as i64),
+        device_id: Some(metadata.dev() as i64),
+        last_accessed: metadata.accessed()
+            .ok()
+            .map(chrono::DateTime::from),
+        metadata: None,
+    }
+}
+
+fn infer_mime_type_from_path(path: &PathBuf) -> Option<String> {
+    path.extension()
+        .and_then(|ext| ext.to_str())
+        .map(|ext| {
+            match ext.to_lowercase().as_str() {
+                "txt" => "text/plain",
+                "md" => "text/markdown",
+                "html" | "htm" => "text/html",
+                "css" => "text/css",
+                "js" => "text/javascript",
+                "json" => "application/json",
+                "xml" => "text/xml",
+                "jpg" | "jpeg" => "image/jpeg",
+                "png" => "image/png",
+                "gif" => "image/gif",
+                "pdf" => "application/pdf",
+                _ => "application/octet-stream",
+            }
+            .to_string()
+        })
+}
+
+fn notify_ui(app_handle: &Option<AppHandle>, event_type: &str, file_path: &str) {
+    if let Some(app) = app_handle {
+        let payload = serde_json::json!({
+            "type": event_type,
+            "path": file_path,
+            "timestamp": chrono::Utc::now().timestamp()
+        });
+        
+        if let Err(e) = app.emit("file_system_change", payload) {
+            eprintln!("UI通知エラー: {}", e);
+        }
+    }
+}
+
 async fn find_directory_id_for_path(pool: &SqlitePool, path: &PathBuf) -> Result<String, String> {
     let db = Database;
-    let directories = db.get_all_directories(pool).await.map_err(|e| e.to_string())?;
+    let directories = db.get_directories(pool).await.map_err(|e| e.to_string())?;
     
     for directory in directories {
         if path.starts_with(&directory.path) {

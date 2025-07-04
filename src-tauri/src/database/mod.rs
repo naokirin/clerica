@@ -101,6 +101,7 @@ pub trait DatabaseTrait {
     async fn get_all_directories(&self, pool: &SqlitePool) -> Result<Vec<Directory>, sqlx::Error>;
     async fn remove_file_by_path(&self, pool: &SqlitePool, path: &str) -> Result<(), sqlx::Error>;
     async fn update_file_metadata(&self, pool: &SqlitePool, path: &str, metadata: &std::fs::Metadata) -> Result<(), sqlx::Error>;
+    async fn file_exists_by_path(&self, pool: &SqlitePool, path: &str) -> Result<bool, sqlx::Error>;
 }
 
 pub struct Database;
@@ -627,6 +628,15 @@ impl DatabaseTrait for Database {
         .await?;
         
         Ok(())
+    }
+
+    async fn file_exists_by_path(&self, pool: &SqlitePool, path: &str) -> Result<bool, sqlx::Error> {
+        let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM files WHERE path = ?")
+            .bind(path)
+            .fetch_one(pool)
+            .await?;
+        
+        Ok(count > 0)
     }
 }
 
@@ -1275,5 +1285,49 @@ mod tests {
         
         let file_tags = db.get_file_tags(&pool, "nonexistent_file").await.unwrap();
         assert_eq!(file_tags.len(), 0);
+    }
+
+    #[tokio::test]
+    async fn test_file_exists_by_path() {
+        let pool = setup_test_db().await;
+        let db = Database;
+        
+        let dir = db.add_directory(&pool, "/test", "test").await.unwrap();
+        
+        let file = File {
+            id: "test_file".to_string(),
+            path: "/test/file.txt".to_string(),
+            name: "file.txt".to_string(),
+            directory_id: dir.id.clone(),
+            size: 1024,
+            file_type: Some("txt".to_string()),
+            created_at: Some(Utc::now()),
+            modified_at: Some(Utc::now()),
+            birth_time: None,
+            inode: Some(12345),
+            is_directory: false,
+            created_at_db: Utc::now(),
+            updated_at_db: Utc::now(),
+            file_size: Some(1024),
+            mime_type: Some("text/plain".to_string()),
+            permissions: Some("644".to_string()),
+            owner_uid: Some(1000),
+            group_gid: Some(1000),
+            hard_links: Some(1),
+            device_id: Some(12345),
+            last_accessed: None,
+            metadata: None,
+        };
+        
+        // ファイルを追加
+        db.add_file(&pool, &file).await.unwrap();
+        
+        // ファイルが存在することを確認
+        let exists = db.file_exists_by_path(&pool, "/test/file.txt").await.unwrap();
+        assert!(exists);
+        
+        // 存在しないファイルを確認
+        let not_exists = db.file_exists_by_path(&pool, "/test/nonexistent.txt").await.unwrap();
+        assert!(!not_exists);
     }
 }

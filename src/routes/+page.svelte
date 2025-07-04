@@ -58,8 +58,20 @@
   } = searchViewModel;
   const { tags, customMetadataKeys } = tagViewModel;
 
-  onMount(() => {
+  onMount(async () => {
     // ViewModelが自動的に初期化するため、特別な処理は不要
+    
+    // ファイルシステム変更のリスナーを追加
+    const { listen } = await import('@tauri-apps/api/event');
+    const unlisten = await listen('file_system_change', (event) => {
+      console.log('ファイルシステム変更イベント:', event.payload);
+      // ファイル一覧を再読み込み
+      fileViewModel.loadFiles();
+    });
+    
+    return () => {
+      unlisten();
+    };
   });
 
   onDestroy(() => {

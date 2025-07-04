@@ -8,6 +8,8 @@ use std::path::Path;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 use watcher::FileWatcher;
+use database::DatabaseTrait;
+use tauri::Manager;
 
 
 mod database;
@@ -76,21 +78,48 @@ async fn main() {
         println!("新しいデータベースが作成され、初期化が完了しました。");
     }
 
-    // ファイル監視の初期化
-    let file_watcher = match FileWatcher::new(Arc::new(pool.clone())) {
-        Ok(watcher) => Arc::new(Mutex::new(watcher)),
-        Err(e) => {
-            eprintln!("ファイル監視の初期化エラー: {e}");
-            std::process::exit(1);
-        }
-    };
-
     tauri::Builder::default()
         .plugin(tauri_plugin_sql::Builder::default().build())
         .plugin(tauri_plugin_dialog::init())
-        .manage(pool)
-        .manage(file_watcher)
-        .setup(|_app| Ok(()))
+        .manage(pool.clone())
+        .setup(move |app| {
+            // ファイル監視の初期化（setup内でAppHandleが取得可能）
+            let app_handle = app.handle().clone();
+            let file_watcher = match FileWatcher::new(Arc::new(pool.clone()), Some(app_handle)) {
+                Ok(watcher) => {
+                    Arc::new(Mutex::new(watcher))
+                }
+                Err(e) => {
+                    eprintln!("ファイル監視の初期化エラー: {e}");
+                    std::process::exit(1);
+                }
+            };
+            
+            // 既存のディレクトリの監視を開始
+            let watcher_clone = Arc::clone(&file_watcher);
+            let pool_clone = pool.clone();
+            tauri::async_runtime::spawn(async move {
+                let db = database::Database;
+                match db.get_directories(&pool_clone).await {
+                    Ok(directories) => {
+                        let mut watcher_guard = watcher_clone.lock().unwrap();
+                        for directory in directories {
+                            if let Err(e) = watcher_guard.watch_directory(&directory.id, &directory.path) {
+                                eprintln!("ディレクトリ監視開始エラー: {} ({})", e, directory.path);
+                            } else {
+                                println!("ディレクトリの監視を開始しました: {}", directory.path);
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        eprintln!("既存ディレクトリの取得エラー: {e}");
+                    }
+                }
+            });
+            
+            app.manage(file_watcher);
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             file_manager::add_directory,
             file_manager::remove_directory,

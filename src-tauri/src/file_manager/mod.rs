@@ -1,4 +1,5 @@
 use crate::database::{Database, DatabaseTrait, Directory, File};
+use crate::watcher::FileWatcher;
 use sqlx::SqlitePool;
 use tauri::State;
 use uuid::Uuid;
@@ -8,6 +9,7 @@ use std::fs;
 use std::os::unix::fs::MetadataExt;
 use std::os::unix::fs::PermissionsExt;
 use std::process::Command;
+use std::sync::{Arc, Mutex};
 
 #[cfg(test)]
 mod tests;
@@ -15,6 +17,7 @@ mod tests;
 #[tauri::command]
 pub async fn add_directory(
     pool: State<'_, SqlitePool>,
+    watcher: State<'_, Arc<Mutex<FileWatcher>>>,
     path: String,
     name: String,
 ) -> Result<Directory, String> {
@@ -28,16 +31,44 @@ pub async fn add_directory(
         eprintln!("ファイルスキャンエラー: {e}");
     }
     
+    // ファイル監視を開始
+    let mut watcher_guard = watcher.lock().map_err(|e| e.to_string())?;
+    if let Err(e) = watcher_guard.watch_directory(&directory.id, &path) {
+        eprintln!("ファイル監視開始エラー: {e}");
+    } else {
+        println!("ディレクトリの監視を開始しました: {}", path);
+    }
+    
     Ok(directory)
 }
 
 #[tauri::command]
 pub async fn remove_directory(
     pool: State<'_, SqlitePool>,
+    watcher: State<'_, Arc<Mutex<FileWatcher>>>,
     id: String,
 ) -> Result<(), String> {
     let db = Database;
+    
+    // ファイル監視を停止
+    {
+        let mut watcher_guard = watcher.lock().map_err(|e| e.to_string())?;
+        if let Err(e) = watcher_guard.unwatch_directory(&id) {
+            eprintln!("ファイル監視停止エラー: {e}");
+        }
+    }
+    
     db.remove_directory(&pool, &id)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn get_directories(
+    pool: State<'_, SqlitePool>,
+) -> Result<Vec<Directory>, String> {
+    let db = Database;
+    db.get_directories(&pool)
         .await
         .map_err(|e| e.to_string())
 }
@@ -281,16 +312,6 @@ pub async fn scan_directory(pool: &SqlitePool, directory_id: &str, path: &str) -
     }
     
     Ok(())
-}
-
-#[tauri::command]
-pub async fn get_directories(
-    pool: State<'_, SqlitePool>,
-) -> Result<Vec<Directory>, String> {
-    let db = Database;
-    db.get_directories(&pool)
-        .await
-        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
