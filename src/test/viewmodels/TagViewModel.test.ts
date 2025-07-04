@@ -223,9 +223,9 @@ describe('TagViewModel', () => {
         name: 'updated_priority'
       };
       
-      const result = await tagViewModel.updateExistingCustomMetadataKey('key1', request);
+      const result = await tagViewModel.updateExistingCustomMetadataKey(request);
       
-      expect(mockUpdateCustomMetadataKey).toHaveBeenCalledWith('key1', request);
+      expect(mockUpdateCustomMetadataKey).toHaveBeenCalledWith(request);
       expect(mockGetCustomMetadataKeys).toHaveBeenCalledTimes(2); // initial load + reload
       expect(result).toBe(true);
     });
@@ -238,7 +238,7 @@ describe('TagViewModel', () => {
         name: 'failed_update'
       };
       
-      const result = await tagViewModel.updateExistingCustomMetadataKey('key1', request);
+      const result = await tagViewModel.updateExistingCustomMetadataKey(request);
       
       expect(result).toBe(false);
       expect(get(tagViewModel.error)).toBeTruthy();

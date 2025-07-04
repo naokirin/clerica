@@ -123,3 +123,10 @@ export interface MetadataSearchFilter {
   value: string;
   operator: 'equals' | 'contains' | 'greater_than' | 'less_than' | 'not_equals';
 }
+
+export type MetadataSearchLogic = 'AND' | 'OR';
+
+export interface MetadataSearchOptions {
+  filters: MetadataSearchFilter[];
+  logic: MetadataSearchLogic;
+}

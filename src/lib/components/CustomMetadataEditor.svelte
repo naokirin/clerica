@@ -1,15 +1,15 @@
 <script lang="ts">
   import { Save, X, Edit3, Trash2 } from "lucide-svelte";
-  import { 
-    getCustomMetadataValuesByFile, 
-    setCustomMetadataValue, 
-    deleteCustomMetadataValue 
+  import {
+    getCustomMetadataValuesByFile,
+    setCustomMetadataValue,
+    deleteCustomMetadataValue,
   } from "../api/metadata.js";
-  import type { 
-    CustomMetadataKey, 
-    CustomMetadataValue, 
+  import type {
+    CustomMetadataKey,
+    CustomMetadataValue,
     CustomMetadataDataType,
-    SetCustomMetadataValueRequest 
+    SetCustomMetadataValueRequest,
   } from "../types.js";
 
   interface Props {
@@ -28,7 +28,7 @@
   // 初期データ読み込み
   const loadMetadataValues = async () => {
     if (!fileId) return;
-    
+
     isLoading = true;
     try {
       metadataValues = await getCustomMetadataValuesByFile(fileId);
@@ -49,7 +49,7 @@
 
   // キーに対応する値を取得
   const getValueForKey = (keyId: string): CustomMetadataValue | undefined => {
-    return metadataValues.find(v => v.key_id === keyId);
+    return metadataValues.find((v) => v.key_id === keyId);
   };
 
   // 表示用の値を取得
@@ -128,19 +128,21 @@
       const request: SetCustomMetadataValueRequest = {
         file_id: fileId,
         key_id: key.id,
-        value: value.trim() || null
+        value: value.trim() || null,
       };
 
       await setCustomMetadataValue(request);
-      
+
       // フォーカスを保持するため、loadMetadataValues()を呼ばず直接値を更新
-      const existingValueIndex = metadataValues.findIndex(v => v.key_id === key.id);
+      const existingValueIndex = metadataValues.findIndex(
+        (v) => v.key_id === key.id,
+      );
       if (existingValueIndex !== -1) {
         // 既存の値を更新
         metadataValues[existingValueIndex] = {
           ...metadataValues[existingValueIndex],
           value: value.trim() || null,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         };
       } else {
         // 新しい値を追加
@@ -150,13 +152,14 @@
           key_id: key.id,
           value: value.trim() || null,
           created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         };
         metadataValues.push(newValue);
       }
-      
+
       return true;
     } catch (e) {
+      console.error("値の保存に失敗:", e);
       error = typeof e === "string" ? e : "値の保存に失敗しました";
       return false;
     } finally {
@@ -170,7 +173,7 @@
     if (changeTimers[key.id]) {
       clearTimeout(changeTimers[key.id]);
     }
-    
+
     changeTimers[key.id] = setTimeout(async () => {
       await saveValue(key, value);
       delete changeTimers[key.id];
@@ -181,9 +184,12 @@
   let changeTimers: Record<string, NodeJS.Timeout> = {};
 
   // データ型に応じた表示形式
-  const formatValue = (value: string, dataType: CustomMetadataDataType): string => {
+  const formatValue = (
+    value: string,
+    dataType: CustomMetadataDataType,
+  ): string => {
     if (!value) return "";
-    
+
     switch (dataType) {
       case "boolean":
         const lowerValue = value.toLowerCase();
@@ -214,27 +220,35 @@
   // データ型に応じた入力要素
   const getInputType = (dataType: CustomMetadataDataType): string => {
     switch (dataType) {
-      case "number": return "number";
-      case "date": return "datetime-local";
-      default: return "text";
+      case "number":
+        return "number";
+      case "date":
+        return "datetime-local";
+      default:
+        return "text";
     }
   };
 
   // 入力要素のプレースホルダー
   const getPlaceholder = (key: CustomMetadataKey): string => {
     switch (key.data_type) {
-      case "boolean": return "true/false, yes/no, 1/0";
-      case "date": return "2024-01-01T10:00:00";
-      case "json": return '{"key": "value"}';
-      case "number": return "123.45";
-      default: return `${key.display_name}を入力...`;
+      case "boolean":
+        return "true/false, yes/no, 1/0";
+      case "date":
+        return "2024-01-01T10:00:00";
+      case "json":
+        return '{"key": "value"}';
+      case "number":
+        return "123.45";
+      default:
+        return `${key.display_name}を入力...`;
     }
   };
 </script>
 
 <div class="file-detail-section">
   <h4>カスタムメタデータ</h4>
-  
+
   {#if isLoading}
     <div class="loading">読み込み中...</div>
   {:else if customMetadataKeys.length === 0}
@@ -248,11 +262,11 @@
         {@const currentValue = getValueForKey(key.id)}
         {@const displayValue = getDisplayValue(key)}
         {@const isSaving = savingKeyId === key.id}
-        
+
         <div class="detail-item">
           <span class="detail-label">
-            <span 
-              class="label-text" 
+            <span
+              class="label-text"
               title={key.description || key.display_name}
             >
               {key.display_name}:
@@ -266,9 +280,10 @@
           </span>
           <span class="detail-value">
             {#if key.data_type === "boolean"}
-              <select 
+              <select
                 value={displayValue}
-                onchange={(e) => handleValueChange(key, (e.target as HTMLSelectElement).value)}
+                onchange={(e) =>
+                  handleValueChange(key, (e.target as HTMLSelectElement).value)}
                 class="inline-select"
               >
                 <option value="">選択してください</option>
@@ -278,7 +293,11 @@
             {:else if key.data_type === "json"}
               <textarea
                 value={displayValue}
-                oninput={(e) => handleValueChange(key, (e.target as HTMLTextAreaElement).value)}
+                oninput={(e) =>
+                  handleValueChange(
+                    key,
+                    (e.target as HTMLTextAreaElement).value,
+                  )}
                 placeholder={getPlaceholder(key)}
                 rows="3"
                 class="inline-textarea"
@@ -287,7 +306,8 @@
               <input
                 type={getInputType(key.data_type)}
                 value={displayValue}
-                oninput={(e) => handleValueChange(key, (e.target as HTMLInputElement).value)}
+                oninput={(e) =>
+                  handleValueChange(key, (e.target as HTMLInputElement).value)}
                 placeholder={getPlaceholder(key)}
                 class="inline-input"
               />
@@ -369,25 +389,30 @@
     gap: 4px;
   }
 
-  .inline-input, .inline-select, .inline-textarea {
+  .inline-input,
+  .inline-select,
+  .inline-textarea {
     border: 1px solid #ddd;
     border-radius: 4px;
     padding: 6px 8px;
     font-size: 14px;
     width: 100%;
-    transition: border-color 0.2s, box-shadow 0.2s;
+    transition:
+      border-color 0.2s,
+      box-shadow 0.2s;
   }
 
-  .inline-input:focus, .inline-select:focus, .inline-textarea:focus {
+  .inline-input:focus,
+  .inline-select:focus,
+  .inline-textarea:focus {
     outline: none;
     border-color: #007acc;
     box-shadow: 0 0 0 2px rgba(0, 122, 204, 0.2);
   }
 
-
   .inline-textarea {
     resize: vertical;
-    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
     min-height: 60px;
   }
 
@@ -406,7 +431,6 @@
   .label-text:hover {
     text-decoration-color: #007acc;
   }
-
 
   .error-message {
     background: #f8d7da;

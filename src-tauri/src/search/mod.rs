@@ -34,6 +34,7 @@ pub async fn search_files(
     query: String,
     tag_ids: Option<Vec<String>>,
     metadata_filters: Vec<MetadataSearchFilter>,
+    metadata_logic: Option<String>,
     sort_by: Option<String>,
     directory_id: Option<String>,
 ) -> Result<Vec<SearchResult>, String> {
@@ -93,27 +94,40 @@ pub async fn search_files(
     }
 
     // カスタムメタデータフィルタ
-    for (i, filter) in valid_metadata_filters.iter().enumerate() {
-        let metadata_condition = match filter.operator.as_str() {
-            "equals" => format!("(cmv{i}.key_id = ? AND cmv{i}.value = ?)"),
-            "contains" => format!("(cmv{i}.key_id = ? AND cmv{i}.value LIKE ?)"),
-            "greater_than" => format!(
-                "(cmv{i}.key_id = ? AND CAST(cmv{i}.value AS REAL) > CAST(? AS REAL))"
-            ),
-            "less_than" => format!(
-                "(cmv{i}.key_id = ? AND CAST(cmv{i}.value AS REAL) < CAST(? AS REAL))"
-            ),
-            "not_equals" => format!("(cmv{i}.key_id = ? AND cmv{i}.value != ?)"),
-            _ => format!("(cmv{i}.key_id = ? AND cmv{i}.value = ?)"), // デフォルトは equals
-        };
+    if !valid_metadata_filters.is_empty() {
+        let metadata_logic = metadata_logic.unwrap_or_else(|| "AND".to_string());
+        let mut metadata_conditions = Vec::new();
+        
+        for (i, filter) in valid_metadata_filters.iter().enumerate() {
+            let metadata_condition = match filter.operator.as_str() {
+                "equals" => format!("(cmv{i}.key_id = ? AND cmv{i}.value = ?)"),
+                "contains" => format!("(cmv{i}.key_id = ? AND cmv{i}.value LIKE ?)"),
+                "greater_than" => format!(
+                    "(cmv{i}.key_id = ? AND CAST(cmv{i}.value AS REAL) > CAST(? AS REAL))"
+                ),
+                "less_than" => format!(
+                    "(cmv{i}.key_id = ? AND CAST(cmv{i}.value AS REAL) < CAST(? AS REAL))"
+                ),
+                "not_equals" => format!("(cmv{i}.key_id = ? AND cmv{i}.value != ?)"),
+                _ => format!("(cmv{i}.key_id = ? AND cmv{i}.value = ?)"), // デフォルトは equals
+            };
 
-        conditions.push(metadata_condition);
-        params.push(filter.key_id.clone());
+            metadata_conditions.push(metadata_condition);
+            params.push(filter.key_id.clone());
 
-        if filter.operator == "contains" {
-            params.push(format!("%{}%", filter.value));
-        } else {
-            params.push(filter.value.clone());
+            if filter.operator == "contains" {
+                params.push(format!("%{}%", filter.value));
+            } else {
+                params.push(filter.value.clone());
+            }
+        }
+        
+        if !metadata_conditions.is_empty() {
+            let combined_condition = match metadata_logic.as_str() {
+                "OR" => format!("({})", metadata_conditions.join(" OR ")),
+                _ => format!("({})", metadata_conditions.join(" AND ")),
+            };
+            conditions.push(combined_condition);
         }
     }
 

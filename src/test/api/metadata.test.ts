@@ -58,7 +58,7 @@ describe('metadata API', () => {
   describe('setCustomMetadataValue', () => {
     it('should call invoke with correct command and parameters', async () => {
       mockInvoke.mockResolvedValue(undefined);
-      
+
       const request: SetCustomMetadataValueRequest = {
         fileId: 'file1',
         keyId: 'key1',
@@ -67,12 +67,12 @@ describe('metadata API', () => {
 
       await setCustomMetadataValue(request);
 
-      expect(mockInvoke).toHaveBeenCalledWith('set_custom_metadata_value', request);
+      expect(mockInvoke).toHaveBeenCalledWith('set_custom_metadata_value', { request });
     });
 
     it('should handle different value types', async () => {
       mockInvoke.mockResolvedValue(undefined);
-      
+
       const requests = [
         { fileId: 'file1', keyId: 'text_key', value: 'string value' },
         { fileId: 'file1', keyId: 'number_key', value: '42' },
@@ -82,7 +82,7 @@ describe('metadata API', () => {
 
       for (const request of requests) {
         await setCustomMetadataValue(request);
-        expect(mockInvoke).toHaveBeenCalledWith('set_custom_metadata_value', request);
+        expect(mockInvoke).toHaveBeenCalledWith('set_custom_metadata_value', { request });
       }
     });
 
@@ -123,7 +123,7 @@ describe('metadata API', () => {
   describe('createCustomMetadataKey', () => {
     it('should call invoke with correct command and parameters', async () => {
       mockInvoke.mockResolvedValue(undefined);
-      
+
       const request: CreateCustomMetadataKeyRequest = {
         name: 'priority',
         dataType: 'string'
@@ -131,12 +131,12 @@ describe('metadata API', () => {
 
       await createCustomMetadataKey(request);
 
-      expect(mockInvoke).toHaveBeenCalledWith('create_custom_metadata_key', request);
+      expect(mockInvoke).toHaveBeenCalledWith('create_custom_metadata_key', { request });
     });
 
     it('should handle different data types', async () => {
       mockInvoke.mockResolvedValue(undefined);
-      
+
       const requests: CreateCustomMetadataKeyRequest[] = [
         { name: 'text_field', dataType: 'string' },
         { name: 'number_field', dataType: 'number' },
@@ -146,7 +146,7 @@ describe('metadata API', () => {
 
       for (const request of requests) {
         await createCustomMetadataKey(request);
-        expect(mockInvoke).toHaveBeenCalledWith('create_custom_metadata_key', request);
+        expect(mockInvoke).toHaveBeenCalledWith('create_custom_metadata_key', { request });
       }
     });
 
@@ -166,32 +166,26 @@ describe('metadata API', () => {
   describe('updateCustomMetadataKey', () => {
     it('should call invoke with correct command and parameters', async () => {
       mockInvoke.mockResolvedValue(undefined);
-      
+
       const request: UpdateCustomMetadataKeyRequest = {
         name: 'updated_priority'
       };
 
-      await updateCustomMetadataKey('key1', request);
+      await updateCustomMetadataKey(request);
 
-      expect(mockInvoke).toHaveBeenCalledWith('update_custom_metadata_key', {
-        keyId: 'key1',
-        ...request
-      });
+      expect(mockInvoke).toHaveBeenCalledWith('update_custom_metadata_key', { request });
     });
 
     it('should handle partial updates', async () => {
       mockInvoke.mockResolvedValue(undefined);
-      
+
       const request: UpdateCustomMetadataKeyRequest = {
-        name: 'new_name'
+        display_name: 'new_name'
       };
 
-      await updateCustomMetadataKey('key1', request);
+      await updateCustomMetadataKey(request);
 
-      expect(mockInvoke).toHaveBeenCalledWith('update_custom_metadata_key', {
-        keyId: 'key1',
-        name: 'new_name'
-      });
+      expect(mockInvoke).toHaveBeenCalledWith('update_custom_metadata_key', { request });
     });
 
     it('should propagate errors from invoke', async () => {
@@ -199,10 +193,10 @@ describe('metadata API', () => {
       mockInvoke.mockRejectedValue(error);
 
       const request: UpdateCustomMetadataKeyRequest = {
-        name: 'updated_name'
+        display_name: 'updated_name'
       };
 
-      await expect(updateCustomMetadataKey('key1', request)).rejects.toThrow('Failed to update metadata key');
+      await expect(updateCustomMetadataKey(request)).rejects.toThrow('Failed to update metadata key');
     });
   });
 

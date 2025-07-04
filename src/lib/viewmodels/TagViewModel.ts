@@ -1,16 +1,16 @@
 import { writable, type Writable } from 'svelte/store';
 import { BaseViewModel } from './BaseViewModel.js';
 import { getTags, createTag, getCustomMetadataKeys } from '../api/tags.js';
-import { 
-  createCustomMetadataKey, 
-  updateCustomMetadataKey, 
-  deleteCustomMetadataKey 
+import {
+  createCustomMetadataKey,
+  updateCustomMetadataKey,
+  deleteCustomMetadataKey
 } from '../api/metadata.js';
-import type { 
-  Tag, 
-  CustomMetadataKey, 
-  CreateCustomMetadataKeyRequest, 
-  UpdateCustomMetadataKeyRequest 
+import type {
+  Tag,
+  CustomMetadataKey,
+  CreateCustomMetadataKeyRequest,
+  UpdateCustomMetadataKeyRequest
 } from '../types.js';
 
 export class TagViewModel extends BaseViewModel {
@@ -73,11 +73,10 @@ export class TagViewModel extends BaseViewModel {
   }
 
   public async updateExistingCustomMetadataKey(
-    keyId: string, 
     request: UpdateCustomMetadataKeyRequest
   ): Promise<boolean> {
     const result = await this.executeAsync(async () => {
-      await updateCustomMetadataKey(keyId, request);
+      await updateCustomMetadataKey(request);
       return true;
     });
 

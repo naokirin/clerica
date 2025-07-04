@@ -1,16 +1,16 @@
 <script lang="ts">
   import { confirm } from "@tauri-apps/plugin-dialog";
   import { Plus, Edit, Trash2, Save, X } from "lucide-svelte";
-  import { 
-    createCustomMetadataKey, 
-    updateCustomMetadataKey, 
-    deleteCustomMetadataKey 
+  import {
+    createCustomMetadataKey,
+    updateCustomMetadataKey,
+    deleteCustomMetadataKey,
   } from "../api/metadata.js";
-  import type { 
-    CustomMetadataKey, 
-    CustomMetadataDataType, 
-    CreateCustomMetadataKeyRequest, 
-    UpdateCustomMetadataKeyRequest 
+  import type {
+    CustomMetadataKey,
+    CustomMetadataDataType,
+    CreateCustomMetadataKeyRequest,
+    UpdateCustomMetadataKeyRequest,
   } from "../types.js";
 
   interface Props {
@@ -30,7 +30,7 @@
     description: "",
     is_required: false,
     default_value: "",
-    validation_pattern: ""
+    validation_pattern: "",
   });
 
   // エラー状態
@@ -38,12 +38,16 @@
   let isSubmitting = $state(false);
 
   // データ型の選択肢
-  const dataTypes: { value: CustomMetadataDataType; label: string; description: string }[] = [
+  const dataTypes: {
+    value: CustomMetadataDataType;
+    label: string;
+    description: string;
+  }[] = [
     { value: "text", label: "テキスト", description: "文字列値" },
     { value: "number", label: "数値", description: "整数・小数点数" },
     { value: "date", label: "日付", description: "日付・時刻" },
     { value: "boolean", label: "真偽値", description: "true/false" },
-    { value: "json", label: "JSON", description: "構造化データ" }
+    { value: "json", label: "JSON", description: "構造化データ" },
   ];
 
   // フォームリセット
@@ -55,7 +59,7 @@
       description: "",
       is_required: false,
       default_value: "",
-      validation_pattern: ""
+      validation_pattern: "",
     };
     error = "";
   };
@@ -76,7 +80,7 @@
       description: key.description || "",
       is_required: key.is_required,
       default_value: key.default_value || "",
-      validation_pattern: key.validation_pattern || ""
+      validation_pattern: key.validation_pattern || "",
     };
     editingKeyId = key.id;
     showCreateForm = true;
@@ -101,7 +105,8 @@
       return false;
     }
     if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(formData.name)) {
-      error = "名前は英数字とアンダースコアのみ使用可能で、数字から始められません";
+      error =
+        "名前は英数字とアンダースコアのみ使用可能で、数字から始められません";
       return false;
     }
     return true;
@@ -120,14 +125,17 @@
         description: formData.description.trim() || null,
         is_required: formData.is_required,
         default_value: formData.default_value.trim() || null,
-        validation_pattern: formData.validation_pattern.trim() || null
+        validation_pattern: formData.validation_pattern.trim() || null,
       };
 
       await createCustomMetadataKey(request);
       onKeysUpdated();
       cancelForm();
     } catch (e) {
-      error = typeof e === "string" ? e : "カスタムメタデータキーの作成に失敗しました";
+      error =
+        typeof e === "string"
+          ? e
+          : "カスタムメタデータキーの作成に失敗しました";
     } finally {
       isSubmitting = false;
     }
@@ -146,14 +154,17 @@
         description: formData.description.trim() || null,
         is_required: formData.is_required,
         default_value: formData.default_value.trim() || null,
-        validation_pattern: formData.validation_pattern.trim() || null
+        validation_pattern: formData.validation_pattern.trim() || null,
       };
 
-      await updateCustomMetadataKey(editingKeyId, request);
+      await updateCustomMetadataKey(request);
       onKeysUpdated();
       cancelForm();
     } catch (e) {
-      error = typeof e === "string" ? e : "カスタムメタデータキーの更新に失敗しました";
+      error =
+        typeof e === "string"
+          ? e
+          : "カスタムメタデータキーの更新に失敗しました";
     } finally {
       isSubmitting = false;
     }
@@ -164,12 +175,12 @@
     try {
       const confirmed = await confirm(
         `カスタムメタデータキー「${keyName}」を削除しますか？\n\n関連するすべての値も削除されます。\nこの操作は取り消すことができません。`,
-        { 
-          title: '確認', 
-          kind: 'warning' 
-        }
+        {
+          title: "確認",
+          kind: "warning",
+        },
       );
-      
+
       if (!confirmed) {
         return;
       }
@@ -179,7 +190,11 @@
     } catch (e) {
       console.error("削除処理でエラーが発生しました:", e);
       // Tauri API のエラーの場合もalertで表示
-      alert(typeof e === "string" ? e : "カスタムメタデータキーの削除に失敗しました");
+      alert(
+        typeof e === "string"
+          ? e
+          : "カスタムメタデータキーの削除に失敗しました",
+      );
     }
   };
 
@@ -195,7 +210,7 @@
 
   // データ型の説明を取得
   const getDataTypeInfo = (dataType: CustomMetadataDataType) => {
-    return dataTypes.find(dt => dt.value === dataType);
+    return dataTypes.find((dt) => dt.value === dataType);
   };
 </script>
 
@@ -212,7 +227,7 @@
   {#if showCreateForm}
     <div class="form-section">
       <h4>{editingKeyId ? "キーを編集" : "新しいキーを作成"}</h4>
-      
+
       {#if error}
         <div class="error-message">{error}</div>
       {/if}
@@ -246,7 +261,11 @@
 
           <div class="form-group">
             <label for="data_type">データ型 *</label>
-            <select id="data_type" bind:value={formData.data_type} disabled={isSubmitting}>
+            <select
+              id="data_type"
+              bind:value={formData.data_type}
+              disabled={isSubmitting}
+            >
               {#each dataTypes as dataType}
                 <option value={dataType.value}>
                   {dataType.label} - {dataType.description}
@@ -307,7 +326,12 @@
             <Save size={16} />
             {isSubmitting ? "保存中..." : editingKeyId ? "更新" : "作成"}
           </button>
-          <button type="button" class="cancel-button" onclick={cancelForm} disabled={isSubmitting}>
+          <button
+            type="button"
+            class="cancel-button"
+            onclick={cancelForm}
+            disabled={isSubmitting}
+          >
             <X size={16} />
             キャンセル
           </button>
@@ -333,15 +357,23 @@
                 <code>{key.name}</code>
               </div>
               <div class="key-actions">
-                <button class="edit-btn" onclick={() => startEdit(key)} title="編集">
+                <button
+                  class="edit-btn"
+                  onclick={() => startEdit(key)}
+                  title="編集"
+                >
                   <Edit size={14} />
                 </button>
-                <button class="delete-btn" onclick={() => deleteKey(key.id, key.display_name)} title="削除">
+                <button
+                  class="delete-btn"
+                  onclick={() => deleteKey(key.id, key.display_name)}
+                  title="削除"
+                >
                   <Trash2 size={14} />
                 </button>
               </div>
             </div>
-            
+
             <div class="key-details">
               <div class="detail-row">
                 <span class="label">データ型:</span>
@@ -350,21 +382,21 @@
                   {key.is_required ? " (必須)" : ""}
                 </span>
               </div>
-              
+
               {#if key.description}
                 <div class="detail-row">
                   <span class="label">説明:</span>
                   <span class="value">{key.description}</span>
                 </div>
               {/if}
-              
+
               {#if key.default_value}
                 <div class="detail-row">
                   <span class="label">デフォルト値:</span>
                   <span class="value">{key.default_value}</span>
                 </div>
               {/if}
-              
+
               {#if key.validation_pattern}
                 <div class="detail-row">
                   <span class="label">バリデーション:</span>

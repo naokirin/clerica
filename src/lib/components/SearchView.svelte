@@ -18,8 +18,8 @@
     currentPage: number;
     totalPages: number;
     metadataSearchFilters: MetadataSearchFilter[];
-    availableMetadataKeys: CustomMetadataKey[];
     metadataLogic: 'AND' | 'OR';
+    availableMetadataKeys: CustomMetadataKey[];
     onSearchQueryChange: (query: string) => void;
     onSearch: () => void;
     onSelectFile: (file: any) => void;
@@ -41,8 +41,8 @@
     currentPage,
     totalPages,
     metadataSearchFilters = $bindable(),
-    availableMetadataKeys,
     metadataLogic,
+    availableMetadataKeys,
     onSearchQueryChange,
     onSearch,
     onSelectFile,
@@ -158,8 +158,6 @@
   ];
 
   const itemsPerPage = 25;
-  
-  // メタデータ検索のロジック（AND/OR）はpropsから受け取る
 
   function getOperatorLabel(operator: string): string {
     switch (operator) {
