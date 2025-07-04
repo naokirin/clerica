@@ -149,13 +149,13 @@ pub async fn handle_file_event(
         },
         EventKind::Modify(_) => {
             for path in &event.paths {
+                println!("ファイル変更検知: {}", path.display());
                 match fs::metadata(&path) {
                     Ok(metadata) => {
                         use std::os::unix::fs::MetadataExt;
                         let path_str = path.to_string_lossy().to_string();
                         let inode = metadata.ino() as i64;
                         let device_id = Some(metadata.dev() as i64);
-                        println!("ファイル変更検知: {}", path.display());
                         
                         // パスによる存在確認
                         match db.file_exists_by_path(pool, &path_str).await {
@@ -237,7 +237,18 @@ pub async fn handle_file_event(
                         }
                     }
                     Err(e) => {
-                        eprintln!("メタデータ取得エラー: {} (パス: {})", e, path.display());
+                        // ファイルが存在しない場合（ディレクトリ外への移動）
+                        let path_str = path.to_string_lossy().to_string();
+                        println!("ファイル不存在によるメタデータ取得エラー: {} (パス: {})", e, path.display());
+                        
+                        // データベースから該当ファイルを削除
+                        match db.remove_file_by_path(pool, &path_str).await {
+                            Ok(()) => {
+                                println!("ディレクトリ外移動によりファイルレコード削除: {}", path_str);
+                                notify_ui(&app_handle, "file_deleted", &path_str);
+                            },
+                            Err(e) => eprintln!("移動ファイル削除エラー: {}", e),
+                        }
                     }
                 }
             }
