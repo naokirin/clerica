@@ -36,7 +36,7 @@ pub async fn add_directory(
     if let Err(e) = watcher_guard.watch_directory(&directory.id, &path) {
         eprintln!("ファイル監視開始エラー: {e}");
     } else {
-        println!("ディレクトリの監視を開始しました: {}", path);
+        println!("ディレクトリの監視を開始しました: {path}");
     }
     
     Ok(directory)
@@ -134,8 +134,7 @@ pub async fn delete_file(
     let result = Command::new("osascript")
         .arg("-e")
         .arg(format!(
-            "tell application \"Finder\" to move POSIX file \"{}\" to trash",
-            file_path
+            "tell application \"Finder\" to move POSIX file \"{file_path}\" to trash"
         ))
         .output();
     

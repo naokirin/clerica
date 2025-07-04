@@ -57,8 +57,7 @@ pub async fn search_files(
     if has_metadata_filters {
         for (i, _) in valid_metadata_filters.iter().enumerate() {
             sql.push_str(&format!(
-                " LEFT JOIN custom_metadata_values cmv{} ON f.id = cmv{}.file_id",
-                i, i
+                " LEFT JOIN custom_metadata_values cmv{i} ON f.id = cmv{i}.file_id"
             ));
         }
     }
@@ -96,18 +95,16 @@ pub async fn search_files(
     // カスタムメタデータフィルタ
     for (i, filter) in valid_metadata_filters.iter().enumerate() {
         let metadata_condition = match filter.operator.as_str() {
-            "equals" => format!("(cmv{}.key_id = ? AND cmv{}.value = ?)", i, i),
-            "contains" => format!("(cmv{}.key_id = ? AND cmv{}.value LIKE ?)", i, i),
+            "equals" => format!("(cmv{i}.key_id = ? AND cmv{i}.value = ?)"),
+            "contains" => format!("(cmv{i}.key_id = ? AND cmv{i}.value LIKE ?)"),
             "greater_than" => format!(
-                "(cmv{}.key_id = ? AND CAST(cmv{}.value AS REAL) > CAST(? AS REAL))",
-                i, i
+                "(cmv{i}.key_id = ? AND CAST(cmv{i}.value AS REAL) > CAST(? AS REAL))"
             ),
             "less_than" => format!(
-                "(cmv{}.key_id = ? AND CAST(cmv{}.value AS REAL) < CAST(? AS REAL))",
-                i, i
+                "(cmv{i}.key_id = ? AND CAST(cmv{i}.value AS REAL) < CAST(? AS REAL))"
             ),
-            "not_equals" => format!("(cmv{}.key_id = ? AND cmv{}.value != ?)", i, i),
-            _ => format!("(cmv{}.key_id = ? AND cmv{}.value = ?)", i, i), // デフォルトは equals
+            "not_equals" => format!("(cmv{i}.key_id = ? AND cmv{i}.value != ?)"),
+            _ => format!("(cmv{i}.key_id = ? AND cmv{i}.value = ?)"), // デフォルトは equals
         };
 
         conditions.push(metadata_condition);

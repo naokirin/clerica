@@ -34,7 +34,7 @@ impl ThumbnailGenerator {
         // キャッシュディレクトリが存在しない場合は作成
         if !cache_dir.exists() {
             std::fs::create_dir_all(&cache_dir).map_err(|e| ThumbnailError {
-                message: format!("Failed to create cache directory: {}", e),
+                message: format!("Failed to create cache directory: {e}"),
             })?;
         }
 
@@ -50,7 +50,7 @@ impl ThumbnailGenerator {
             let home = env::var("HOME").map_err(|_| ThumbnailError {
                 message: "Failed to get home directory".to_string(),
             })?;
-            PathBuf::from(format!("{}/Library/Caches/Clerica/thumbnails", home))
+            PathBuf::from(format!("{home}/Library/Caches/Clerica/thumbnails"))
         };
 
         Ok(cache_dir)
@@ -62,7 +62,7 @@ impl ThumbnailGenerator {
             "{:x}",
             md5::compute(video_path.to_string_lossy().as_bytes())
         );
-        let thumbnail_name = format!("{}_{}.jpg", file_name, hash);
+        let thumbnail_name = format!("{file_name}_{hash}.jpg");
         self.cache_dir.join(thumbnail_name)
     }
 
@@ -89,13 +89,13 @@ impl ThumbnailGenerator {
             ])
             .output()
             .map_err(|e| ThumbnailError {
-                message: format!("Failed to execute ffmpeg: {}", e),
+                message: format!("Failed to execute ffmpeg: {e}"),
             })?;
 
         if !output.status.success() {
             let error_message = String::from_utf8_lossy(&output.stderr);
             return Err(ThumbnailError {
-                message: format!("ffmpeg failed: {}", error_message),
+                message: format!("ffmpeg failed: {error_message}"),
             });
         }
 
@@ -112,14 +112,14 @@ impl ThumbnailGenerator {
         let max_age = std::time::Duration::from_secs(10 * 24 * 60 * 60); // 10日
 
         let entries = std::fs::read_dir(&self.cache_dir).map_err(|e| ThumbnailError {
-            message: format!("Failed to read cache directory: {}", e),
+            message: format!("Failed to read cache directory: {e}"),
         })?;
 
         let now = std::time::SystemTime::now();
 
         for entry in entries {
             let entry = entry.map_err(|e| ThumbnailError {
-                message: format!("Failed to read directory entry: {}", e),
+                message: format!("Failed to read directory entry: {e}"),
             })?;
 
             let path = entry.path();
@@ -197,7 +197,7 @@ impl ThumbnailGenerator {
             "{:x}",
             md5::compute(audio_path.to_string_lossy().as_bytes())
         );
-        let thumbnail_name = format!("audio_{}_{}.jpg", file_name, hash);
+        let thumbnail_name = format!("audio_{file_name}_{hash}.jpg");
         self.cache_dir.join(thumbnail_name)
     }
 
@@ -215,11 +215,11 @@ impl ThumbnailGenerator {
 
         let tagged_file = Probe::open(audio_path)
             .map_err(|e| ThumbnailError {
-                message: format!("Failed to open audio file: {}", e),
+                message: format!("Failed to open audio file: {e}"),
             })?
             .read()
             .map_err(|e| ThumbnailError {
-                message: format!("Failed to read audio file: {}", e),
+                message: format!("Failed to read audio file: {e}"),
             })?;
 
         // アルバムアートを取得
@@ -232,7 +232,7 @@ impl ThumbnailGenerator {
 
         // 画像データをファイルに保存
         std::fs::write(&thumbnail_path, picture.data()).map_err(|e| ThumbnailError {
-            message: format!("Failed to write album art: {}", e),
+            message: format!("Failed to write album art: {e}"),
         })?;
 
         Ok(thumbnail_path)
@@ -242,12 +242,12 @@ impl ThumbnailGenerator {
         let mut total_size = 0;
 
         let entries = std::fs::read_dir(&self.cache_dir).map_err(|e| ThumbnailError {
-            message: format!("Failed to read cache directory: {}", e),
+            message: format!("Failed to read cache directory: {e}"),
         })?;
 
         for entry in entries {
             let entry = entry.map_err(|e| ThumbnailError {
-                message: format!("Failed to read directory entry: {}", e),
+                message: format!("Failed to read directory entry: {e}"),
             })?;
 
             let path = entry.path();
@@ -270,7 +270,7 @@ impl ThumbnailGenerator {
             "{:x}",
             md5::compute(archive_path.to_string_lossy().as_bytes())
         );
-        let thumbnail_name = format!("archive_{}_{}.jpg", file_name, hash);
+        let thumbnail_name = format!("archive_{file_name}_{hash}.jpg");
         self.cache_dir.join(thumbnail_name)
     }
 
@@ -279,19 +279,19 @@ impl ThumbnailGenerator {
         archive_path: &Path,
     ) -> Result<(String, Vec<u8>), ThumbnailError> {
         let file = File::open(archive_path).map_err(|e| ThumbnailError {
-            message: format!("Failed to open archive file: {}", e),
+            message: format!("Failed to open archive file: {e}"),
         })?;
 
         let reader = BufReader::new(file);
         let mut archive = ZipArchive::new(reader).map_err(|e| ThumbnailError {
-            message: format!("Failed to read ZIP archive: {}", e),
+            message: format!("Failed to read ZIP archive: {e}"),
         })?;
 
         // アーカイブ内のファイル名を取得してソート
         let mut file_names: Vec<String> = Vec::new();
         for i in 0..archive.len() {
             let file = archive.by_index(i).map_err(|e| ThumbnailError {
-                message: format!("Failed to read file from archive: {}", e),
+                message: format!("Failed to read file from archive: {e}"),
             })?;
             file_names.push(file.name().to_string());
         }
@@ -304,12 +304,12 @@ impl ThumbnailGenerator {
             let file_path = Path::new(&file_name);
             if Self::is_image_file(file_path) {
                 let mut file = archive.by_name(&file_name).map_err(|e| ThumbnailError {
-                    message: format!("Failed to read file from archive: {}", e),
+                    message: format!("Failed to read file from archive: {e}"),
                 })?;
 
                 let mut buffer = Vec::new();
                 file.read_to_end(&mut buffer).map_err(|e| ThumbnailError {
-                    message: format!("Failed to read file contents: {}", e),
+                    message: format!("Failed to read file contents: {e}"),
                 })?;
 
                 return Ok((file_name, buffer));
@@ -329,7 +329,7 @@ impl ThumbnailGenerator {
         let archive = RarArchive::new(archive_path.to_str().unwrap())
             .open_for_processing()
             .map_err(|e| ThumbnailError {
-                message: format!("Failed to open RAR archive: {}", e),
+                message: format!("Failed to open RAR archive: {e}"),
             })?;
 
         // アーカイブ内のファイル名を取得してソート
@@ -343,13 +343,13 @@ impl ThumbnailGenerator {
                         file_names.push(header.entry().filename.to_string_lossy().to_string());
                     }
                     archive_cursor = header.skip().map_err(|e| ThumbnailError {
-                        message: format!("Failed to skip RAR entry: {}", e),
+                        message: format!("Failed to skip RAR entry: {e}"),
                     })?;
                 }
                 Ok(None) => break, // アーカイブの終端
                 Err(e) => {
                     return Err(ThumbnailError {
-                        message: format!("Failed to read RAR header: {}", e),
+                        message: format!("Failed to read RAR header: {e}"),
                     })
                 }
             }
@@ -366,7 +366,7 @@ impl ThumbnailGenerator {
                 let archive = RarArchive::new(archive_path.to_str().unwrap())
                     .open_for_processing()
                     .map_err(|e| ThumbnailError {
-                        message: format!("Failed to reopen RAR archive: {}", e),
+                        message: format!("Failed to reopen RAR archive: {e}"),
                     })?;
 
                 let mut archive_cursor = archive;
@@ -376,19 +376,19 @@ impl ThumbnailGenerator {
                         Ok(Some(header)) => {
                             if header.entry().filename.to_string_lossy() == file_name {
                                 let (data, _rest) = header.read().map_err(|e| ThumbnailError {
-                                    message: format!("Failed to read RAR file contents: {}", e),
+                                    message: format!("Failed to read RAR file contents: {e}"),
                                 })?;
                                 return Ok((file_name, data));
                             } else {
                                 archive_cursor = header.skip().map_err(|e| ThumbnailError {
-                                    message: format!("Failed to skip RAR entry: {}", e),
+                                    message: format!("Failed to skip RAR entry: {e}"),
                                 })?;
                             }
                         }
                         Ok(None) => break,
                         Err(e) => {
                             return Err(ThumbnailError {
-                                message: format!("Failed to read RAR header: {}", e),
+                                message: format!("Failed to read RAR header: {e}"),
                             })
                         }
                     }
@@ -407,7 +407,7 @@ impl ThumbnailGenerator {
         is_gzipped: bool,
     ) -> Result<(String, Vec<u8>), ThumbnailError> {
         let file = File::open(archive_path).map_err(|e| ThumbnailError {
-            message: format!("Failed to open tar file: {}", e),
+            message: format!("Failed to open tar file: {e}"),
         })?;
 
         let mut file_names: Vec<String> = Vec::new();
@@ -418,10 +418,10 @@ impl ThumbnailGenerator {
 
             // ファイル名を収集
             for entry in archive.entries().map_err(|e| ThumbnailError {
-                message: format!("Failed to read tar.gz entries: {}", e),
+                message: format!("Failed to read tar.gz entries: {e}"),
             })? {
                 let entry = entry.map_err(|e| ThumbnailError {
-                    message: format!("Failed to read tar.gz entry: {}", e),
+                    message: format!("Failed to read tar.gz entry: {e}"),
                 })?;
 
                 if entry.header().entry_type().is_file() {
@@ -435,10 +435,10 @@ impl ThumbnailGenerator {
 
             // ファイル名を収集
             for entry in archive.entries().map_err(|e| ThumbnailError {
-                message: format!("Failed to read tar entries: {}", e),
+                message: format!("Failed to read tar entries: {e}"),
             })? {
                 let entry = entry.map_err(|e| ThumbnailError {
-                    message: format!("Failed to read tar entry: {}", e),
+                    message: format!("Failed to read tar entry: {e}"),
                 })?;
 
                 if entry.header().entry_type().is_file() {
@@ -458,7 +458,7 @@ impl ThumbnailGenerator {
             if Self::is_image_file(file_path) {
                 // tarファイルを再度開いて対象ファイルを抽出
                 let file = File::open(archive_path).map_err(|e| ThumbnailError {
-                    message: format!("Failed to reopen tar file: {}", e),
+                    message: format!("Failed to reopen tar file: {e}"),
                 })?;
 
                 if is_gzipped {
@@ -466,17 +466,17 @@ impl ThumbnailGenerator {
                     let mut archive = TarArchive::new(decoder);
 
                     for entry in archive.entries().map_err(|e| ThumbnailError {
-                        message: format!("Failed to read tar.gz entries: {}", e),
+                        message: format!("Failed to read tar.gz entries: {e}"),
                     })? {
                         let mut entry = entry.map_err(|e| ThumbnailError {
-                            message: format!("Failed to read tar.gz entry: {}", e),
+                            message: format!("Failed to read tar.gz entry: {e}"),
                         })?;
 
                         if let Ok(path) = entry.path() {
                             if path.to_string_lossy() == file_name {
                                 let mut buffer = Vec::new();
                                 entry.read_to_end(&mut buffer).map_err(|e| ThumbnailError {
-                                    message: format!("Failed to read tar.gz file contents: {}", e),
+                                    message: format!("Failed to read tar.gz file contents: {e}"),
                                 })?;
                                 return Ok((file_name, buffer));
                             }
@@ -486,17 +486,17 @@ impl ThumbnailGenerator {
                     let mut archive = TarArchive::new(file);
 
                     for entry in archive.entries().map_err(|e| ThumbnailError {
-                        message: format!("Failed to read tar entries: {}", e),
+                        message: format!("Failed to read tar entries: {e}"),
                     })? {
                         let mut entry = entry.map_err(|e| ThumbnailError {
-                            message: format!("Failed to read tar entry: {}", e),
+                            message: format!("Failed to read tar entry: {e}"),
                         })?;
 
                         if let Ok(path) = entry.path() {
                             if path.to_string_lossy() == file_name {
                                 let mut buffer = Vec::new();
                                 entry.read_to_end(&mut buffer).map_err(|e| ThumbnailError {
-                                    message: format!("Failed to read tar file contents: {}", e),
+                                    message: format!("Failed to read tar file contents: {e}"),
                                 })?;
                                 return Ok((file_name, buffer));
                             }
@@ -557,7 +557,7 @@ impl ThumbnailGenerator {
             }
             _ => {
                 return Err(ThumbnailError {
-                    message: format!("Unsupported archive format: {}", extension),
+                    message: format!("Unsupported archive format: {extension}"),
                 });
             }
         };
@@ -565,7 +565,7 @@ impl ThumbnailGenerator {
         // 画像データを一時的にファイルに保存
         let temp_image_path = thumbnail_path.with_extension("temp");
         std::fs::write(&temp_image_path, image_data).map_err(|e| ThumbnailError {
-            message: format!("Failed to write temporary image file: {}", e),
+            message: format!("Failed to write temporary image file: {e}"),
         })?;
 
         // ffmpegを使用してサムネイルを生成
@@ -583,7 +583,7 @@ impl ThumbnailGenerator {
             ])
             .output()
             .map_err(|e| ThumbnailError {
-                message: format!("Failed to execute ffmpeg: {}", e),
+                message: format!("Failed to execute ffmpeg: {e}"),
             })?;
 
         // 一時ファイルを削除
@@ -592,7 +592,7 @@ impl ThumbnailGenerator {
         if !output.status.success() {
             let error_message = String::from_utf8_lossy(&output.stderr);
             return Err(ThumbnailError {
-                message: format!("ffmpeg failed: {}", error_message),
+                message: format!("ffmpeg failed: {error_message}"),
             });
         }
 

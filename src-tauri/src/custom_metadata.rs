@@ -70,7 +70,7 @@ pub async fn create_custom_metadata_key(
 
     match db.create_custom_metadata_key(&pool, &key).await {
         Ok(created_key) => Ok(created_key),
-        Err(e) => Err(format!("カスタムメタデータキーの作成に失敗しました: {}", e)),
+        Err(e) => Err(format!("カスタムメタデータキーの作成に失敗しました: {e}")),
     }
 }
 
@@ -82,7 +82,7 @@ pub async fn get_custom_metadata_keys(
     let db = Database;
     match db.get_all_custom_metadata_keys(&pool).await {
         Ok(keys) => Ok(keys),
-        Err(e) => Err(format!("カスタムメタデータキーの取得に失敗しました: {}", e)),
+        Err(e) => Err(format!("カスタムメタデータキーの取得に失敗しました: {e}")),
     }
 }
 
@@ -106,7 +106,7 @@ pub async fn update_custom_metadata_key(
     // 既存のキーを取得してnameを保持
     let keys = match db.get_all_custom_metadata_keys(&pool).await {
         Ok(keys) => keys,
-        Err(e) => return Err(format!("カスタムメタデータキーの取得に失敗しました: {}", e)),
+        Err(e) => return Err(format!("カスタムメタデータキーの取得に失敗しました: {e}")),
     };
 
     let existing_key = keys.iter().find(|k| k.id == request.id);
@@ -130,7 +130,7 @@ pub async fn update_custom_metadata_key(
 
     match db.update_custom_metadata_key(&pool, &updated_key).await {
         Ok(key) => Ok(key),
-        Err(e) => Err(format!("カスタムメタデータキーの更新に失敗しました: {}", e)),
+        Err(e) => Err(format!("カスタムメタデータキーの更新に失敗しました: {e}")),
     }
 }
 
@@ -143,7 +143,7 @@ pub async fn delete_custom_metadata_key(
     let db = Database;
     match db.delete_custom_metadata_key(&pool, &key_id).await {
         Ok(_) => Ok(()),
-        Err(e) => Err(format!("カスタムメタデータキーの削除に失敗しました: {}", e)),
+        Err(e) => Err(format!("カスタムメタデータキーの削除に失敗しました: {e}")),
     }
 }
 
@@ -156,7 +156,7 @@ pub async fn get_custom_metadata_key_by_name(
     let db = Database;
     match db.get_custom_metadata_key_by_name(&pool, &name).await {
         Ok(key) => Ok(key),
-        Err(e) => Err(format!("カスタムメタデータキーの取得に失敗しました: {}", e)),
+        Err(e) => Err(format!("カスタムメタデータキーの取得に失敗しました: {e}")),
     }
 }
 
@@ -169,7 +169,7 @@ pub async fn set_custom_metadata_value(
     let db = Database;
     match db.set_custom_metadata_value(&pool, &request.file_id, &request.key_id, request.value).await {
         Ok(value) => Ok(value),
-        Err(e) => Err(format!("カスタムメタデータ値の設定に失敗しました: {}", e)),
+        Err(e) => Err(format!("カスタムメタデータ値の設定に失敗しました: {e}")),
     }
 }
 
@@ -182,7 +182,7 @@ pub async fn get_custom_metadata_values_by_file(
     let db = Database;
     match db.get_custom_metadata_values_by_file(&pool, &file_id).await {
         Ok(values) => Ok(values),
-        Err(e) => Err(format!("カスタムメタデータ値の取得に失敗しました: {}", e)),
+        Err(e) => Err(format!("カスタムメタデータ値の取得に失敗しました: {e}")),
     }
 }
 
@@ -196,7 +196,7 @@ pub async fn get_custom_metadata_value(
     let db = Database;
     match db.get_custom_metadata_value(&pool, &file_id, &key_id).await {
         Ok(value) => Ok(value),
-        Err(e) => Err(format!("カスタムメタデータ値の取得に失敗しました: {}", e)),
+        Err(e) => Err(format!("カスタムメタデータ値の取得に失敗しました: {e}")),
     }
 }
 
@@ -210,6 +210,6 @@ pub async fn delete_custom_metadata_value(
     let db = Database;
     match db.delete_custom_metadata_value(&pool, &file_id, &key_id).await {
         Ok(_) => Ok(()),
-        Err(e) => Err(format!("カスタムメタデータ値の削除に失敗しました: {}", e)),
+        Err(e) => Err(format!("カスタムメタデータ値の削除に失敗しました: {e}")),
     }
 }
