@@ -11,12 +11,17 @@ vi.mock('../../lib/api/files.js', () => ({
   deleteFile: vi.fn()
 }));
 
+vi.mock('../../lib/api/settings.js', () => ({
+  getSettings: vi.fn()
+}));
+
 // Mock utils
 vi.mock('../../lib/utils.js', () => ({
   getFileCategory: vi.fn()
 }));
 
 const { getFiles: mockGetFiles, openFile: mockOpenFile, revealInFinder: mockRevealInFinder, deleteFile: mockDeleteFile } = vi.mocked(await import('../../lib/api/files.js'));
+const { getSettings: mockGetSettings } = vi.mocked(await import('../../lib/api/settings.js'));
 const { getFileCategory: mockGetFileCategory } = vi.mocked(await import('../../lib/utils.js'));
 
 describe('FileViewModel', () => {
@@ -44,6 +49,7 @@ describe('FileViewModel', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockGetFiles.mockResolvedValue(mockFiles);
+    mockGetSettings.mockResolvedValue({ show_hidden_files: false, files_per_page: 20 });
     mockGetFileCategory.mockImplementation((file: File) => {
       if (file.name.endsWith('.jpg')) return 'image';
       if (file.name.endsWith('.pdf')) return 'document';
@@ -160,7 +166,7 @@ describe('FileViewModel', () => {
 
     it('should calculate total pages', () => {
       const totalPages = get(fileViewModel.totalPages);
-      expect(totalPages).toBe(1); // 2 files, 25 per page
+      expect(totalPages).toBe(1); // 2 files, 20 per page
     });
 
     it('should paginate files', () => {

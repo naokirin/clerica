@@ -8,12 +8,17 @@ vi.mock('../../lib/api/search.js', () => ({
   searchFiles: vi.fn()
 }));
 
+vi.mock('../../lib/api/settings.js', () => ({
+  getSettings: vi.fn()
+}));
+
 // Mock utils
 vi.mock('../../lib/utils.js', () => ({
   getFileCategory: vi.fn()
 }));
 
 const { searchFiles: mockSearchFiles } = vi.mocked(await import('../../lib/api/search.js'));
+const { getSettings: mockGetSettings } = vi.mocked(await import('../../lib/api/settings.js'));
 const { getFileCategory: mockGetFileCategory } = vi.mocked(await import('../../lib/utils.js'));
 
 describe('SearchViewModel', () => {
@@ -53,6 +58,7 @@ describe('SearchViewModel', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockSearchFiles.mockResolvedValue(mockSearchResults);
+    mockGetSettings.mockResolvedValue({ show_hidden_files: false, files_per_page: 20 });
     mockGetFileCategory.mockImplementation((file: File) => {
       if (file.name.endsWith('.jpg')) return 'image';
       if (file.name.endsWith('.pdf')) return 'document';
@@ -146,7 +152,7 @@ describe('SearchViewModel', () => {
 
     it('should calculate total pages', () => {
       const totalPages = get(searchViewModel.searchTotalPages);
-      expect(totalPages).toBe(1); // 2 results, 25 per page
+      expect(totalPages).toBe(1); // 2 results, 20 per page
     });
 
     it('should paginate results', () => {
