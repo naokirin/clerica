@@ -14,7 +14,10 @@
   import SettingsModal from "../lib/components/SettingsModal.svelte";
 
   // ViewModel のインポート
-  import { AppViewModel, type ActiveTab } from "../lib/viewmodels/AppViewModel.js";
+  import {
+    AppViewModel,
+    type ActiveTab,
+  } from "../lib/viewmodels/AppViewModel.js";
   import type { File } from "../lib/types.js";
   import "../lib/App.css";
 
@@ -22,7 +25,7 @@
   const appViewModel = new AppViewModel();
 
   // ViewModelからのストア取得
-  const { 
+  const {
     activeTab,
     isAppLoading,
     loadingSteps,
@@ -30,27 +33,27 @@
     directoryViewModel,
     fileViewModel,
     searchViewModel,
-    tagViewModel
+    tagViewModel,
   } = appViewModel;
 
   const { directories, selectedDirectoryId } = directoryViewModel;
-  const { 
-    files, 
-    selectedFile, 
-    selectedCategory, 
-    currentPage, 
+  const {
+    files,
+    selectedFile,
+    selectedCategory,
+    currentPage,
     isDeleting,
     categoryCounts,
     filteredFiles,
     totalPages,
     paginatedFiles,
     itemsPerPage,
-    sortOptions 
+    sortOptions,
   } = fileViewModel;
-  const { 
-    searchQuery, 
-    selectedTags, 
-    metadataSearchFilters, 
+  const {
+    searchQuery,
+    selectedTags,
+    metadataSearchFilters,
     metadataLogic,
     searchResults,
     selectedCategory: searchSelectedCategory,
@@ -60,7 +63,7 @@
     searchTotalPages,
     paginatedSearchResults,
     itemsPerPage: searchItemsPerPage,
-    sortOptions: searchSortOptions
+    sortOptions: searchSortOptions,
   } = searchViewModel;
   const { tags, customMetadataKeys } = tagViewModel;
 
@@ -77,15 +80,15 @@
 
   onMount(async () => {
     // ViewModelが自動的に初期化するため、特別な処理は不要
-    
+
     // ファイルシステム変更のリスナーを追加
-    const { listen } = await import('@tauri-apps/api/event');
-    const unlisten = await listen('file_system_change', (event) => {
-      console.log('ファイルシステム変更イベント:', event.payload);
+    const { listen } = await import("@tauri-apps/api/event");
+    const unlisten = await listen("file_system_change", (event) => {
+      console.log("ファイルシステム変更イベント:", event.payload);
       // ファイル一覧を再読み込み
       fileViewModel.loadFiles();
     });
-    
+
     return () => {
       unlisten();
     };
@@ -131,7 +134,8 @@
   };
 
   const rescanDirectory = async (directoryId: string) => {
-    const success = await directoryViewModel.rescanExistingDirectory(directoryId);
+    const success =
+      await directoryViewModel.rescanExistingDirectory(directoryId);
     if (success) {
       await fileViewModel.loadFiles();
     } else {
@@ -148,7 +152,8 @@
       { title: "確認", kind: "warning" },
     );
     if (confirmed) {
-      const success = await directoryViewModel.removeExistingDirectory(directoryId);
+      const success =
+        await directoryViewModel.removeExistingDirectory(directoryId);
       if (success) {
         await fileViewModel.loadFiles();
       } else {
@@ -203,10 +208,6 @@
     }
   };
 
-
-
-
-
   // カスタムメタデータキーが更新された時の処理
   const handleCustomMetadataKeysUpdated = async () => {
     await tagViewModel.loadCustomMetadataKeys();
@@ -228,11 +229,6 @@
     steps={$loadingSteps}
   />
 
-  <header class="app-header">
-    <h1>Clerica</h1>
-    <p>Mac向けファイル整理・検索ツール</p>
-  </header>
-
   <div class="app-content {$isAppLoading ? 'loading' : ''}">
     <Sidebar
       directories={$directories}
@@ -250,28 +246,28 @@
         <div class="tab-group">
           <button
             class="tab {$activeTab === 'files' ? 'active' : ''}"
-            onclick={() => appViewModel.setActiveTab('files')}
+            onclick={() => appViewModel.setActiveTab("files")}
           >
             <FileText size={16} />
             ファイル
           </button>
           <button
             class="tab {$activeTab === 'search' ? 'active' : ''}"
-            onclick={() => appViewModel.setActiveTab('search')}
+            onclick={() => appViewModel.setActiveTab("search")}
           >
             <Search size={16} />
             検索
           </button>
           <button
             class="tab {$activeTab === 'tags' ? 'active' : ''}"
-            onclick={() => appViewModel.setActiveTab('tags')}
+            onclick={() => appViewModel.setActiveTab("tags")}
           >
             <Tag size={16} />
             タグ管理
           </button>
           <button
             class="tab {$activeTab === 'metadata' ? 'active' : ''}"
-            onclick={() => appViewModel.setActiveTab('metadata')}
+            onclick={() => appViewModel.setActiveTab("metadata")}
           >
             🏷️ メタデータ
           </button>
@@ -298,7 +294,8 @@
             selectedDirectoryId={$selectedDirectoryId}
             sortOptions={$sortOptions}
             onSelectFile={selectFile}
-            onSelectCategory={(category) => fileViewModel.selectCategory(category)}
+            onSelectCategory={(category) =>
+              fileViewModel.selectCategory(category)}
             onGoToPage={(page) => fileViewModel.goToPage(page)}
             onGoToPreviousPage={() => fileViewModel.goToPreviousPage()}
             onGoToNextPage={() => fileViewModel.goToNextPage()}
@@ -322,16 +319,20 @@
             availableMetadataKeys={$customMetadataKeys}
             metadataLogic={$metadataLogic}
             sortOptions={$searchSortOptions}
-            onSearchQueryChange={(query) => searchViewModel.setSearchQuery(query)}
+            onSearchQueryChange={(query) =>
+              searchViewModel.setSearchQuery(query)}
             onSearch={searchFiles}
             onSelectFile={selectFile}
-            onSelectCategory={(category) => searchViewModel.selectCategory(category)}
+            onSelectCategory={(category) =>
+              searchViewModel.selectCategory(category)}
             onGoToPage={(page) => searchViewModel.goToPage(page)}
             onGoToPreviousPage={() => searchViewModel.goToPreviousPage()}
             onGoToNextPage={() => searchViewModel.goToNextPage()}
             onGoToFirstPage={() => searchViewModel.goToFirstPage()}
-            onGoToLastPage={() => searchViewModel.goToLastPage($searchTotalPages)}
-            onMetadataLogicChange={(logic) => searchViewModel.setMetadataLogic(logic)}
+            onGoToLastPage={() =>
+              searchViewModel.goToLastPage($searchTotalPages)}
+            onMetadataLogicChange={(logic) =>
+              searchViewModel.setMetadataLogic(logic)}
             onSortChange={(options) => searchViewModel.setSortOptions(options)}
           />
         {/if}

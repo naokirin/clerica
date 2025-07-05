@@ -28,6 +28,7 @@
   flex: 1;
   overflow: hidden;
   transition: opacity 0.3s ease-in-out;
+  border-top: #d1d5db 1px solid;
 }
 
 .app-content.loading {
@@ -668,10 +669,21 @@
 }
 
 @keyframes fadeInOut {
-  0% { opacity: 0; }
-  20% { opacity: 1; }
-  80% { opacity: 1; }
-  100% { opacity: 0; }
+  0% {
+    opacity: 0;
+  }
+
+  20% {
+    opacity: 1;
+  }
+
+  80% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
 }
 
 .metadata-category {
