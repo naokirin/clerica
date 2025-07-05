@@ -9,7 +9,7 @@
     SortOptions,
     Tag as TagType,
   } from "../types.js";
-  import FileItemDisplay from "./FileItemDisplay.svelte";
+  import FileList from "./FileList.svelte";
   import SortControl from "./SortControl.svelte";
 
   interface Props {
@@ -576,66 +576,21 @@
     </div>
   {/if}
 
-  <div class="search-results">
-    {#each filteredResults as result (result.file.id)}
-      <FileItemDisplay 
-        file={result.file} 
-        tags={result.tags}
-        onSelectFile={onSelectFile}
-      />
-    {/each}
-    {#if searchResults.length === 0 && (searchQuery || metadataSearchFilters.some(f => f.keyId && f.value))}
-      <div class="no-results">検索結果が見つかりませんでした</div>
-    {/if}
-  </div>
-
-  {#if totalPages > 1}
-    <div class="pagination-controls pagination-bottom">
-      <button
-        class="pagination-btn"
-        onclick={onGoToFirstPage}
-        disabled={currentPage === 1}
-      >
-        ≪
-      </button>
-      <button
-        class="pagination-btn"
-        onclick={onGoToPreviousPage}
-        disabled={currentPage === 1}
-      >
-        ‹
-      </button>
-
-      {#each Array.from({ length: Math.min(7, totalPages) }, (_, i) => {
-        let start = Math.max(1, currentPage - 3);
-        let end = Math.min(totalPages, start + 6);
-        start = Math.max(1, end - 6);
-        return start + i;
-      }).filter((page) => page <= totalPages) as page}
-        <button
-          class="pagination-btn {currentPage === page ? 'active' : ''}"
-          onclick={() => onGoToPage(page)}
-        >
-          {page}
-        </button>
-      {/each}
-
-      <button
-        class="pagination-btn"
-        onclick={onGoToNextPage}
-        disabled={currentPage === totalPages}
-      >
-        ›
-      </button>
-      <button
-        class="pagination-btn"
-        onclick={onGoToLastPage}
-        disabled={currentPage === totalPages}
-      >
-        ≫
-      </button>
-    </div>
-  {/if}
+  <FileList
+    filesWithTags={filteredResults.map(result => ({ file: result.file, tags: result.tags }))}
+    {currentPage}
+    {totalPages}
+    emptyMessage={searchResults.length === 0 && (searchQuery || metadataSearchFilters.some(f => f.keyId && f.value)) 
+      ? "検索結果が見つかりませんでした" 
+      : "検索条件を入力してください"}
+    showEmptyState={filteredResults.length === 0}
+    {onSelectFile}
+    {onGoToPage}
+    {onGoToPreviousPage}
+    {onGoToNextPage}
+    {onGoToFirstPage}
+    {onGoToLastPage}
+  />
 </div>
 
 <style>
@@ -739,11 +694,6 @@
     justify-content: space-between;
     align-items: center;
     margin: 1rem 0;
-  }
-  
-  .pagination-bottom {
-    justify-content: center;
-    gap: 0.5rem;
   }
 
   .pagination-buttons {

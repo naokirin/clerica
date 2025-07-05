@@ -6,6 +6,9 @@ import type { File } from '../../lib/types.js';
 // Mock APIs
 vi.mock('../../lib/api/files.js', () => ({
   getFiles: vi.fn(),
+  getFilesWithTags: vi.fn(),
+  getFilesByDirectory: vi.fn(),
+  getFilesByDirectoryWithTags: vi.fn(),
   openFile: vi.fn(),
   revealInFinder: vi.fn(),
   deleteFile: vi.fn()
@@ -20,7 +23,15 @@ vi.mock('../../lib/utils.js', () => ({
   getFileCategory: vi.fn()
 }));
 
-const { getFiles: mockGetFiles, openFile: mockOpenFile, revealInFinder: mockRevealInFinder, deleteFile: mockDeleteFile } = vi.mocked(await import('../../lib/api/files.js'));
+const { 
+  getFiles: mockGetFiles, 
+  getFilesWithTags: mockGetFilesWithTags,
+  getFilesByDirectory: mockGetFilesByDirectory,
+  getFilesByDirectoryWithTags: mockGetFilesByDirectoryWithTags,
+  openFile: mockOpenFile, 
+  revealInFinder: mockRevealInFinder, 
+  deleteFile: mockDeleteFile 
+} = vi.mocked(await import('../../lib/api/files.js'));
 const { getSettings: mockGetSettings } = vi.mocked(await import('../../lib/api/settings.js'));
 const { getFileCategory: mockGetFileCategory } = vi.mocked(await import('../../lib/utils.js'));
 
@@ -46,9 +57,17 @@ describe('FileViewModel', () => {
     }
   ];
 
+  const mockFilesWithTags = [
+    { file: mockFiles[0], tags: [] },
+    { file: mockFiles[1], tags: [] }
+  ];
+
   beforeEach(() => {
     vi.clearAllMocks();
     mockGetFiles.mockResolvedValue(mockFiles);
+    mockGetFilesWithTags.mockResolvedValue(mockFilesWithTags);
+    mockGetFilesByDirectory.mockResolvedValue(mockFiles);
+    mockGetFilesByDirectoryWithTags.mockResolvedValue(mockFilesWithTags);
     mockGetSettings.mockResolvedValue({ show_hidden_files: false, files_per_page: 20 });
     mockGetFileCategory.mockImplementation((file: File) => {
       if (file.name.endsWith('.jpg')) return 'image';
@@ -77,7 +96,7 @@ describe('FileViewModel', () => {
       // Wait for async initialization
       await new Promise(resolve => setTimeout(resolve, 0));
       
-      expect(mockGetFiles).toHaveBeenCalled();
+      expect(mockGetFilesWithTags).toHaveBeenCalled();
     });
   });
 
@@ -89,13 +108,13 @@ describe('FileViewModel', () => {
     it('should load files successfully', async () => {
       await fileViewModel.loadFiles();
       
-      expect(mockGetFiles).toHaveBeenCalled();
+      expect(mockGetFilesWithTags).toHaveBeenCalled();
       expect(get(fileViewModel.files)).toEqual(mockFiles);
     });
 
     it('should handle load errors', async () => {
       const error = new Error('Load failed');
-      mockGetFiles.mockRejectedValue(error);
+      mockGetFilesWithTags.mockRejectedValue(error);
       
       await fileViewModel.loadFiles();
       
@@ -212,7 +231,7 @@ describe('FileViewModel', () => {
       const result = await fileViewModel.openSelectedFile('/test/file.txt');
       
       expect(mockOpenFile).toHaveBeenCalledWith('/test/file.txt');
-      expect(mockGetFiles).toHaveBeenCalledTimes(3); // constructor load + explicit load + reload
+      expect(mockGetFilesWithTags).toHaveBeenCalledTimes(3); // constructor load + explicit load + reload
       expect(result).toBe(true);
     });
 
@@ -249,7 +268,7 @@ describe('FileViewModel', () => {
       
       expect(get(fileViewModel.isDeleting)).toBe(false);
       expect(mockDeleteFile).toHaveBeenCalledWith('/test/file.txt');
-      expect(mockGetFiles).toHaveBeenCalledTimes(3); // constructor load + explicit load + reload
+      expect(mockGetFilesWithTags).toHaveBeenCalledTimes(3); // constructor load + explicit load + reload
       expect(get(fileViewModel.selectedFile)).toBeNull();
       expect(result).toBe(true);
     });
@@ -287,7 +306,7 @@ describe('FileViewModel', () => {
       const values: File[][] = [];
       fileViewModel.files.subscribe(value => values.push([...value]));
       
-      fileViewModel['_files'].set(mockFiles);
+      fileViewModel['_filesWithTags'].set(mockFilesWithTags);
       
       expect(values).toHaveLength(2);
       expect(values[1]).toEqual(mockFiles);
