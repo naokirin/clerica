@@ -5,7 +5,7 @@ export async function getTags(): Promise<Tag[]> {
   return await invoke("get_tags");
 }
 
-export async function createTag(name: string, color: string): Promise<void> {
+export async function createTag(name: string, color: string): Promise<Tag> {
   return await invoke("create_tag", { name, color });
 }
 

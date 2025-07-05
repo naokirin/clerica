@@ -122,6 +122,7 @@ pub trait DatabaseTrait {
         file_id: &str,
         tag_id: &str,
     ) -> Result<(), sqlx::Error>;
+    async fn delete_orphaned_tags(&self, pool: &SqlitePool) -> Result<Vec<String>, sqlx::Error>;
     async fn get_file_tags(
         &self,
         pool: &SqlitePool,
@@ -575,6 +576,29 @@ impl DatabaseTrait for Database {
             .await?;
 
         Ok(())
+    }
+
+    async fn delete_orphaned_tags(&self, pool: &SqlitePool) -> Result<Vec<String>, sqlx::Error> {
+        // 参照されていないタグのIDを取得
+        let orphaned_tag_ids: Vec<String> = sqlx::query_scalar(
+            "SELECT t.id FROM tags t 
+             LEFT JOIN file_tags ft ON t.id = ft.tag_id 
+             WHERE ft.tag_id IS NULL"
+        )
+        .fetch_all(pool)
+        .await?;
+
+        // 参照されていないタグを削除
+        if !orphaned_tag_ids.is_empty() {
+            for tag_id in &orphaned_tag_ids {
+                sqlx::query("DELETE FROM tags WHERE id = ?")
+                    .bind(tag_id)
+                    .execute(pool)
+                    .await?;
+            }
+        }
+
+        Ok(orphaned_tag_ids)
     }
 
     async fn get_file_tags(

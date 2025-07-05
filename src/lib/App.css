@@ -401,7 +401,6 @@
 .tag-name {
   font-weight: 500;
   color: #111827;
-  margin-bottom: 0.5rem;
 }
 
 .tag-color {
@@ -542,6 +541,7 @@
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
@@ -625,6 +625,53 @@
 /* メタデータセクション */
 .metadata-section {
   margin-top: 0.5rem;
+}
+
+/* タグ管理セクション */
+.tags-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.tags-section-header h4 {
+  margin: 0;
+}
+
+
+.loading-tags {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.saving-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #10b981;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.saved-indicator {
+  display: flex;
+  align-items: center;
+  color: #10b981;
+  font-size: 0.75rem;
+  font-weight: 500;
+  animation: fadeInOut 2s ease-in-out;
+}
+
+@keyframes fadeInOut {
+  0% { opacity: 0; }
+  20% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { opacity: 0; }
 }
 
 .metadata-category {
@@ -1089,6 +1136,7 @@
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -1098,15 +1146,19 @@
   0% {
     background-position: -200px 0;
   }
+
   100% {
     background-position: 200px 0;
   }
 }
 
 @keyframes pulse {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.5;
   }
@@ -1120,6 +1172,7 @@
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
@@ -1133,35 +1186,35 @@
     align-items: flex-start;
     gap: 1rem;
   }
-  
+
   .files-stats {
     align-items: flex-start;
     width: 100%;
   }
-  
+
   .file-category-filters {
     gap: 0.5rem;
     padding: 0.75rem;
   }
-  
+
   .category-filter-btn {
     padding: 0.5rem 0.75rem;
     font-size: 0.75rem;
   }
-  
+
   .category-label {
     display: none;
   }
-  
+
   .category-icon {
     font-size: 1.125rem;
   }
-  
+
   .pagination-controls {
     flex-wrap: wrap;
     gap: 0.5rem;
   }
-  
+
   .pagination-btn {
     min-width: 36px;
     height: 36px;

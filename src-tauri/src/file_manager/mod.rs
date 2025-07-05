@@ -1,4 +1,4 @@
-use crate::database::{Database, DatabaseTrait, Directory, File};
+use crate::database::{Database, DatabaseTrait, Directory, File, Tag};
 use crate::watcher::FileWatcher;
 use crate::settings;
 use sqlx::SqlitePool;
@@ -130,7 +130,23 @@ pub async fn update_file_tags(
             .map_err(|e| e.to_string())?;
     }
     
+    // 未参照タグを削除
+    db.delete_orphaned_tags(&pool)
+        .await
+        .map_err(|e| e.to_string())?;
+    
     Ok(())
+}
+
+#[tauri::command]
+pub async fn get_file_tags(
+    pool: State<'_, SqlitePool>,
+    file_id: String,
+) -> Result<Vec<Tag>, String> {
+    let db = Database;
+    db.get_file_tags(&pool, &file_id)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]

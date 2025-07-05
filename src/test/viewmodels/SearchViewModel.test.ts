@@ -147,6 +147,7 @@ describe('SearchViewModel', () => {
 
   describe('pagination', () => {
     beforeEach(async () => {
+      await new Promise(resolve => setTimeout(resolve, 0)); // Wait for async operations in constructor
       await searchViewModel.performSearch();
     });
 

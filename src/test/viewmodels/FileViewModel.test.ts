@@ -161,6 +161,7 @@ describe('FileViewModel', () => {
   describe('pagination', () => {
     beforeEach(async () => {
       fileViewModel = new FileViewModel();
+      await new Promise(resolve => setTimeout(resolve, 0)); // Wait for async operations in constructor
       await fileViewModel.loadFiles();
     });
 

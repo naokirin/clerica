@@ -1,9 +1,12 @@
 <script lang="ts">
   import { X, Trash2, Loader2 } from "lucide-svelte";
-  import type { File, CustomMetadataKey } from "../types.js";
+  import type { File, CustomMetadataKey, Tag } from "../types.js";
   import { formatFileSize, formatDate } from "../utils.js";
   import CustomMetadataEditor from "./CustomMetadataEditor.svelte";
+  import TagInput from "./TagInput.svelte";
   import * as exifApi from "../api/exif.js";
+  import * as filesApi from "../api/files.js";
+  import * as tagsApi from "../api/tags.js";
 
   interface Props {
     file: File | null;
@@ -24,6 +27,13 @@
     onDeleteFile,
     onClose
   }: Props = $props();
+
+  // タグの状態管理
+  let currentTags = $state<Tag[]>([]);
+  let originalTags: Tag[] = [];
+  let isSavingTags = $state(false);
+  let isLoadingTags = $state(false);
+  let showSavedIndicator = $state(false);
 
   // EXIFメタデータの値を解釈する関数
   async function interpretExifValue(key: string, value: any): Promise<string> {
@@ -273,6 +283,111 @@
     const tagName = await exifApi.getTagName(tagNumber);
     return tagName || `タグ ${tagNumber}`;
   }
+
+  // ファイルのタグを読み込む関数
+  async function loadFileTags() {
+    if (!file) return;
+    
+    isLoadingTags = true;
+    try {
+      const tags = await filesApi.getFileTags(file.id);
+      currentTags = [...tags];
+      originalTags = [...tags];
+    } catch (error) {
+      console.error('タグの読み込みエラー:', error);
+      currentTags = [];
+      originalTags = [];
+    } finally {
+      isLoadingTags = false;
+    }
+  }
+
+  // タグの変更ハンドラー（自動保存付き）
+  function handleTagsChange(event: CustomEvent<Tag[]>) {
+    currentTags = event.detail;
+    // 変更があった場合は自動保存
+    if (hasTagsChanged()) {
+      saveTagsChanges();
+    }
+  }
+
+  // タグが変更されているかチェック
+  function hasTagsChanged(): boolean {
+    if (currentTags.length !== originalTags.length) return true;
+    
+    const currentIds = currentTags.map(t => t.id).sort();
+    const originalIds = originalTags.map(t => t.id).sort();
+    
+    return currentIds.some((id, index) => id !== originalIds[index]);
+  }
+
+  // タグを保存する関数
+  async function saveTagsChanges() {
+    if (!file || !hasTagsChanged()) return;
+    
+    isSavingTags = true;
+    try {
+      // 全ての既存タグを取得
+      const allExistingTags = await tagsApi.getTags();
+      
+      // 新しいタグ（IDがtempで始まるもの）を処理
+      const tagsToProcess = currentTags.filter(tag => tag.id.startsWith('temp_'));
+      const processedTags: Tag[] = [];
+      
+      for (const tagToProcess of tagsToProcess) {
+        // 既存タグから同じ名前のタグを検索
+        const existingTag = allExistingTags.find(existing => existing.name === tagToProcess.name);
+        
+        if (existingTag) {
+          // 既存のタグが見つかった場合はそれを使用
+          processedTags.push(existingTag);
+        } else {
+          // 既存のタグが見つからない場合は新規作成
+          try {
+            const createdTag = await tagsApi.createTag(tagToProcess.name, tagToProcess.color);
+            processedTags.push(createdTag);
+          } catch (error) {
+            console.error('タグ作成エラー:', error);
+          }
+        }
+      }
+      
+      // 既存のタグと処理されたタグのIDリストを作成
+      const existingTagIds = currentTags.filter(tag => !tag.id.startsWith('temp_')).map(tag => tag.id);
+      const processedTagIds = processedTags.map(tag => tag.id);
+      const allTagIds = [...existingTagIds, ...processedTagIds];
+      
+      // ファイルのタグを更新
+      await filesApi.updateFileTags(file.id, allTagIds);
+      
+      // 状態を更新
+      const updatedTags = [
+        ...currentTags.filter(tag => !tag.id.startsWith('temp_')),
+        ...processedTags
+      ];
+      currentTags = updatedTags;
+      originalTags = [...updatedTags];
+      
+      // 保存完了の視覚的フィードバック
+      showSavedIndicator = true;
+      setTimeout(() => {
+        showSavedIndicator = false;
+      }, 2000); // 2秒後に非表示
+      
+      console.log('タグが正常に保存されました');
+    } catch (error) {
+      console.error('タグの保存エラー:', error);
+    } finally {
+      isSavingTags = false;
+    }
+  }
+
+  // ファイルが変更されたときにタグを読み込む
+  $effect(() => {
+    if (file) {
+      loadFileTags();
+    }
+  });
 </script>
 
 {#if file}
@@ -409,6 +524,37 @@
               </div>
             {/if}
           </div>
+        </div>
+
+        <!-- タグ管理 -->
+        <div class="file-detail-section">
+          <div class="tags-section-header">
+            <h4>タグ</h4>
+            {#if isSavingTags}
+              <div class="saving-indicator">
+                <Loader2 size={14} class="animate-spin" />
+                保存中...
+              </div>
+            {:else if showSavedIndicator}
+              <div class="saved-indicator">
+                ✓ 保存済み
+              </div>
+            {/if}
+          </div>
+          
+          {#if isLoadingTags}
+            <div class="loading-tags">
+              <Loader2 size={16} class="animate-spin" />
+              タグを読み込み中...
+            </div>
+          {:else}
+            <TagInput 
+              tags={currentTags} 
+              on:change={handleTagsChange}
+              disabled={isSavingTags}
+              placeholder="タグを入力してEnterキーを押してください..."
+            />
+          {/if}
         </div>
 
         <!-- ファイルメタデータ (EXIF, 音声情報等) -->

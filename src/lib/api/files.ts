@@ -1,15 +1,15 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { File, SortOptions } from "../types.js";
+import type { File, SortOptions, Tag } from "../types.js";
 
 export async function getFiles(sortOptions?: SortOptions): Promise<File[]> {
-  return await invoke("get_files", { 
+  return await invoke("get_files", {
     sortField: sortOptions?.field || "modified_at",
     sortOrder: sortOptions?.order || "desc"
   });
 }
 
 export async function getFilesByDirectory(directoryId: string, sortOptions?: SortOptions): Promise<File[]> {
-  return await invoke("get_files_by_directory", { 
+  return await invoke("get_files_by_directory", {
     directoryId,
     sortField: sortOptions?.field || "modified_at",
     sortOrder: sortOptions?.order || "desc"
@@ -38,4 +38,12 @@ export async function extractAudioAlbumArt(filePath: string): Promise<string> {
 
 export async function generateArchiveThumbnail(filePath: string): Promise<string> {
   return await invoke("generate_archive_thumbnail", { filePath });
+}
+
+export async function updateFileTags(fileId: string, tagIds: string[]): Promise<void> {
+  return await invoke("update_file_tags", { fileId: fileId, tagIds: tagIds });
+}
+
+export async function getFileTags(fileId: string): Promise<Tag[]> {
+  return await invoke("get_file_tags", { fileId: fileId });
 }

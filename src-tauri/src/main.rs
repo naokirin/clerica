@@ -128,6 +128,7 @@ async fn main() {
             file_manager::get_directories,
             file_manager::get_files_by_directory,
             file_manager::get_file_info,
+            file_manager::get_file_tags,
             file_manager::update_file_tags,
             file_manager::delete_file,
             file_manager::move_file,

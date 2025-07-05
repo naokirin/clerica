@@ -21,7 +21,7 @@
     onSelectDirectory,
     onRescanDirectory,
     onRemoveDirectory,
-    onCreateTag
+    onCreateTag,
   }: Props = $props();
 </script>
 
@@ -34,50 +34,49 @@
     </button>
     <div class="directory-list">
       <!-- すべてのファイルオプション -->
-      <div class="directory-item {selectedDirectoryId === 'all' ? 'selected' : ''}" onclick={() => onSelectDirectory('all')}>
+      <div
+        class="directory-item {selectedDirectoryId === 'all' ? 'selected' : ''}"
+        onclick={() => onSelectDirectory("all")}
+      >
         <div class="directory-content">
           <div class="directory-name">すべてのファイル</div>
           <div class="directory-path">全ディレクトリのファイルを表示</div>
         </div>
       </div>
-      
+
       {#each directories as dir (dir.id)}
-        <div class="directory-item {selectedDirectoryId === dir.id ? 'selected' : ''}" onclick={() => onSelectDirectory(dir.id)}>
+        <div
+          class="directory-item {selectedDirectoryId === dir.id
+            ? 'selected'
+            : ''}"
+          onclick={() => onSelectDirectory(dir.id)}
+        >
           <div class="directory-content">
             <div class="directory-name">{dir.name}</div>
             <div class="directory-path">{dir.path}</div>
           </div>
           <div class="directory-actions">
-            <button 
+            <button
               class="rescan-directory-btn"
-              onclick={(e) => { e.stopPropagation(); onRescanDirectory(dir.id); }}
+              onclick={(e) => {
+                e.stopPropagation();
+                onRescanDirectory(dir.id);
+              }}
               title="ディレクトリを再スキャン"
             >
               <RefreshCw size={14} />
             </button>
-            <button 
+            <button
               class="remove-directory-btn"
-              onclick={(e) => { e.stopPropagation(); onRemoveDirectory(dir.id, dir.name); }}
+              onclick={(e) => {
+                e.stopPropagation();
+                onRemoveDirectory(dir.id, dir.name);
+              }}
               title="ディレクトリを登録から削除"
             >
               <X size={14} />
             </button>
           </div>
-        </div>
-      {/each}
-    </div>
-  </div>
-
-  <div class="sidebar-section">
-    <h3>タグ</h3>
-    <button onclick={onCreateTag} class="add-button">
-      <Tag size={16} />
-      タグを作成
-    </button>
-    <div class="tag-list">
-      {#each tags as tag (tag.id)}
-        <div class="tag-item" style="border-left-color: {tag.color}">
-          {tag.name}
         </div>
       {/each}
     </div>
