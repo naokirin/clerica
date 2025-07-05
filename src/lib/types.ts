@@ -44,6 +44,11 @@ export interface SearchResult {
   score: number;
 }
 
+export interface FileWithTags {
+  file: File;
+  tags: Tag[];
+}
+
 export type FileCategory = "all" | "image" | "audio" | "video" | "document" | "archive" | "other";
 
 export interface FileCategoryInfo {

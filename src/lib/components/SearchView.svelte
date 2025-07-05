@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Search, Plus, X } from "lucide-svelte";
+  import { Search, Plus, X, Tag } from "lucide-svelte";
   import type {
     SearchResult,
     FileCategory,
@@ -7,6 +7,7 @@
     MetadataSearchFilter,
     CustomMetadataKey,
     SortOptions,
+    Tag as TagType,
   } from "../types.js";
   import FileItemDisplay from "./FileItemDisplay.svelte";
   import SortControl from "./SortControl.svelte";
@@ -20,6 +21,10 @@
     currentPage: number;
     totalPages: number;
     itemsPerPage: number;
+    selectedTags: string[];
+    allTags: TagType[];
+    topTags: TagType[];
+    tagSearchResults: TagType[];
     metadataSearchFilters: MetadataSearchFilter[];
     metadataLogic: 'AND' | 'OR';
     availableMetadataKeys: CustomMetadataKey[];
@@ -33,6 +38,9 @@
     onGoToNextPage: () => void;
     onGoToFirstPage: () => void;
     onGoToLastPage: () => void;
+    onTagAdd: (tagId: string) => void;
+    onTagRemove: (tagId: string) => void;
+    onTagSearch: (query: string) => void;
     onMetadataLogicChange: (logic: 'AND' | 'OR') => void;
     onSortChange: (options: SortOptions) => void;
   }
@@ -46,6 +54,10 @@
     currentPage,
     totalPages,
     itemsPerPage,
+    selectedTags,
+    allTags,
+    topTags,
+    tagSearchResults,
     metadataSearchFilters = $bindable(),
     metadataLogic,
     availableMetadataKeys,
@@ -59,6 +71,9 @@
     onGoToNextPage,
     onGoToFirstPage,
     onGoToLastPage,
+    onTagAdd,
+    onTagRemove,
+    onTagSearch,
     onMetadataLogicChange,
     onSortChange,
   }: Props = $props();
@@ -259,6 +274,73 @@
       <Search size={16} />
       検索
     </button>
+  </div>
+
+  <!-- タグフィルタ -->
+  <div class="tag-filter-section">
+    <div class="tag-filter-header">
+      <Tag size={16} />
+      <h3>タグで絞り込み</h3>
+    </div>
+
+    <!-- 選択されたタグ -->
+    {#if selectedTags.length > 0}
+      <div class="selected-tags">
+        <h4>選択中のタグ:</h4>
+        <div class="tag-chips">
+          {#each selectedTags as tagId}
+            {@const selectedTag = allTags.find(tag => tag.id === tagId)}
+            {#if selectedTag}
+              <div class="tag-chip selected">
+                <span class="tag-color" style="background-color: {selectedTag.color}"></span>
+                <span class="tag-name">{selectedTag.name}</span>
+                <button onclick={() => onTagRemove(tagId)} class="tag-remove-btn">
+                  <X size={12} />
+                </button>
+              </div>
+            {/if}
+          {/each}
+        </div>
+      </div>
+    {/if}
+
+    <!-- 上位タグ -->
+    <div class="top-tags">
+      <h4>よく使われるタグ (上位10件):</h4>
+      <div class="tag-chips">
+        {#each topTags as tag}
+          {#if !selectedTags.includes(tag.id)}
+            <button onclick={() => onTagAdd(tag.id)} class="tag-chip">
+              <span class="tag-color" style="background-color: {tag.color}"></span>
+              <span class="tag-name">{tag.name}</span>
+            </button>
+          {/if}
+        {/each}
+      </div>
+    </div>
+
+    <!-- タグ検索 -->
+    <div class="tag-search">
+      <h4>タグを検索:</h4>
+      <input
+        type="text"
+        placeholder="タグ名を入力..."
+        oninput={(e) => onTagSearch(e.target.value)}
+        class="tag-search-input"
+      />
+      {#if tagSearchResults.length > 0}
+        <div class="tag-search-results">
+          {#each tagSearchResults as tag}
+            {#if !selectedTags.includes(tag.id)}
+              <button onclick={() => onTagAdd(tag.id)} class="tag-search-result">
+                <span class="tag-color" style="background-color: {tag.color}"></span>
+                <span class="tag-name">{tag.name}</span>
+              </button>
+            {/if}
+          {/each}
+        </div>
+      {/if}
+    </div>
   </div>
 
   <!-- カスタムメタデータ検索フィルタ -->
@@ -671,5 +753,140 @@
 
   .sort-section {
     /* Sort control positioned on the right of pagination */
+  }
+
+  /* タグフィルタスタイル */
+  .tag-filter-section {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .tag-filter-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .tag-filter-header h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #374151;
+  }
+
+  .selected-tags, .top-tags, .tag-search {
+    margin-bottom: 1rem;
+  }
+
+  .selected-tags h4, .top-tags h4, .tag-search h4 {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #4b5563;
+  }
+
+  .tag-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .tag-chip {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    background: #ffffff;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .tag-chip:hover {
+    background: #f3f4f6;
+    border-color: #9ca3af;
+  }
+
+  .tag-chip.selected {
+    background: #dbeafe;
+    border-color: #3b82f6;
+  }
+
+  .tag-color {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .tag-name {
+    color: #374151;
+    font-weight: 500;
+  }
+
+  .tag-remove-btn {
+    background: none;
+    border: none;
+    color: #6b7280;
+    cursor: pointer;
+    padding: 2px;
+    border-radius: 2px;
+    transition: all 0.2s ease;
+  }
+
+  .tag-remove-btn:hover {
+    background: #f3f4f6;
+    color: #ef4444;
+  }
+
+  .tag-search-input {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .tag-search-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  .tag-search-results {
+    background: #ffffff;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+
+  .tag-search-result {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    background: none;
+    border: none;
+    border-bottom: 1px solid #e5e7eb;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    text-align: left;
+  }
+
+  .tag-search-result:last-child {
+    border-bottom: none;
+  }
+
+  .tag-search-result:hover {
+    background: #f3f4f6;
   }
 </style>

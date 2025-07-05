@@ -1,6 +1,7 @@
 <script lang="ts">
   import type {
     File,
+    FileWithTags,
     FileCategory,
     FileCategoryInfo,
     SortOptions,
@@ -10,6 +11,7 @@
 
   interface Props {
     files: File[];
+    filesWithTags: FileWithTags[];
     selectedCategory: FileCategory;
     categoryCounts: Record<FileCategory, number>;
     currentPage: number;
@@ -30,6 +32,7 @@
 
   let {
     files,
+    filesWithTags,
     selectedCategory,
     categoryCounts,
     currentPage,
@@ -250,8 +253,12 @@
   {/if}
 
   <div class="file-list">
-    {#each files as file (file.id)}
-      <FileItemDisplay {file} {onSelectFile} />
+    {#each filesWithTags as fileWithTags (fileWithTags.file.id)}
+      <FileItemDisplay 
+        file={fileWithTags.file} 
+        tags={fileWithTags.tags}
+        {onSelectFile} 
+      />
     {/each}
     {#if files.length === 0}
       <div class="no-files">

@@ -15,6 +15,12 @@ use std::sync::{Arc, Mutex};
 #[cfg(test)]
 mod tests;
 
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+pub struct FileWithTags {
+    pub file: File,
+    pub tags: Vec<Tag>,
+}
+
 #[tauri::command]
 pub async fn add_directory(
     pool: State<'_, SqlitePool>,
@@ -94,6 +100,38 @@ pub async fn get_files(
     }
     
     Ok(files)
+}
+
+#[tauri::command]
+pub async fn get_files_with_tags(
+    pool: State<'_, SqlitePool>,
+    sort_field: Option<String>,
+    sort_order: Option<String>,
+) -> Result<Vec<FileWithTags>, String> {
+    let db = Database;
+    let mut files = db.get_all_files_sorted(&pool, sort_field, sort_order)
+        .await
+        .map_err(|e| e.to_string())?;
+    
+    // 設定を取得して隠しファイルを除外するかどうかを決定
+    let settings = settings::get_all_settings(&pool).await
+        .map_err(|e| e.to_string())?;
+    
+    if !settings.show_hidden_files {
+        files.retain(|file| !settings::is_hidden_file(&file.path));
+    }
+    
+    // 各ファイルのタグ情報を取得
+    let mut results = Vec::new();
+    for file in files {
+        let tags = db.get_file_tags(&pool, &file.id)
+            .await
+            .map_err(|e| e.to_string())?;
+        
+        results.push(FileWithTags { file, tags });
+    }
+    
+    Ok(results)
 }
 
 #[tauri::command]
@@ -350,9 +388,52 @@ pub async fn get_files_by_directory(
     sort_order: Option<String>,
 ) -> Result<Vec<File>, String> {
     let db = Database;
-    db.get_files_by_directory_sorted(&pool, &directory_id, sort_field, sort_order)
+    let mut files = db.get_files_by_directory_sorted(&pool, &directory_id, sort_field, sort_order)
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|e| e.to_string())?;
+    
+    // 設定を取得して隠しファイルを除外するかどうかを決定
+    let settings = settings::get_all_settings(&pool).await
+        .map_err(|e| e.to_string())?;
+    
+    if !settings.show_hidden_files {
+        files.retain(|file| !settings::is_hidden_file(&file.path));
+    }
+    
+    Ok(files)
+}
+
+#[tauri::command]
+pub async fn get_files_by_directory_with_tags(
+    pool: State<'_, SqlitePool>,
+    directory_id: String,
+    sort_field: Option<String>,
+    sort_order: Option<String>,
+) -> Result<Vec<FileWithTags>, String> {
+    let db = Database;
+    let mut files = db.get_files_by_directory_sorted(&pool, &directory_id, sort_field, sort_order)
+        .await
+        .map_err(|e| e.to_string())?;
+    
+    // 設定を取得して隠しファイルを除外するかどうかを決定
+    let settings = settings::get_all_settings(&pool).await
+        .map_err(|e| e.to_string())?;
+    
+    if !settings.show_hidden_files {
+        files.retain(|file| !settings::is_hidden_file(&file.path));
+    }
+    
+    // 各ファイルのタグ情報を取得
+    let mut results = Vec::new();
+    for file in files {
+        let tags = db.get_file_tags(&pool, &file.id)
+            .await
+            .map_err(|e| e.to_string())?;
+        
+        results.push(FileWithTags { file, tags });
+    }
+    
+    Ok(results)
 }
 
 #[tauri::command]

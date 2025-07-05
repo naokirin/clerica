@@ -74,15 +74,20 @@ pub async fn search_files(
         params.push(format!("%{query}%"));
     }
 
-    // タグフィルタ
+    // タグフィルタ - 複数のタグがAND条件で絞り込まれる
     if let Some(tag_ids) = tag_ids {
         if !tag_ids.is_empty() {
+            let tag_count = tag_ids.len();
             let placeholders = tag_ids
                 .iter()
                 .map(|_| "?".to_string())
                 .collect::<Vec<_>>()
                 .join(",");
-            conditions.push(format!("ft.tag_id IN ({placeholders})"));
+            // 指定されたすべてのタグを持つファイルのみを取得
+            conditions.push(format!(
+                "f.id IN (SELECT file_id FROM file_tags WHERE tag_id IN ({}) GROUP BY file_id HAVING COUNT(DISTINCT tag_id) = {})",
+                placeholders, tag_count
+            ));
             params.extend(tag_ids);
         }
     }
@@ -237,6 +242,18 @@ pub async fn search_files(
 pub async fn get_tags(pool: State<'_, SqlitePool>) -> Result<Vec<Tag>, String> {
     let db = Database;
     db.get_all_tags(&pool).await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn get_top_tags(pool: State<'_, SqlitePool>, limit: u32) -> Result<Vec<Tag>, String> {
+    let db = Database;
+    db.get_top_tags(&pool, limit).await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn search_tags_by_name(pool: State<'_, SqlitePool>, query: String) -> Result<Vec<Tag>, String> {
+    let db = Database;
+    db.search_tags_by_name(&pool, &query).await.map_err(|e| e.to_string())
 }
 
 #[tauri::command]

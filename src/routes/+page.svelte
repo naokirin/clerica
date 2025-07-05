@@ -39,6 +39,8 @@
   const { directories, selectedDirectoryId } = directoryViewModel;
   const {
     files,
+    filesWithTags,
+    paginatedFilesWithTags,
     selectedFile,
     selectedCategory,
     currentPage,
@@ -65,7 +67,7 @@
     itemsPerPage: searchItemsPerPage,
     sortOptions: searchSortOptions,
   } = searchViewModel;
-  const { tags, customMetadataKeys } = tagViewModel;
+  const { tags, topTags, tagSearchResults, customMetadataKeys } = tagViewModel;
 
   // 設定モーダルの状態管理
   let isSettingsModalOpen = false;
@@ -213,6 +215,29 @@
     await tagViewModel.loadCustomMetadataKeys();
   };
 
+  // タグ追加ハンドラー
+  const handleTagAdd = async (tagId: string) => {
+    let currentTags: string[];
+    const unsubscribe = selectedTags.subscribe(tags => currentTags = tags);
+    unsubscribe();
+    
+    if (!currentTags.includes(tagId)) {
+      searchViewModel.setSelectedTags([...currentTags, tagId]);
+      await searchViewModel.performSearch(); // 検索を再実行
+    }
+  };
+
+  // タグ削除ハンドラー
+  const handleTagRemove = async (tagId: string) => {
+    let currentTags: string[];
+    const unsubscribe = selectedTags.subscribe(tags => currentTags = tags);
+    unsubscribe();
+    
+    const newTags = currentTags.filter(id => id !== tagId);
+    searchViewModel.setSelectedTags(newTags);
+    await searchViewModel.performSearch(); // 検索を再実行
+  };
+
   // 設定が変更された時の処理
   const handleSettingsChanged = async () => {
     await fileViewModel.updateItemsPerPage();
@@ -285,6 +310,7 @@
         {#if $activeTab === "files"}
           <FilesView
             files={$paginatedFiles}
+            filesWithTags={$paginatedFilesWithTags}
             selectedCategory={$selectedCategory}
             categoryCounts={$categoryCounts}
             currentPage={$currentPage}
@@ -315,6 +341,10 @@
             currentPage={$searchCurrentPage}
             totalPages={$searchTotalPages}
             itemsPerPage={$searchItemsPerPage}
+            selectedTags={$selectedTags}
+            allTags={$tags}
+            topTags={$topTags}
+            tagSearchResults={$tagSearchResults}
             bind:metadataSearchFilters={$metadataSearchFilters}
             availableMetadataKeys={$customMetadataKeys}
             metadataLogic={$metadataLogic}
@@ -331,6 +361,9 @@
             onGoToFirstPage={() => searchViewModel.goToFirstPage()}
             onGoToLastPage={() =>
               searchViewModel.goToLastPage($searchTotalPages)}
+            onTagAdd={(tagId) => handleTagAdd(tagId)}
+            onTagRemove={(tagId) => handleTagRemove(tagId)}
+            onTagSearch={(query) => tagViewModel.searchTags(query)}
             onMetadataLogicChange={(logic) =>
               searchViewModel.setMetadataLogic(logic)}
             onSortChange={(options) => searchViewModel.setSortOptions(options)}

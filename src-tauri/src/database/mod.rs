@@ -104,6 +104,8 @@ pub trait DatabaseTrait {
         sort_order: Option<String>,
     ) -> Result<Vec<File>, sqlx::Error>;
     async fn get_all_tags(&self, pool: &SqlitePool) -> Result<Vec<Tag>, sqlx::Error>;
+    async fn get_top_tags(&self, pool: &SqlitePool, limit: u32) -> Result<Vec<Tag>, sqlx::Error>;
+    async fn search_tags_by_name(&self, pool: &SqlitePool, query: &str) -> Result<Vec<Tag>, sqlx::Error>;
     async fn create_tag(
         &self,
         pool: &SqlitePool,
@@ -509,6 +511,56 @@ impl DatabaseTrait for Database {
         let rows = sqlx::query("SELECT * FROM tags ORDER BY name")
             .fetch_all(pool)
             .await?;
+
+        let mut tags = Vec::new();
+        for row in rows {
+            tags.push(Tag {
+                id: row.get("id"),
+                name: row.get("name"),
+                color: row.get("color"),
+                created_at: row.get("created_at"),
+            });
+        }
+
+        Ok(tags)
+    }
+
+    async fn get_top_tags(&self, pool: &SqlitePool, limit: u32) -> Result<Vec<Tag>, sqlx::Error> {
+        let rows = sqlx::query(
+            "SELECT t.id, t.name, t.color, t.created_at, COUNT(ft.tag_id) as file_count
+             FROM tags t
+             LEFT JOIN file_tags ft ON t.id = ft.tag_id
+             GROUP BY t.id, t.name, t.color, t.created_at
+             ORDER BY file_count DESC, t.name ASC
+             LIMIT ?"
+        )
+        .bind(limit)
+        .fetch_all(pool)
+        .await?;
+
+        let mut tags = Vec::new();
+        for row in rows {
+            tags.push(Tag {
+                id: row.get("id"),
+                name: row.get("name"),
+                color: row.get("color"),
+                created_at: row.get("created_at"),
+            });
+        }
+
+        Ok(tags)
+    }
+
+    async fn search_tags_by_name(&self, pool: &SqlitePool, query: &str) -> Result<Vec<Tag>, sqlx::Error> {
+        let search_pattern = format!("%{}%", query);
+        let rows = sqlx::query(
+            "SELECT * FROM tags 
+             WHERE name LIKE ? 
+             ORDER BY name ASC"
+        )
+        .bind(&search_pattern)
+        .fetch_all(pool)
+        .await?;
 
         let mut tags = Vec::new();
         for row in rows {

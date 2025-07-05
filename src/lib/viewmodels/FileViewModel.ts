@@ -1,12 +1,12 @@
 import { writable, derived, type Writable, type Readable } from 'svelte/store';
 import { BaseViewModel } from './BaseViewModel.js';
-import { getFiles, getFilesByDirectory, openFile, revealInFinder, deleteFile } from '../api/files.js';
+import { getFiles, getFilesWithTags, getFilesByDirectory, getFilesByDirectoryWithTags, openFile, revealInFinder, deleteFile } from '../api/files.js';
 import { getSettings } from '../api/settings.js';
-import type { File, FileCategory, SortOptions } from '../types.js';
+import type { File, FileWithTags, FileCategory, SortOptions } from '../types.js';
 import { getFileCategory } from '../utils.js';
 
 export class FileViewModel extends BaseViewModel {
-  private _files: Writable<File[]> = writable([]);
+  private _filesWithTags: Writable<FileWithTags[]> = writable([]);
   private _selectedFile: Writable<File | null> = writable(null);
   private _selectedCategory: Writable<FileCategory> = writable("all");
   private _currentPage: Writable<number> = writable(1);
@@ -15,7 +15,13 @@ export class FileViewModel extends BaseViewModel {
   private _selectedDirectoryId: Writable<string | "all"> = writable("all");
   private _sortOptions: Writable<SortOptions> = writable({ field: "modified_at", order: "desc" });
 
-  public readonly files = this._files;
+  // 互換性のためのファイルのみのストア
+  public readonly files: Readable<File[]> = derived(
+    this._filesWithTags,
+    (filesWithTags) => filesWithTags.map(f => f.file)
+  );
+  
+  public readonly filesWithTags = this._filesWithTags;
   public readonly selectedFile = this._selectedFile;
   public readonly selectedCategory = this._selectedCategory;
   public readonly currentPage = this._currentPage;
@@ -26,7 +32,7 @@ export class FileViewModel extends BaseViewModel {
 
   // 派生ストア
   public readonly categoryCounts: Readable<Record<FileCategory, number>> = derived(
-    [this._files, this._selectedCategory],
+    [this.files, this._selectedCategory],
     ([files, selectedCategory]) => {
       const counts: Record<FileCategory, number> = {
         all: files.length,
@@ -48,12 +54,22 @@ export class FileViewModel extends BaseViewModel {
   );
 
   public readonly filteredFiles: Readable<File[]> = derived(
-    [this._files, this._selectedCategory],
+    [this.files, this._selectedCategory],
     ([files, selectedCategory]) => {
       if (selectedCategory === "all") {
         return files;
       }
       return files.filter((file) => getFileCategory(file) === selectedCategory);
+    }
+  );
+
+  public readonly filteredFilesWithTags: Readable<FileWithTags[]> = derived(
+    [this._filesWithTags, this._selectedCategory],
+    ([filesWithTags, selectedCategory]) => {
+      if (selectedCategory === "all") {
+        return filesWithTags;
+      }
+      return filesWithTags.filter((fileWithTags) => getFileCategory(fileWithTags.file) === selectedCategory);
     }
   );
 
@@ -68,6 +84,15 @@ export class FileViewModel extends BaseViewModel {
       const startIndex = (currentPage - 1) * itemsPerPage;
       const endIndex = startIndex + itemsPerPage;
       return filteredFiles.slice(startIndex, endIndex);
+    }
+  );
+
+  public readonly paginatedFilesWithTags: Readable<FileWithTags[]> = derived(
+    [this.filteredFilesWithTags, this._currentPage, this._itemsPerPage],
+    ([filteredFilesWithTags, currentPage, itemsPerPage]) => {
+      const startIndex = (currentPage - 1) * itemsPerPage;
+      const endIndex = startIndex + itemsPerPage;
+      return filteredFilesWithTags.slice(startIndex, endIndex);
     }
   );
 
@@ -97,14 +122,14 @@ export class FileViewModel extends BaseViewModel {
     const result = await this.executeAsync(async () => {
       const currentSortOptions = this.getCurrentSortOptions();
       if (targetDirectoryId === "all") {
-        return await getFiles(currentSortOptions);
+        return await getFilesWithTags(currentSortOptions);
       } else {
-        return await getFilesByDirectory(targetDirectoryId, currentSortOptions);
+        return await getFilesByDirectoryWithTags(targetDirectoryId, currentSortOptions);
       }
     });
 
     if (result) {
-      this._files.set(result);
+      this._filesWithTags.set(result);
     }
   }
 
