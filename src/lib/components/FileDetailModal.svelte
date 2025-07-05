@@ -16,6 +16,7 @@
     onRevealInFinder: (filePath: string) => void;
     onDeleteFile: (filePath: string, fileName: string) => void;
     onClose: () => void;
+    onTagsUpdated?: () => void;
   }
 
   let {
@@ -25,7 +26,8 @@
     onOpenFile,
     onRevealInFinder,
     onDeleteFile,
-    onClose
+    onClose,
+    onTagsUpdated
   }: Props = $props();
 
   // タグの状態管理
@@ -373,6 +375,11 @@
       setTimeout(() => {
         showSavedIndicator = false;
       }, 2000); // 2秒後に非表示
+      
+      // 親コンポーネントにタグ更新を通知
+      if (onTagsUpdated) {
+        onTagsUpdated();
+      }
       
       console.log('タグが正常に保存されました');
     } catch (error) {

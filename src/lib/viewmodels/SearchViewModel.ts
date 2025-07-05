@@ -197,4 +197,16 @@ export class SearchViewModel extends BaseViewModel {
     this._sortOptions.set(options);
     this.performSearch(); // ソート変更時に検索を再実行
   }
+
+  // タグが更新された時の再検索メソッド
+  public async refreshSearchResults(): Promise<void> {
+    // 既に検索結果がある場合のみ再検索を実行
+    let currentResults: SearchResult[];
+    const resultUnsub = this._searchResults.subscribe(results => currentResults = results);
+    resultUnsub();
+    
+    if (currentResults && currentResults.length > 0) {
+      await this.performSearch();
+    }
+  }
 }

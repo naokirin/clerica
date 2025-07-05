@@ -245,6 +245,12 @@
     await fileViewModel.loadFiles();
     await searchViewModel.performSearch();
   };
+
+  // タグが更新された時の処理
+  const handleTagsUpdated = async () => {
+    await fileViewModel.loadFiles(); // ファイル一覧を再読み込み
+    await searchViewModel.refreshSearchResults(); // 検索結果も再読み込み
+  };
 </script>
 
 <div class="app">
@@ -392,6 +398,7 @@
     onRevealInFinder={revealInFinder}
     onDeleteFile={deleteFile}
     onClose={closeFileDetails}
+    onTagsUpdated={handleTagsUpdated}
   />
 
   <!-- 設定モーダル -->
