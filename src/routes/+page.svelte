@@ -20,6 +20,7 @@
   } from "../lib/viewmodels/AppViewModel.js";
   import type { File } from "../lib/types.js";
   import "../lib/App.css";
+  import { errorStore } from "../lib/stores/error.js";
 
   // AppViewModel インスタンス
   const appViewModel = new AppViewModel();
@@ -146,7 +147,7 @@
     if (success) {
       await fileViewModel.loadFiles();
     } else {
-      alert("ディレクトリの再スキャンに失敗しました。");
+      errorStore.showError("ディレクトリの再スキャンに失敗しました。");
     }
   };
 
@@ -164,7 +165,7 @@
       if (success) {
         await fileViewModel.loadFiles();
       } else {
-        alert("ディレクトリの削除に失敗しました。");
+        errorStore.showError("ディレクトリの削除に失敗しました。");
       }
     }
   };
@@ -191,14 +192,14 @@
   const openFile = async (filePath: string) => {
     const success = await fileViewModel.openSelectedFile(filePath);
     if (!success) {
-      alert(`ファイルを開けませんでした`);
+      errorStore.showError(`ファイルを開けませんでした`);
     }
   };
 
   const revealInFinder = async (filePath: string) => {
     const success = await fileViewModel.revealFileInFinder(filePath);
     if (!success) {
-      alert(`Finderで表示できませんでした`);
+      errorStore.showError(`Finderで表示できませんでした`);
     }
   };
 
@@ -210,7 +211,7 @@
     if (confirmed) {
       const success = await fileViewModel.deleteSelectedFile(filePath);
       if (!success) {
-        alert(`ファイルをゴミ箱に移動できませんでした`);
+        errorStore.showError(`ファイルをゴミ箱に移動できませんでした`);
       }
     }
   };

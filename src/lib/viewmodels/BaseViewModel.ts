@@ -1,4 +1,5 @@
 import { writable, type Writable } from 'svelte/store';
+import { errorStore } from '../stores/error.js';
 
 export abstract class BaseViewModel {
   protected _isLoading: Writable<boolean> = writable(false);
@@ -13,6 +14,9 @@ export abstract class BaseViewModel {
 
   protected setError(error: string | null): void {
     this._error.set(error);
+    if (error) {
+      errorStore.showError(error);
+    }
   }
 
   protected async executeAsync<T>(operation: () => Promise<T>): Promise<T | null> {
@@ -22,7 +26,8 @@ export abstract class BaseViewModel {
       return await operation();
     } catch (error) {
       console.error('ViewModel operation failed:', error);
-      this.setError(error instanceof Error ? error.message : String(error));
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.setError(errorMessage);
       return null;
     } finally {
       this.setLoading(false);

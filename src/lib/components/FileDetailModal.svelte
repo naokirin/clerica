@@ -8,6 +8,7 @@
   import * as exifApi from "../api/exif.js";
   import * as filesApi from "../api/files.js";
   import * as tagsApi from "../api/tags.js";
+  import { errorStore } from "../stores/error.js";
 
   interface Props {
     file: File | null;
@@ -298,6 +299,7 @@
       originalTags = [...tags];
     } catch (error) {
       console.error('タグの読み込みエラー:', error);
+      errorStore.showError('タグの読み込みに失敗しました');
       currentTags = [];
       originalTags = [];
     } finally {
@@ -351,6 +353,7 @@
             processedTags.push(createdTag);
           } catch (error) {
             console.error('タグ作成エラー:', error);
+            errorStore.showError('タグの作成に失敗しました');
           }
         }
       }
@@ -385,6 +388,7 @@
       console.log('タグが正常に保存されました');
     } catch (error) {
       console.error('タグの保存エラー:', error);
+      errorStore.showError('タグの保存に失敗しました');
     } finally {
       isSavingTags = false;
     }

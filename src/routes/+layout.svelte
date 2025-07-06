@@ -1,9 +1,11 @@
 <script lang="ts">
   import '../index.css';
+  import Snackbar from '../lib/components/Snackbar.svelte';
 </script>
 
 <main>
   <slot />
+  <Snackbar />
 </main>
 
 <style>

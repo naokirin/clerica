@@ -12,6 +12,7 @@
     CreateCustomMetadataKeyRequest,
     UpdateCustomMetadataKeyRequest,
   } from "../types.js";
+  import { errorStore } from "../stores/error.js";
 
   interface Props {
     keys: CustomMetadataKey[];
@@ -189,8 +190,8 @@
       onKeysUpdated();
     } catch (e) {
       console.error("削除処理でエラーが発生しました:", e);
-      // Tauri API のエラーの場合もalertで表示
-      alert(
+      // Tauri API のエラーの場合もerrorStoreで表示
+      errorStore.showError(
         typeof e === "string"
           ? e
           : "カスタムメタデータキーの削除に失敗しました",
