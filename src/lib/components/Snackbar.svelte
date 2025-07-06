@@ -2,6 +2,7 @@
   import { errorStore, type ErrorInfo } from '../stores/error';
   import { fly } from 'svelte/transition';
   import { X, AlertCircle, CheckCircle, Info, AlertTriangle } from 'lucide-svelte';
+  import { t } from "$lib/i18n";
 
   let { errors } = errorStore;
 
@@ -56,7 +57,7 @@
         <button
           class="snackbar-close"
           onclick={() => dismissError(error.id)}
-          aria-label="閉じる"
+          aria-label={$t("common.buttons.close")}
         >
           <X size={16} />
         </button>

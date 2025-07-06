@@ -20,7 +20,7 @@
     filesWithTags,
     currentPage,
     totalPages,
-    emptyMessage = "ファイルが見つかりませんでした",
+    emptyMessage = "ファイルが見つかりませんでした", // デフォルト、親から渡されることを想定
     showEmptyState = true,
     onSelectFile,
     onGoToPage,

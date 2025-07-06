@@ -3,6 +3,8 @@
   import { onMount } from "svelte";
   import { getSettings, updateSettingBool, updateSettingInt } from "../api/settings";
   import { errorStore } from "../stores/error";
+  import { t } from "$lib/i18n";
+  import LanguageSwitcher from "./LanguageSwitcher.svelte";
 
   export let isOpen = false;
   export let onClose: () => void;
@@ -25,7 +27,7 @@
       filesPerPage = settings.files_per_page;
     } catch (error) {
       console.error('設定の読み込みに失敗しました:', error);
-      errorStore.showError("設定の読み込みに失敗しました。アプリケーションを再起動してください。");
+      errorStore.showError($t("common.error.settingsLoadFailed"));
     }
   });
 
@@ -41,7 +43,7 @@
       filesPerPage = settings.files_per_page;
     } catch (error) {
       console.error('設定の読み込みに失敗しました:', error);
-      errorStore.showError("設定の読み込みに失敗しました。アプリケーションを再起動してください。");
+      errorStore.showError($t("common.error.settingsLoadFailed"));
     }
   };
 
@@ -69,7 +71,7 @@
         highlightSearchResults,
       });
       
-      errorStore.showSuccess("設定を保存しました。");
+      errorStore.showSuccess($t("common.settings.saved"));
       
       // 設定が変更されたことを通知
       if (onSettingsChanged) {
@@ -79,7 +81,7 @@
       handleClose();
     } catch (error) {
       console.error('設定の保存に失敗しました:', error);
-      errorStore.showError("設定の保存に失敗しました。もう一度お試しください。");
+      errorStore.showError($t("common.error.settingsSaveFailed"));
     } finally {
       isLoading = false;
     }
@@ -96,21 +98,28 @@
   >
     <div class="modal-content" on:click={(e) => e.stopPropagation()}>
       <div class="modal-header">
-        <h3 id="settings-title">設定</h3>
+        <h3 id="settings-title">{$t("common.settings.title")}</h3>
         <button
           class="close-button"
           on:click={handleClose}
-          aria-label="設定を閉じる"
+          aria-label={$t("common.buttons.close")}
         >
           <X size={20} />
         </button>
       </div>
       <div class="modal-body">
         <div class="settings-section">
-          <h4>ファイル管理</h4>
+          <h4>{$t("common.settings.language")}</h4>
+          <div class="setting-item">
+            <LanguageSwitcher />
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h4>{$t("common.settings.fileManagement")}</h4>
           <div class="setting-item">
             <label class="setting-label">
-              1ページあたりのファイル数:
+              {$t("common.pagination.itemsPerPage")}:
               <select class="setting-select" bind:value={filesPerPage}>
                 <option value={10}>10</option>
                 <option value={20}>20</option>
@@ -127,17 +136,17 @@
                 class="setting-checkbox"
                 bind:checked={showHiddenFiles}
               />
-              隠しファイルを表示
+              {$t("common.settings.showHiddenFiles")}
             </label>
           </div>
         </div>
 
         <div class="settings-actions">
           <button class="save-button" on:click={handleSave} disabled={isLoading}>
-            {isLoading ? '保存中...' : '設定を保存'}
+            {isLoading ? $t("common.buttons.saving") : $t("common.buttons.save")}
           </button>
           <button class="cancel-button" on:click={handleClose} disabled={isLoading}>
-            キャンセル
+            {$t("common.buttons.cancel")}
           </button>
         </div>
       </div>

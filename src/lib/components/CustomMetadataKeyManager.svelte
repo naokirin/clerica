@@ -13,6 +13,7 @@
     UpdateCustomMetadataKeyRequest,
   } from "../types";
   import { errorStore } from "../stores/error";
+  import { t } from "$lib/i18n";
 
   interface Props {
     keys: CustomMetadataKey[];
@@ -39,17 +40,13 @@
   let isSubmitting = $state(false);
 
   // データ型の選択肢
-  const dataTypes: {
-    value: CustomMetadataDataType;
-    label: string;
-    description: string;
-  }[] = [
-    { value: "text", label: "テキスト", description: "文字列値" },
-    { value: "number", label: "数値", description: "整数・小数点数" },
-    { value: "date", label: "日付", description: "日付・時刻" },
-    { value: "boolean", label: "真偽値", description: "true/false" },
-    { value: "json", label: "JSON", description: "構造化データ" },
-  ];
+  const dataTypes = $derived([
+    { value: "text" as CustomMetadataDataType, label: $t("common.metadata.dataTypes.text"), description: $t("common.metadata.dataTypeDescriptions.text") },
+    { value: "number" as CustomMetadataDataType, label: $t("common.metadata.dataTypes.number"), description: $t("common.metadata.dataTypeDescriptions.number") },
+    { value: "date" as CustomMetadataDataType, label: $t("common.metadata.dataTypes.date"), description: $t("common.metadata.dataTypeDescriptions.date") },
+    { value: "boolean" as CustomMetadataDataType, label: $t("common.metadata.dataTypes.boolean"), description: $t("common.metadata.dataTypeDescriptions.boolean") },
+    { value: "json" as CustomMetadataDataType, label: $t("common.metadata.dataTypes.json"), description: $t("common.metadata.dataTypeDescriptions.json") },
+  ]);
 
   // フォームリセット
   const resetForm = () => {
@@ -98,16 +95,15 @@
   // バリデーション
   const validateForm = (): boolean => {
     if (!formData.name.trim()) {
-      error = "名前は必須です";
+      error = $t("common.error.nameRequired");
       return false;
     }
     if (!formData.display_name.trim()) {
-      error = "表示名は必須です";
+      error = $t("common.error.displayNameRequired");
       return false;
     }
     if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(formData.name)) {
-      error =
-        "名前は英数字とアンダースコアのみ使用可能で、数字から始められません";
+      error = $t("common.error.invalidNameFormat");
       return false;
     }
     return true;
@@ -136,7 +132,7 @@
       error =
         typeof e === "string"
           ? e
-          : "カスタムメタデータキーの作成に失敗しました";
+          : $t("common.error.createKeyFailed");
     } finally {
       isSubmitting = false;
     }
@@ -165,7 +161,7 @@
       error =
         typeof e === "string"
           ? e
-          : "カスタムメタデータキーの更新に失敗しました";
+          : $t("common.error.updateKeyFailed");
     } finally {
       isSubmitting = false;
     }
@@ -175,9 +171,9 @@
   const deleteKey = async (keyId: string, keyName: string) => {
     try {
       const confirmed = await confirm(
-        `カスタムメタデータキー「${keyName}」を削除しますか？\n\n関連するすべての値も削除されます。\nこの操作は取り消すことができません。`,
+        $t("common.dialog.confirmDeleteKey", { name: keyName }),
         {
-          title: "確認",
+          title: $t("common.dialog.confirm"),
           kind: "warning",
         },
       );
@@ -190,11 +186,10 @@
       onKeysUpdated();
     } catch (e) {
       console.error("削除処理でエラーが発生しました:", e);
-      // Tauri API のエラーの場合もerrorStoreで表示
       errorStore.showError(
         typeof e === "string"
           ? e
-          : "カスタムメタデータキーの削除に失敗しました",
+          : $t("common.error.deleteKeyFailed"),
       );
     }
   };
@@ -217,17 +212,17 @@
 
 <div class="custom-metadata-manager">
   <div class="header">
-    <h3>カスタムメタデータキー管理</h3>
+    <h3>{$t("common.metadata.keyManagement")}</h3>
     <button class="create-button" onclick={startCreate}>
       <Plus size={16} />
-      新規作成
+      {$t("common.buttons.create")}
     </button>
   </div>
 
   <!-- 作成・編集フォーム -->
   {#if showCreateForm}
     <div class="form-section">
-      <h4>{editingKeyId ? "キーを編集" : "新しいキーを作成"}</h4>
+      <h4>{editingKeyId ? $t("common.metadata.editKey") : $t("common.metadata.createNewKey")}</h4>
 
       {#if error}
         <div class="error-message">{error}</div>
@@ -236,32 +231,32 @@
       <form onsubmit={handleSubmit}>
         <div class="form-grid">
           <div class="form-group">
-            <label for="name">名前 *</label>
+            <label for="name">{$t("common.metadata.name")} *</label>
             <input
               id="name"
               type="text"
               bind:value={formData.name}
-              placeholder="例: priority, category, project_name"
+              placeholder={$t("common.placeholder.keyName")}
               disabled={editingKeyId !== null || isSubmitting}
               required
             />
-            <small>英数字とアンダースコアのみ。数字から始められません。</small>
+            <small>{$t("common.metadata.nameRule")}</small>
           </div>
 
           <div class="form-group">
-            <label for="display_name">表示名 *</label>
+            <label for="display_name">{$t("common.metadata.displayName")} *</label>
             <input
               id="display_name"
               type="text"
               bind:value={formData.display_name}
-              placeholder="例: 優先度, カテゴリ, プロジェクト名"
+              placeholder={$t("common.placeholder.displayName")}
               disabled={isSubmitting}
               required
             />
           </div>
 
           <div class="form-group">
-            <label for="data_type">データ型 *</label>
+            <label for="data_type">{$t("common.metadata.dataType")} *</label>
             <select
               id="data_type"
               bind:value={formData.data_type}
@@ -276,37 +271,37 @@
           </div>
 
           <div class="form-group">
-            <label for="description">説明</label>
+            <label for="description">{$t("common.metadata.description")}</label>
             <textarea
               id="description"
               bind:value={formData.description}
-              placeholder="このカスタムメタデータキーの用途や説明"
+              placeholder={$t("common.placeholder.description")}
               disabled={isSubmitting}
               rows="3"
             ></textarea>
           </div>
 
           <div class="form-group">
-            <label for="default_value">デフォルト値</label>
+            <label for="default_value">{$t("common.metadata.defaultValue")}</label>
             <input
               id="default_value"
               type="text"
               bind:value={formData.default_value}
-              placeholder="新しいファイルに自動設定される値"
+              placeholder={$t("common.placeholder.defaultValue")}
               disabled={isSubmitting}
             />
           </div>
 
           <div class="form-group">
-            <label for="validation_pattern">バリデーションパターン</label>
+            <label for="validation_pattern">{$t("common.metadata.validationPattern")}</label>
             <input
               id="validation_pattern"
               type="text"
               bind:value={formData.validation_pattern}
-              placeholder="正規表現パターン（任意）"
+              placeholder={$t("common.placeholder.validationPattern")}
               disabled={isSubmitting}
             />
-            <small>値の妥当性チェックに使用する正規表現</small>
+            <small>{$t("common.metadata.validationDescription")}</small>
           </div>
 
           <div class="form-group checkbox-group">
@@ -316,16 +311,16 @@
                 bind:checked={formData.is_required}
                 disabled={isSubmitting}
               />
-              必須フィールド
+              {$t("common.metadata.required")}
             </label>
-            <small>チェックすると、この値の入力が必須になります</small>
+            <small>{$t("common.metadata.requiredDescription")}</small>
           </div>
         </div>
 
         <div class="form-actions">
           <button type="submit" class="save-button" disabled={isSubmitting}>
             <Save size={16} />
-            {isSubmitting ? "保存中..." : editingKeyId ? "更新" : "作成"}
+            {isSubmitting ? $t("common.buttons.saving") : editingKeyId ? $t("common.buttons.update") : $t("common.buttons.create")}
           </button>
           <button
             type="button"
@@ -334,7 +329,7 @@
             disabled={isSubmitting}
           >
             <X size={16} />
-            キャンセル
+            {$t("common.buttons.cancel")}
           </button>
         </div>
       </form>
@@ -345,8 +340,8 @@
   <div class="keys-list">
     {#if keys.length === 0}
       <div class="empty-state">
-        <p>カスタムメタデータキーが設定されていません</p>
-        <p>「新規作成」ボタンから最初のキーを作成してください</p>
+        <p>{$t("common.metadata.noKeysConfigured")}</p>
+        <p>{$t("common.metadata.createFirstKey")}</p>
       </div>
     {:else}
       <div class="keys-grid">
@@ -361,14 +356,14 @@
                 <button
                   class="edit-btn"
                   onclick={() => startEdit(key)}
-                  title="編集"
+                  title={$t("common.buttons.edit")}
                 >
                   <Edit size={14} />
                 </button>
                 <button
                   class="delete-btn"
                   onclick={() => deleteKey(key.id, key.display_name)}
-                  title="削除"
+                  title={$t("common.buttons.delete")}
                 >
                   <Trash2 size={14} />
                 </button>
@@ -377,30 +372,30 @@
 
             <div class="key-details">
               <div class="detail-row">
-                <span class="label">データ型:</span>
+                <span class="label">{$t("common.metadata.dataType")}:</span>
                 <span class="value">
                   {getDataTypeInfo(key.data_type)?.label || key.data_type}
-                  {key.is_required ? " (必須)" : ""}
+                  {key.is_required ? ` (${$t("common.metadata.required")})` : ""}
                 </span>
               </div>
 
               {#if key.description}
                 <div class="detail-row">
-                  <span class="label">説明:</span>
+                  <span class="label">{$t("common.metadata.description")}:</span>
                   <span class="value">{key.description}</span>
                 </div>
               {/if}
 
               {#if key.default_value}
                 <div class="detail-row">
-                  <span class="label">デフォルト値:</span>
+                  <span class="label">{$t("common.metadata.defaultValue")}:</span>
                   <span class="value">{key.default_value}</span>
                 </div>
               {/if}
 
               {#if key.validation_pattern}
                 <div class="detail-row">
-                  <span class="label">バリデーション:</span>
+                  <span class="label">{$t("common.metadata.validation")}:</span>
                   <code class="value">{key.validation_pattern}</code>
                 </div>
               {/if}

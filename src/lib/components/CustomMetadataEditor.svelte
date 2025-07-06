@@ -12,6 +12,7 @@
     SetCustomMetadataValueRequest,
   } from "../types";
   import { errorStore } from "../stores/error";
+  import { t } from "$lib/i18n";
 
   interface Props {
     fileId: string;
@@ -35,8 +36,8 @@
       metadataValues = await getCustomMetadataValuesByFile(fileId);
     } catch (e) {
       console.error("カスタムメタデータ値の読み込みに失敗:", e);
-      error = "メタデータ値の読み込みに失敗しました";
-      errorStore.showError("カスタムメタデータの読み込みに失敗しました。しばらくしてから再度お試しください。");
+      error = $t("common.error.metadataLoadFailed");
+      errorStore.showError($t("common.error.customMetadataLoadFailed"));
     } finally {
       isLoading = false;
     }
@@ -64,7 +65,7 @@
   const validateValue = (key: CustomMetadataKey, value: string): boolean => {
     // 必須チェック
     if (key.is_required && !value.trim()) {
-      error = `${key.display_name}は必須項目です`;
+      error = $t("common.error.requiredField", { field: key.display_name });
       return false;
     }
 
@@ -73,20 +74,20 @@
       switch (key.data_type) {
         case "number":
           if (isNaN(Number(value))) {
-            error = `${key.display_name}は数値で入力してください`;
+            error = $t("common.error.invalidNumber", { field: key.display_name });
             return false;
           }
           break;
         case "date":
           if (isNaN(Date.parse(value))) {
-            error = `${key.display_name}は有効な日付で入力してください（例: 2024-01-01, 2024-01-01T10:00:00）`;
+            error = $t("common.error.invalidDate", { field: key.display_name });
             return false;
           }
           break;
         case "boolean":
           const lowerValue = value.toLowerCase();
           if (!["true", "false", "1", "0", "yes", "no"].includes(lowerValue)) {
-            error = `${key.display_name}はtrue/false、yes/no、1/0のいずれかで入力してください`;
+            error = $t("common.error.invalidBoolean", { field: key.display_name });
             return false;
           }
           break;
@@ -94,7 +95,7 @@
           try {
             JSON.parse(value);
           } catch {
-            error = `${key.display_name}は有効なJSON形式で入力してください`;
+            error = $t("common.error.invalidJson", { field: key.display_name });
             return false;
           }
           break;
@@ -106,12 +107,12 @@
       try {
         const regex = new RegExp(key.validation_pattern);
         if (!regex.test(value)) {
-          error = `${key.display_name}の形式が正しくありません`;
+          error = $t("common.error.invalidFormat", { field: key.display_name });
           return false;
         }
       } catch {
         console.warn(`無効な正規表現パターン: ${key.validation_pattern}`);
-        errorStore.showWarning("バリデーションパターンの設定に問題があります。");
+        errorStore.showWarning($t("common.error.invalidValidationPattern"));
       }
     }
 
@@ -163,8 +164,8 @@
       return true;
     } catch (e) {
       console.error("値の保存に失敗:", e);
-      error = typeof e === "string" ? e : "値の保存に失敗しました";
-      errorStore.showError("メタデータの保存に失敗しました。もう一度お試しください。");
+      error = typeof e === "string" ? e : $t("common.error.saveFailed");
+      errorStore.showError($t("common.error.metadataSaveFailed"));
       return false;
     } finally {
       savingKeyId = null;
@@ -197,8 +198,8 @@
     switch (dataType) {
       case "boolean":
         const lowerValue = value.toLowerCase();
-        if (["true", "1", "yes"].includes(lowerValue)) return "はい";
-        if (["false", "0", "no"].includes(lowerValue)) return "いいえ";
+        if (["true", "1", "yes"].includes(lowerValue)) return $t("common.buttons.yes");
+        if (["false", "0", "no"].includes(lowerValue)) return $t("common.buttons.no");
         return value;
       case "date":
         try {
@@ -237,28 +238,28 @@
   const getPlaceholder = (key: CustomMetadataKey): string => {
     switch (key.data_type) {
       case "boolean":
-        return "true/false, yes/no, 1/0";
+        return $t("common.placeholder.boolean");
       case "date":
-        return "2024-01-01T10:00:00";
+        return $t("common.placeholder.date");
       case "json":
-        return '{"key": "value"}';
+        return $t("common.placeholder.json");
       case "number":
-        return "123.45";
+        return $t("common.placeholder.number");
       default:
-        return `${key.display_name}を入力...`;
+        return $t("common.placeholder.input", { field: key.display_name });
     }
   };
 </script>
 
 <div class="file-detail-section">
-  <h4>カスタムメタデータ</h4>
+  <h4>{$t("common.metadata.customMetadata")}</h4>
 
   {#if isLoading}
-    <div class="loading">読み込み中...</div>
+    <div class="loading">{$t("common.loading.loading")}</div>
   {:else if customMetadataKeys.length === 0}
     <div class="empty-state">
-      <p>カスタムメタデータキーが定義されていません</p>
-      <p>「メタデータ」タブから新しいキーを作成してください</p>
+      <p>{$t("common.metadata.noCustomKeys")}</p>
+      <p>{$t("common.metadata.createKeyInstruction")}</p>
     </div>
   {:else}
     <div class="detail-grid">
@@ -279,7 +280,7 @@
               <span class="required">*</span>
             {/if}
             {#if isSaving}
-              <span class="saving-indicator">保存中...</span>
+              <span class="saving-indicator">{$t("common.buttons.saving")}</span>
             {/if}
           </span>
           <span class="detail-value">
@@ -290,9 +291,9 @@
                   handleValueChange(key, (e.target as HTMLSelectElement).value)}
                 class="inline-select"
               >
-                <option value="">選択してください</option>
-                <option value="true">はい</option>
-                <option value="false">いいえ</option>
+                <option value="">{$t("common.buttons.selectValue")}</option>
+                <option value="true">{$t("common.buttons.yes")}</option>
+                <option value="false">{$t("common.buttons.no")}</option>
               </select>
             {:else if key.data_type === "json"}
               <textarea

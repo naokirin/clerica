@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Loader2 } from "lucide-svelte";
   import type { LoadingSteps } from "../types";
+  import { t } from "$lib/i18n";
 
   interface Props {
     isVisible: boolean;
@@ -16,7 +17,7 @@
     <div class="loading-container">
       <div class="loading-logo">
         <h1>Clerica</h1>
-        <p>Mac向けファイル整理・検索ツール</p>
+        <p>{$t("common.app.description")}</p>
       </div>
 
       <div class="loading-content">
@@ -26,7 +27,7 @@
           </div>
         {:else}
           <div class="loading-complete">
-            <p>準備が完了しました！</p>
+            <p>{$t("common.loading.ready")}</p>
           </div>
         {/if}
 
@@ -48,8 +49,8 @@
             </div>
             <span
               >{steps.directories
-                ? "ディレクトリ読み込み完了"
-                : "ディレクトリを読み込み中..."}</span
+                ? $t("common.loading.directoriesComplete")
+                : $t("common.loading.directoriesLoading")}</span
             >
           </div>
 
@@ -62,7 +63,7 @@
               {/if}
             </div>
             <span
-              >{steps.tags ? "タグ読み込み完了" : "タグを読み込み中..."}</span
+              >{steps.tags ? $t("common.loading.tagsComplete") : $t("common.loading.tagsLoading")}</span
             >
           </div>
 
@@ -76,8 +77,8 @@
             </div>
             <span
               >{steps.files
-                ? "ファイル読み込み完了"
-                : "ファイルを読み込み中..."}</span
+                ? $t("common.loading.filesComplete")
+                : $t("common.loading.filesLoading")}</span
             >
           </div>
         </div>

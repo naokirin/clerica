@@ -11,6 +11,7 @@
   } from "../types";
   import FileList from "./FileList.svelte";
   import SortControl from "./SortControl.svelte";
+  import { t } from "$lib/i18n";
 
   interface Props {
     searchQuery: string;
@@ -26,7 +27,7 @@
     topTags: TagType[];
     tagSearchResults: TagType[];
     metadataSearchFilters: MetadataSearchFilter[];
-    metadataLogic: 'AND' | 'OR';
+    metadataLogic: "AND" | "OR";
     availableMetadataKeys: CustomMetadataKey[];
     sortOptions: SortOptions;
     onSearchQueryChange: (query: string) => void;
@@ -41,7 +42,7 @@
     onTagAdd: (tagId: string) => void;
     onTagRemove: (tagId: string) => void;
     onTagSearch: (query: string) => void;
-    onMetadataLogicChange: (logic: 'AND' | 'OR') => void;
+    onMetadataLogicChange: (logic: "AND" | "OR") => void;
     onSortChange: (options: SortOptions) => void;
   }
 
@@ -81,14 +82,14 @@
   const fileCategories: FileCategoryInfo[] = [
     {
       key: "all",
-      label: "すべて",
+      label: $t("common.files.category.all"),
       icon: "📁",
       mimeTypes: [],
       extensions: [],
     },
     {
       key: "image",
-      label: "画像",
+      label: $t("common.files.category.image"),
       icon: "🖼️",
       mimeTypes: ["image/"],
       extensions: [
@@ -106,14 +107,14 @@
     },
     {
       key: "audio",
-      label: "音声",
+      label: $t("common.files.category.audio"),
       icon: "🎵",
       mimeTypes: ["audio/"],
       extensions: ["mp3", "wav", "ogg", "flac", "aac", "m4a", "wma", "opus"],
     },
     {
       key: "video",
-      label: "動画",
+      label: $t("common.files.category.video"),
       icon: "🎬",
       mimeTypes: ["video/"],
       extensions: [
@@ -130,7 +131,7 @@
     },
     {
       key: "document",
-      label: "ドキュメント",
+      label: $t("common.files.category.document"),
       icon: "📄",
       mimeTypes: [
         "application/pdf",
@@ -160,7 +161,7 @@
     },
     {
       key: "archive",
-      label: "アーカイブ",
+      label: $t("common.files.category.archive"),
       icon: "📦",
       mimeTypes: [
         "application/zip",
@@ -173,7 +174,7 @@
     },
     {
       key: "other",
-      label: "その他",
+      label: $t("common.files.category.other"),
       icon: "📄",
       mimeTypes: [],
       extensions: [],
@@ -183,15 +184,15 @@
   function getOperatorLabel(operator: string): string {
     switch (operator) {
       case "equals":
-        return "等しい";
+        return $t("common.search.operators.equals");
       case "contains":
-        return "含む";
+        return $t("common.search.operators.contains");
       case "greater_than":
-        return "より大きい";
+        return $t("common.search.operators.greaterThan");
       case "less_than":
-        return "より小さい";
+        return $t("common.search.operators.lessThan");
       case "not_equals":
-        return "等しくない";
+        return $t("common.search.operators.notEquals");
       default:
         return operator;
     }
@@ -240,19 +241,22 @@
 
 <div class="search-view">
   <div class="search-header">
-    <h2>ファイル検索</h2>
-    
+    <h2>{$t("common.search.title")}</h2>
+
     {#if searchResults.length > 0}
       <div class="search-stats">
         <span class="total-results">
           {selectedCategory === "all"
-            ? "検索結果"
+            ? $t("common.search.results")
             : fileCategories.find((c) => c.key === selectedCategory)?.label}:
-          {filteredResults.length.toLocaleString()} 件
+          {filteredResults.length.toLocaleString()}
+          {$t("common.search.items")}
         </span>
         {#if totalPages > 1}
           <span class="page-info">
-            ページ {currentPage} / {totalPages}
+            {$t("common.pagination.page")}
+            {currentPage}
+            {$t("common.pagination.of", { total: totalPages })}
             ({((currentPage - 1) * itemsPerPage + 1).toLocaleString()} - {Math.min(
               currentPage * itemsPerPage,
               filteredResults.length,
@@ -266,13 +270,13 @@
   <div class="search-controls">
     <input
       type="text"
-      placeholder="ファイル名を入力..."
+      placeholder={$t("common.search.inputPlaceholder")}
       bind:value={searchQuery}
       class="search-input"
     />
     <button onclick={onSearch} class="search-button">
       <Search size={16} />
-      検索
+      {$t("common.buttons.search")}
     </button>
   </div>
 
@@ -280,25 +284,29 @@
   <div class="tag-filter-section">
     <div class="tag-filter-header">
       <Tag size={16} />
-      <h3>タグで絞り込み</h3>
+      <h3>{$t("common.search.tagFilter")}</h3>
     </div>
 
     <!-- 選択されたタグ -->
     {#if selectedTags.length > 0}
       <div class="selected-tags">
-        <h4>選択中のタグ:</h4>
+        <h4>{$t("common.search.selectedTags")}:</h4>
         <div class="tag-chips">
           {#each selectedTags as tagId}
-            {@const selectedTag = allTags.find(tag => tag.id === tagId)}
-            {#if selectedTag}
-              <div class="tag-chip selected">
-                <span class="tag-color" style="background-color: {selectedTag.color}"></span>
-                <span class="tag-name">{selectedTag.name}</span>
-                <button onclick={() => onTagRemove(tagId)} class="tag-remove-btn">
-                  <X size={12} />
-                </button>
-              </div>
-            {/if}
+            {@const selectedTag = allTags.find((tag) => tag.id === tagId)}
+            <div class="tag-chip selected">
+              <span
+                class="tag-color"
+                style="background-color: {selectedTag?.color || '#666'}"
+              ></span>
+              <span class="tag-name"
+                >{selectedTag?.name ||
+                  $t("common.search.tagId", { id: tagId })}</span
+              >
+              <button onclick={() => onTagRemove(tagId)} class="tag-remove-btn">
+                <X size={12} />
+              </button>
+            </div>
           {/each}
         </div>
       </div>
@@ -306,12 +314,13 @@
 
     <!-- 上位タグ -->
     <div class="top-tags">
-      <h4>よく使われるタグ (上位10件):</h4>
+      <h4>{$t("common.search.topTags")}:</h4>
       <div class="tag-chips">
         {#each topTags as tag}
           {#if !selectedTags.includes(tag.id)}
             <button onclick={() => onTagAdd(tag.id)} class="tag-chip">
-              <span class="tag-color" style="background-color: {tag.color}"></span>
+              <span class="tag-color" style="background-color: {tag.color}"
+              ></span>
               <span class="tag-name">{tag.name}</span>
             </button>
           {/if}
@@ -321,10 +330,10 @@
 
     <!-- タグ検索 -->
     <div class="tag-search">
-      <h4>タグを検索:</h4>
+      <h4>{$t("common.search.searchTags")}:</h4>
       <input
         type="text"
-        placeholder="タグ名を入力..."
+        placeholder={$t("common.search.tagSearchPlaceholder")}
         oninput={(e) => onTagSearch(e.target.value)}
         class="tag-search-input"
       />
@@ -332,8 +341,12 @@
         <div class="tag-search-results">
           {#each tagSearchResults as tag}
             {#if !selectedTags.includes(tag.id)}
-              <button onclick={() => onTagAdd(tag.id)} class="tag-search-result">
-                <span class="tag-color" style="background-color: {tag.color}"></span>
+              <button
+                onclick={() => onTagAdd(tag.id)}
+                class="tag-search-result"
+              >
+                <span class="tag-color" style="background-color: {tag.color}"
+                ></span>
                 <span class="tag-name">{tag.name}</span>
               </button>
             {/if}
@@ -346,36 +359,38 @@
   <!-- カスタムメタデータ検索フィルタ -->
   <div class="metadata-search-section">
     <div class="metadata-search-header">
-      <h3>カスタムメタデータ検索</h3>
+      <h3>{$t("common.search.metadataSearch")}</h3>
       <button onclick={addMetadataFilter} class="add-filter-btn">
         <Plus size={16} />
-        フィルタを追加
+        {$t("common.search.addFilter")}
       </button>
     </div>
 
     {#if metadataSearchFilters.length > 1}
       <div class="metadata-logic-section">
-        <label class="metadata-logic-label">検索条件の結合方法:</label>
+        <label class="metadata-logic-label"
+          >{$t("common.search.metadataLogicLabel")}:</label
+        >
         <div class="metadata-logic-options">
           <label class="metadata-logic-option">
             <input
               type="radio"
               value="AND"
-              checked={metadataLogic === 'AND'}
-              onchange={() => onMetadataLogicChange('AND')}
+              checked={metadataLogic === "AND"}
+              onchange={() => onMetadataLogicChange("AND")}
               class="metadata-logic-radio"
             />
-            すべての条件に一致 (AND)
+            {$t("common.search.metadataLogicAnd")}
           </label>
           <label class="metadata-logic-option">
             <input
               type="radio"
               value="OR"
-              checked={metadataLogic === 'OR'}
-              onchange={() => onMetadataLogicChange('OR')}
+              checked={metadataLogic === "OR"}
+              onchange={() => onMetadataLogicChange("OR")}
               class="metadata-logic-radio"
             />
-            いずれかの条件に一致 (OR)
+            {$t("common.search.metadataLogicOr")}
           </label>
         </div>
       </div>
@@ -406,7 +421,7 @@
               }}
               class="metadata-key-select"
             >
-              <option value="">メタデータキーを選択...</option>
+              <option value="">{$t("common.search.selectMetadataKey")}</option>
               {#each availableMetadataKeys as key}
                 <option value={key.id}>{key.display_name}</option>
               {/each}
@@ -439,9 +454,9 @@
                   }}
                   class="metadata-value-input"
                 >
-                  <option value="">選択...</option>
-                  <option value="true">はい</option>
-                  <option value="false">いいえ</option>
+                  <option value="">{$t("common.search.selectValue")}</option>
+                  <option value="true">{$t("common.search.yes")}</option>
+                  <option value="false">{$t("common.search.no")}</option>
                 </select>
               {:else if filter.dataType === "date"}
                 <input
@@ -459,7 +474,7 @@
                 <input
                   type="number"
                   value={filter.value}
-                  placeholder="数値を入力..."
+                  placeholder={$t("common.search.enterNumber")}
                   oninput={(e) => {
                     updateMetadataFilter(index, {
                       ...filter,
@@ -472,7 +487,7 @@
                 <input
                   type="text"
                   value={filter.value}
-                  placeholder="値を入力..."
+                  placeholder={$t("common.search.enterValue")}
                   oninput={(e) => {
                     updateMetadataFilter(index, {
                       ...filter,
@@ -487,7 +502,7 @@
             <button
               onclick={() => removeMetadataFilter(index)}
               class="remove-filter-btn"
-              title="フィルタを削除"
+              title={$t("common.search.removeFilter")}
             >
               <X size={16} />
             </button>
@@ -567,22 +582,26 @@
         </button>
       </div>
       <div class="sort-section">
-        <SortControl 
+        <SortControl
           sortField={sortOptions.field}
           sortOrder={sortOptions.order}
-          onSortChange={onSortChange}
+          {onSortChange}
         />
       </div>
     </div>
   {/if}
 
   <FileList
-    filesWithTags={filteredResults.map(result => ({ file: result.file, tags: result.tags }))}
+    filesWithTags={filteredResults.map((result) => ({
+      file: result.file,
+      tags: result.tags,
+    }))}
     {currentPage}
     {totalPages}
-    emptyMessage={searchResults.length === 0 && (searchQuery || metadataSearchFilters.some(f => f.keyId && f.value)) 
-      ? "検索結果が見つかりませんでした" 
-      : "検索条件を入力してください"}
+    emptyMessage={searchResults.length === 0 &&
+    (searchQuery || metadataSearchFilters.some((f) => f.keyId && f.value))
+      ? $t("common.search.noSearchResults")
+      : $t("common.search.enterSearchCriteria")}
     showEmptyState={filteredResults.length === 0}
     {onSelectFile}
     {onGoToPage}
@@ -728,11 +747,15 @@
     color: #374151;
   }
 
-  .selected-tags, .top-tags, .tag-search {
+  .selected-tags,
+  .top-tags,
+  .tag-search {
     margin-bottom: 1rem;
   }
 
-  .selected-tags h4, .top-tags h4, .tag-search h4 {
+  .selected-tags h4,
+  .top-tags h4,
+  .tag-search h4 {
     margin: 0 0 0.5rem 0;
     font-size: 0.875rem;
     font-weight: 500;

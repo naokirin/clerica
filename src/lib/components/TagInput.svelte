@@ -1,9 +1,10 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
   import type { Tag } from '../types';
+  import { t } from '$lib/i18n';
 
   export let tags: Tag[] = [];
-  export let placeholder = "タグを入力してください...";
+  export let placeholder = $t('common.tags.inputPlaceholder');
   export let disabled = false;
 
   const dispatch = createEventDispatcher<{
@@ -81,7 +82,7 @@
           class="tag-remove"
           on:click={() => removeTag(tag)}
           {disabled}
-          aria-label="Remove tag {tag.name}"
+          aria-label={$t('common.tags.removeAriaLabel', { name: tag.name })}
         >
           ✕
         </button>

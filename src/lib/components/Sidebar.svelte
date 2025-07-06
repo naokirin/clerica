@@ -1,6 +1,7 @@
 <script lang="ts">
   import { FolderPlus, Tag, RefreshCw, X } from "lucide-svelte";
   import type { Directory, Tag as TagType } from "../types";
+  import { t } from "$lib/i18n";
 
   interface Props {
     directories: Directory[];
@@ -27,10 +28,10 @@
 
 <div class="sidebar">
   <div class="sidebar-section">
-    <h3>ディレクトリ</h3>
+    <h3>{$t("common.sidebar.directories")}</h3>
     <button onclick={onAddDirectory} class="add-button">
       <FolderPlus size={16} />
-      ディレクトリを追加
+      {$t("common.sidebar.addDirectory")}
     </button>
     <div class="directory-list">
       <!-- すべてのファイルオプション -->
@@ -39,8 +40,8 @@
         onclick={() => onSelectDirectory("all")}
       >
         <div class="directory-content">
-          <div class="directory-name">すべてのファイル</div>
-          <div class="directory-path">全ディレクトリのファイルを表示</div>
+          <div class="directory-name">{$t("common.sidebar.allFiles")}</div>
+          <div class="directory-path">{$t("common.sidebar.allFilesDescription")}</div>
         </div>
       </div>
 
@@ -62,7 +63,7 @@
                 e.stopPropagation();
                 onRescanDirectory(dir.id);
               }}
-              title="ディレクトリを再スキャン"
+              title={$t("common.sidebar.rescan")}
             >
               <RefreshCw size={14} />
             </button>
@@ -72,7 +73,7 @@
                 e.stopPropagation();
                 onRemoveDirectory(dir.id, dir.name);
               }}
-              title="ディレクトリを登録から削除"
+              title={$t("common.sidebar.remove")}
             >
               <X size={14} />
             </button>

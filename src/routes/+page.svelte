@@ -21,6 +21,7 @@
   import type { File } from "../lib/types";
   import "../lib/App.css";
   import { errorStore } from "../lib/stores/error";
+  import { t } from "$lib/i18n";
 
   // AppViewModel インスタンス
   const appViewModel = new AppViewModel();
@@ -114,7 +115,7 @@
       const selected = await open({
         directory: true,
         multiple: false,
-        title: "追加するディレクトリを選択",
+        title: $t("common.dialog.selectDirectory"),
       });
 
       if (selected && typeof selected === "string") {
@@ -125,7 +126,7 @@
     } catch (error) {
       console.error("Failed to add directory:", error);
       const fallbackPath = prompt(
-        "ディレクトリ選択に失敗しました。パスを直接入力してください:",
+        $t("common.dialog.fallbackDirectoryInput"),
       );
       if (fallbackPath && fallbackPath.trim()) {
         const name = fallbackPath.split("/").pop() || fallbackPath;
@@ -146,7 +147,7 @@
     if (success) {
       await fileViewModel.loadFiles();
     } else {
-      errorStore.showError("ディレクトリの再スキャンに失敗しました。");
+      errorStore.showError($t("common.error.directoryRescanFailed"));
     }
   };
 
@@ -155,8 +156,8 @@
     directoryName: string,
   ) => {
     const confirmed = await confirm(
-      `「${directoryName}」を登録から削除しますか？\nファイルは削除されません。`,
-      { title: "確認", kind: "warning" },
+      $t("common.dialog.confirmRemoveDirectory", { name: directoryName }),
+      { title: $t("common.dialog.confirm"), kind: "warning" },
     );
     if (confirmed) {
       const success =
@@ -164,13 +165,13 @@
       if (success) {
         await fileViewModel.loadFiles();
       } else {
-        errorStore.showError("ディレクトリの削除に失敗しました。");
+        errorStore.showError($t("common.error.directoryRemoveFailed"));
       }
     }
   };
 
   const createTag = async () => {
-    const name = prompt("Enter tag name:");
+    const name = prompt($t("common.dialog.enterTagName"));
     if (name) {
       await tagViewModel.createNewTag(name, "#3B82F6");
     }
@@ -191,26 +192,26 @@
   const openFile = async (filePath: string) => {
     const success = await fileViewModel.openSelectedFile(filePath);
     if (!success) {
-      errorStore.showError(`ファイルを開けませんでした`);
+      errorStore.showError($t("common.error.fileOpenFailed"));
     }
   };
 
   const revealInFinder = async (filePath: string) => {
     const success = await fileViewModel.revealFileInFinder(filePath);
     if (!success) {
-      errorStore.showError(`Finderで表示できませんでした`);
+      errorStore.showError($t("common.error.fileRevealFailed"));
     }
   };
 
   const deleteFile = async (filePath: string, fileName: string) => {
-    const confirmed = await confirm(`「${fileName}」をゴミ箱に移動しますか？`, {
-      title: "確認",
+    const confirmed = await confirm($t("common.dialog.confirmDeleteFile", { name: fileName }), {
+      title: $t("common.dialog.confirm"),
       kind: "warning",
     });
     if (confirmed) {
       const success = await fileViewModel.deleteSelectedFile(filePath);
       if (!success) {
-        errorStore.showError(`ファイルをゴミ箱に移動できませんでした`);
+        errorStore.showError($t("common.error.fileDeleteFailed"));
       }
     }
   };
@@ -285,33 +286,33 @@
             onclick={() => appViewModel.setActiveTab("files")}
           >
             <FileText size={16} />
-            ファイル
+            {$t("common.tabs.files")}
           </button>
           <button
             class="tab {$activeTab === 'search' ? 'active' : ''}"
             onclick={() => appViewModel.setActiveTab("search")}
           >
             <Search size={16} />
-            検索
+            {$t("common.tabs.search")}
           </button>
           <button
             class="tab {$activeTab === 'tags' ? 'active' : ''}"
             onclick={() => appViewModel.setActiveTab("tags")}
           >
             <Tag size={16} />
-            タグ管理
+            {$t("common.tabs.tags")}
           </button>
           <button
             class="tab {$activeTab === 'metadata' ? 'active' : ''}"
             onclick={() => appViewModel.setActiveTab("metadata")}
           >
-            🏷️ メタデータ
+            🏷️ {$t("common.tabs.metadata")}
           </button>
         </div>
         <button
           class="settings-button"
           onclick={openSettingsModal}
-          title="設定"
+          title={$t("common.buttons.settings")}
         >
           <Settings size={16} />
         </button>

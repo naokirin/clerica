@@ -8,6 +8,7 @@
   } from "../types";
   import FileList from "./FileList.svelte";
   import SortControl from "./SortControl.svelte";
+  import { t } from "$lib/i18n";
 
   interface Props {
     files: File[];
@@ -51,17 +52,17 @@
     onSortChange,
   }: Props = $props();
 
-  const fileCategories: FileCategoryInfo[] = [
+  const getFileCategories = (): FileCategoryInfo[] => [
     {
       key: "all",
-      label: "すべて",
+      label: $t("common.files.category.all"),
       icon: "📁",
       mimeTypes: [],
       extensions: [],
     },
     {
       key: "image",
-      label: "画像",
+      label: $t("common.files.category.image"),
       icon: "🖼️",
       mimeTypes: ["image/"],
       extensions: [
@@ -79,14 +80,14 @@
     },
     {
       key: "audio",
-      label: "音声",
+      label: $t("common.files.category.audio"),
       icon: "🎵",
       mimeTypes: ["audio/"],
       extensions: ["mp3", "wav", "ogg", "flac", "aac", "m4a", "wma", "opus"],
     },
     {
       key: "video",
-      label: "動画",
+      label: $t("common.files.category.video"),
       icon: "🎬",
       mimeTypes: ["video/"],
       extensions: [
@@ -103,7 +104,7 @@
     },
     {
       key: "document",
-      label: "ドキュメント",
+      label: $t("common.files.category.document"),
       icon: "📄",
       mimeTypes: [
         "application/pdf",
@@ -133,7 +134,7 @@
     },
     {
       key: "archive",
-      label: "アーカイブ",
+      label: $t("common.files.category.archive"),
       icon: "📦",
       mimeTypes: [
         "application/zip",
@@ -146,31 +147,34 @@
     },
     {
       key: "other",
-      label: "その他",
+      label: $t("common.files.category.other"),
       icon: "📄",
       mimeTypes: [],
       extensions: [],
     },
   ];
+
+  let fileCategories = $derived(getFileCategories());
 </script>
 
 <div class="files-view">
   <div class="files-header">
-    <h2>ファイル一覧</h2>
+    <h2>{$t("common.files.title")}</h2>
     <div class="files-stats">
       <span class="total-files">
         {selectedCategory === "all"
-          ? "合計"
+          ? $t("common.files.total")
           : fileCategories.find((c) => c.key === selectedCategory)?.label}:
-        {totalFiles.toLocaleString()} ファイル
+        {$t("common.files.totalFiles", { count: totalFiles.toLocaleString() })}
       </span>
       {#if totalPages > 1}
         <span class="page-info">
-          ページ {currentPage} / {totalPages}
-          ({((currentPage - 1) * itemsPerPage + 1).toLocaleString()} - {Math.min(
-            currentPage * itemsPerPage,
-            totalFiles,
-          ).toLocaleString()})
+          {$t("common.pagination.page")} {currentPage} {$t("common.pagination.of", { total: totalPages })}
+          ({$t("common.pagination.showing", { 
+            start: ((currentPage - 1) * itemsPerPage + 1).toLocaleString(),
+            end: Math.min(currentPage * itemsPerPage, totalFiles).toLocaleString(),
+            total: totalFiles.toLocaleString()
+          })})
         </span>
       {/if}
     </div>
@@ -261,8 +265,8 @@
     {currentPage}
     {totalPages}
     emptyMessage={totalFiles === 0 && selectedDirectoryId === "all" 
-      ? "ディレクトリを追加してファイルをスキャンしてください" 
-      : "対象のファイルが存在しません"}
+      ? $t("common.files.emptyDirectories") 
+      : $t("common.files.noFiles")}
     showEmptyState={files.length === 0}
     {onSelectFile}
     {onGoToPage}

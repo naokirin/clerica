@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { SortField, SortOrder, SortOptions } from "../types";
   import { ChevronUp, ChevronDown } from "lucide-svelte";
+  import { t } from "$lib/i18n";
 
   interface Props {
     sortField: SortField;
@@ -10,14 +11,16 @@
 
   let { sortField, sortOrder, onSortChange }: Props = $props();
 
-  const sortFields: { value: SortField; label: string }[] = [
-    { value: "modified_at", label: "更新日時" },
-    { value: "name", label: "ファイル名" },
-    { value: "size", label: "ファイルサイズ" },
-    { value: "created_at", label: "作成日時" },
-    { value: "last_accessed", label: "最終アクセス日時" },
-    { value: "file_type", label: "ファイル種別" },
+  const getSortFields = (): { value: SortField; label: string }[] => [
+    { value: "modified_at", label: $t("common.files.sort.modified") },
+    { value: "name", label: $t("common.files.sort.name") },
+    { value: "size", label: $t("common.files.sort.size") },
+    { value: "created_at", label: $t("common.files.sort.created") },
+    { value: "last_accessed", label: $t("common.files.sort.lastAccessed") },
+    { value: "file_type", label: $t("common.files.sort.fileType") },
   ];
+
+  let sortFields = $derived(getSortFields());
 
   function handleFieldChange(event: Event) {
     const target = event.target as HTMLSelectElement;
@@ -45,7 +48,7 @@
     type="button"
     onclick={toggleSortOrder} 
     class="sort-order-btn"
-    title={sortOrder === "asc" ? "昇順 (クリックで降順に変更)" : "降順 (クリックで昇順に変更)"}
+    title={sortOrder === "asc" ? $t("common.files.sort.ascendingTooltip") : $t("common.files.sort.descendingTooltip")}
   >
     {#if sortOrder === "asc"}
       <ChevronUp size={16} />
