@@ -1,9 +1,10 @@
 <script lang="ts">
-  import { X, Trash2, Loader2 } from "lucide-svelte";
+  import { X, Trash2, Loader2, ExternalLink, Folder } from "lucide-svelte";
   import type { File, CustomMetadataKey, Tag } from "../types.js";
   import { formatFileSize, formatDate } from "../utils.js";
   import CustomMetadataEditor from "./CustomMetadataEditor.svelte";
   import TagInput from "./TagInput.svelte";
+  import Dropdown from "./Dropdown.svelte";
   import * as exifApi from "../api/exif.js";
   import * as filesApi from "../api/files.js";
   import * as tagsApi from "../api/tags.js";
@@ -403,36 +404,40 @@
       <div class="modal-header">
         <h3>ファイル詳細</h3>
         <div class="modal-actions">
-          <button 
-            class="action-button open-button" 
-            onclick={() => onOpenFile(file.path)}
-            title="ファイルを開く"
-            disabled={isDeleting}
-          >
-            📂 開く
-          </button>
-          <button 
-            class="action-button finder-button" 
-            onclick={() => onRevealInFinder(file.path)}
-            title="Finderで表示"
-            disabled={isDeleting}
-          >
-            🔍 Finder
-          </button>
-          <button 
-            class="action-button delete-button" 
-            onclick={() => onDeleteFile(file.path, file.name)}
-            title={isDeleting ? "削除中..." : "ゴミ箱に移動"}
-            disabled={isDeleting}
-          >
-            {#if isDeleting}
-              <Loader2 size={16} class="animate-spin" />
-              削除中...
-            {:else}
-              <Trash2 size={16} />
-              削除
-            {/if}
-          </button>
+          <Dropdown disabled={isDeleting} position="left">
+            {#snippet children()}
+              <button 
+                class="dropdown-menu-item" 
+                onclick={() => onOpenFile(file.path)}
+                role="menuitem"
+              >
+                <ExternalLink size={16} class="icon" />
+                開く
+              </button>
+              <button 
+                class="dropdown-menu-item" 
+                onclick={() => onRevealInFinder(file.path)}
+                role="menuitem"
+              >
+                <Folder size={16} class="icon" />
+                Finderで表示
+              </button>
+              <button 
+                class="dropdown-menu-item danger" 
+                onclick={() => onDeleteFile(file.path, file.name)}
+                disabled={isDeleting}
+                role="menuitem"
+              >
+                {#if isDeleting}
+                  <Loader2 size={16} class="icon animate-spin" />
+                  削除中...
+                {:else}
+                  <Trash2 size={16} class="icon" />
+                  削除
+                {/if}
+              </button>
+            {/snippet}
+          </Dropdown>
           <button 
             class="close-button" 
             onclick={onClose}
