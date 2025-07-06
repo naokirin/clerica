@@ -72,6 +72,9 @@
   // 設定モーダルの状態管理
   let isSettingsModalOpen = false;
 
+  let fileSystemChangeListenerPromise: Promise<void> | null = null;
+  let unlisten: (() => void) | null = null;
+
   const openSettingsModal = () => {
     isSettingsModalOpen = true;
   };
@@ -80,23 +83,25 @@
     isSettingsModalOpen = false;
   };
 
-  onMount(async () => {
+  onMount(() => {
     // ViewModelが自動的に初期化するため、特別な処理は不要
-
-    // ファイルシステム変更のリスナーを追加
-    const { listen } = await import("@tauri-apps/api/event");
-    const unlisten = await listen("file_system_change", (event) => {
-      console.log("ファイルシステム変更イベント:", event.payload);
-      // ファイル一覧を再読み込み
-      fileViewModel.loadFiles();
+    if (fileSystemChangeListenerPromise) {
+      // 既にリスナーが登録されている場合は何もしない
+      return;
+    }
+    fileSystemChangeListenerPromise = Promise.resolve().then(async () => {
+      // ファイルシステム変更のリスナーを追加
+      const { listen } = await import("@tauri-apps/api/event");
+      unlisten = await listen("file_system_change", (event) => {
+        console.log("ファイルシステム変更イベント:", event.payload);
+        // ファイル一覧を再読み込み
+        fileViewModel.loadFiles();
+      });
     });
-
-    return () => {
-      unlisten();
-    };
   });
 
   onDestroy(() => {
+    unlisten?.(); // コンポーネントが破棄される際にリスナーを解除
     appViewModel.dispose();
   });
 
@@ -218,9 +223,9 @@
   // タグ追加ハンドラー
   const handleTagAdd = async (tagId: string) => {
     let currentTags: string[];
-    const unsubscribe = selectedTags.subscribe(tags => currentTags = tags);
+    const unsubscribe = selectedTags.subscribe((tags) => (currentTags = tags));
     unsubscribe();
-    
+
     if (!currentTags.includes(tagId)) {
       searchViewModel.setSelectedTags([...currentTags, tagId]);
       await searchViewModel.performSearch(); // 検索を再実行
@@ -230,10 +235,10 @@
   // タグ削除ハンドラー
   const handleTagRemove = async (tagId: string) => {
     let currentTags: string[];
-    const unsubscribe = selectedTags.subscribe(tags => currentTags = tags);
+    const unsubscribe = selectedTags.subscribe((tags) => (currentTags = tags));
     unsubscribe();
-    
-    const newTags = currentTags.filter(id => id !== tagId);
+
+    const newTags = currentTags.filter((id) => id !== tagId);
     searchViewModel.setSelectedTags(newTags);
     await searchViewModel.performSearch(); // 検索を再実行
   };
