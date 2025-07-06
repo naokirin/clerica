@@ -2,6 +2,7 @@
   import { X } from "lucide-svelte";
   import { onMount } from "svelte";
   import { getSettings, updateSettingBool, updateSettingInt } from "../api/settings";
+  import { errorStore } from "../stores/error.js";
 
   export let isOpen = false;
   export let onClose: () => void;
@@ -24,6 +25,7 @@
       filesPerPage = settings.files_per_page;
     } catch (error) {
       console.error('設定の読み込みに失敗しました:', error);
+      errorStore.showError("設定の読み込みに失敗しました。アプリケーションを再起動してください。");
     }
   });
 
@@ -39,6 +41,7 @@
       filesPerPage = settings.files_per_page;
     } catch (error) {
       console.error('設定の読み込みに失敗しました:', error);
+      errorStore.showError("設定の読み込みに失敗しました。アプリケーションを再起動してください。");
     }
   };
 
@@ -66,6 +69,8 @@
         highlightSearchResults,
       });
       
+      errorStore.showSuccess("設定を保存しました。");
+      
       // 設定が変更されたことを通知
       if (onSettingsChanged) {
         onSettingsChanged();
@@ -74,6 +79,7 @@
       handleClose();
     } catch (error) {
       console.error('設定の保存に失敗しました:', error);
+      errorStore.showError("設定の保存に失敗しました。もう一度お試しください。");
     } finally {
       isLoading = false;
     }

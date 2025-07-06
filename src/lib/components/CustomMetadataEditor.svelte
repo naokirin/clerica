@@ -11,6 +11,7 @@
     CustomMetadataDataType,
     SetCustomMetadataValueRequest,
   } from "../types.js";
+  import { errorStore } from "../stores/error.js";
 
   interface Props {
     fileId: string;
@@ -35,6 +36,7 @@
     } catch (e) {
       console.error("カスタムメタデータ値の読み込みに失敗:", e);
       error = "メタデータ値の読み込みに失敗しました";
+      errorStore.showError("カスタムメタデータの読み込みに失敗しました。しばらくしてから再度お試しください。");
     } finally {
       isLoading = false;
     }
@@ -109,6 +111,7 @@
         }
       } catch {
         console.warn(`無効な正規表現パターン: ${key.validation_pattern}`);
+        errorStore.showWarning("バリデーションパターンの設定に問題があります。");
       }
     }
 
@@ -161,6 +164,7 @@
     } catch (e) {
       console.error("値の保存に失敗:", e);
       error = typeof e === "string" ? e : "値の保存に失敗しました";
+      errorStore.showError("メタデータの保存に失敗しました。もう一度お試しください。");
       return false;
     } finally {
       savingKeyId = null;

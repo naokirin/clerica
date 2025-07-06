@@ -10,6 +10,7 @@
     getImageUrl,
   } from "../utils.js";
   import { onMount } from "svelte";
+  import { errorStore } from "../stores/error.js";
 
   interface Props {
     file: File;
@@ -41,6 +42,7 @@
       return await getImageUrl(thumbnailPath);
     } catch (error) {
       console.error("Failed to generate video thumbnail:", error);
+      errorStore.showError("動画のサムネイル生成に失敗しました");
       throw error;
     }
   }
@@ -55,6 +57,7 @@
       return await getImageUrl(thumbnailPath);
     } catch (error) {
       console.error("Failed to extract album art:", error);
+      errorStore.showError("音楽ファイルのアルバムアート抽出に失敗しました");
       throw error;
     }
   }
@@ -69,6 +72,7 @@
       return await getImageUrl(thumbnailPath);
     } catch (error) {
       console.error("Failed to generate archive thumbnail:", error);
+      errorStore.showError("アーカイブファイルのサムネイル生成に失敗しました");
       throw error;
     }
   }
@@ -89,6 +93,7 @@
             class="thumbnail"
             onerror={(e) => {
               console.error("Failed to load image:", imageUrl);
+              errorStore.showWarning("画像の読み込みに失敗しました");
               e.currentTarget.style.display = "none";
               e.currentTarget.nextElementSibling.style.display = "block";
             }}
@@ -109,6 +114,7 @@
             class="thumbnail video-thumbnail"
             onerror={(e) => {
               console.error("Failed to load video thumbnail:", thumbnailUrl);
+              errorStore.showWarning("動画サムネイルの読み込みに失敗しました");
               e.currentTarget.style.display = "none";
               e.currentTarget.nextElementSibling.style.display = "block";
             }}
@@ -132,6 +138,7 @@
             class="thumbnail album-art"
             onerror={(e) => {
               console.error("Failed to load album art:", albumArtUrl);
+              errorStore.showWarning("アルバムアートの読み込みに失敗しました");
               e.currentTarget.style.display = "none";
               e.currentTarget.nextElementSibling.style.display = "block";
             }}
@@ -155,6 +162,7 @@
             class="thumbnail archive-thumbnail"
             onerror={(e) => {
               console.error("Failed to load archive thumbnail:", thumbnailUrl);
+              errorStore.showWarning("アーカイブサムネイルの読み込みに失敗しました");
               e.currentTarget.style.display = "none";
               e.currentTarget.nextElementSibling.style.display = "block";
             }}
