@@ -5,7 +5,7 @@
     FileCategory,
     FileCategoryInfo,
     SortOptions,
-  } from "../types.js";
+  } from "../types";
   import FileList from "./FileList.svelte";
   import SortControl from "./SortControl.svelte";
 

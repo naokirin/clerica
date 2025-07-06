@@ -36,7 +36,7 @@ vi.mock('@tauri-apps/plugin-dialog', () => ({
 }));
 
 // Mock for Fuse.js
-vi.mock('fuse.js', () => ({
+vi.mock('fuse', () => ({
   default: vi.fn().mockImplementation(() => ({
     search: vi.fn().mockReturnValue([]),
     setCollection: vi.fn(),

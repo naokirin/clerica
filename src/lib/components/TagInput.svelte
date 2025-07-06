@@ -1,6 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
-  import type { Tag } from '../types.js';
+  import type { Tag } from '../types';
 
   export let tags: Tag[] = [];
   export let placeholder = "タグを入力してください...";

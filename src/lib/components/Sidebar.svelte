@@ -1,6 +1,6 @@
 <script lang="ts">
   import { FolderPlus, Tag, RefreshCw, X } from "lucide-svelte";
-  import type { Directory, Tag as TagType } from "../types.js";
+  import type { Directory, Tag as TagType } from "../types";
 
   interface Props {
     directories: Directory[];

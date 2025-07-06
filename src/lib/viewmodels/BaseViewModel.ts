@@ -1,5 +1,5 @@
 import { writable, type Writable } from 'svelte/store';
-import { errorStore } from '../stores/error.js';
+import { errorStore } from '../stores/error';
 
 export abstract class BaseViewModel {
   protected _isLoading: Writable<boolean> = writable(false);

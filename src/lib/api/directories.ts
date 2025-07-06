@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { Directory } from "../types.js";
+import type { Directory } from "../types";
 
 export async function getDirectories(): Promise<Directory[]> {
   return await invoke("get_directories");

@@ -1,17 +1,17 @@
 import { writable, type Writable } from 'svelte/store';
-import { BaseViewModel } from './BaseViewModel.js';
-import { getTags, createTag, getCustomMetadataKeys, getTopTags, searchTagsByName } from '../api/tags.js';
+import { BaseViewModel } from './BaseViewModel';
+import { getTags, createTag, getCustomMetadataKeys, getTopTags, searchTagsByName } from '../api/tags';
 import {
   createCustomMetadataKey,
   updateCustomMetadataKey,
   deleteCustomMetadataKey
-} from '../api/metadata.js';
+} from '../api/metadata';
 import type {
   Tag,
   CustomMetadataKey,
   CreateCustomMetadataKeyRequest,
   UpdateCustomMetadataKeyRequest
-} from '../types.js';
+} from '../types';
 
 export class TagViewModel extends BaseViewModel {
   private _tags: Writable<Tag[]> = writable([]);

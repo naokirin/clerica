@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { Tag, CustomMetadataKey } from "../types.js";
+import type { Tag, CustomMetadataKey } from "../types";
 
 export async function getTags(): Promise<Tag[]> {
   return await invoke("get_tags");

@@ -6,12 +6,12 @@ import {
   createCustomMetadataKey,
   updateCustomMetadataKey,
   deleteCustomMetadataKey
-} from '../../lib/api/metadata.js';
+} from '../../lib/api/metadata';
 import type {
   SetCustomMetadataValueRequest,
   CreateCustomMetadataKeyRequest,
   UpdateCustomMetadataKeyRequest
-} from '../../lib/types.js';
+} from '../../lib/types';
 
 vi.mock('@tauri-apps/api/core', () => ({
   invoke: vi.fn()

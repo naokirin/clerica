@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Loader2 } from "lucide-svelte";
-  import type { LoadingSteps } from "../types.js";
+  import type { LoadingSteps } from "../types";
 
   interface Props {
     isVisible: boolean;

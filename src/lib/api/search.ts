@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { SearchResult, MetadataSearchFilter, MetadataSearchLogic, SortOptions } from "../types.js";
+import type { SearchResult, MetadataSearchFilter, MetadataSearchLogic, SortOptions } from "../types";
 
 export async function searchFiles(
   query: string,

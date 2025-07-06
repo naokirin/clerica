@@ -1,9 +1,9 @@
 import { writable, derived, type Writable, type Readable } from 'svelte/store';
-import { BaseViewModel } from './BaseViewModel.js';
-import { getFiles, getFilesWithTags, getFilesByDirectory, getFilesByDirectoryWithTags, openFile, revealInFinder, deleteFile } from '../api/files.js';
-import { getSettings } from '../api/settings.js';
-import type { File, FileWithTags, FileCategory, SortOptions } from '../types.js';
-import { getFileCategory } from '../utils.js';
+import { BaseViewModel } from './BaseViewModel';
+import { getFiles, getFilesWithTags, getFilesByDirectory, getFilesByDirectoryWithTags, openFile, revealInFinder, deleteFile } from '../api/files';
+import { getSettings } from '../api/settings';
+import type { File, FileWithTags, FileCategory, SortOptions } from '../types';
+import { getFileCategory } from '../utils';
 
 export class FileViewModel extends BaseViewModel {
   private _filesWithTags: Writable<FileWithTags[]> = writable([]);

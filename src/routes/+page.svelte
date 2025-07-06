@@ -17,10 +17,10 @@
   import {
     AppViewModel,
     type ActiveTab,
-  } from "../lib/viewmodels/AppViewModel.js";
-  import type { File } from "../lib/types.js";
+  } from "../lib/viewmodels/AppViewModel";
+  import type { File } from "../lib/types";
   import "../lib/App.css";
-  import { errorStore } from "../lib/stores/error.js";
+  import { errorStore } from "../lib/stores/error";
 
   // AppViewModel インスタンス
   const appViewModel = new AppViewModel();

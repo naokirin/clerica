@@ -8,7 +8,7 @@
     CustomMetadataKey,
     SortOptions,
     Tag as TagType,
-  } from "../types.js";
+  } from "../types";
   import FileList from "./FileList.svelte";
   import SortControl from "./SortControl.svelte";
 

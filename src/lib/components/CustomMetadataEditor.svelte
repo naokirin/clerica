@@ -4,14 +4,14 @@
     getCustomMetadataValuesByFile,
     setCustomMetadataValue,
     deleteCustomMetadataValue,
-  } from "../api/metadata.js";
+  } from "../api/metadata";
   import type {
     CustomMetadataKey,
     CustomMetadataValue,
     CustomMetadataDataType,
     SetCustomMetadataValueRequest,
-  } from "../types.js";
-  import { errorStore } from "../stores/error.js";
+  } from "../types";
+  import { errorStore } from "../stores/error";
 
   interface Props {
     fileId: string;

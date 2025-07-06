@@ -1,7 +1,7 @@
 import { writable, type Writable } from 'svelte/store';
-import { BaseViewModel } from './BaseViewModel.js';
-import { getDirectories, addDirectory, removeDirectory, rescanDirectory } from '../api/directories.js';
-import type { Directory } from '../types.js';
+import { BaseViewModel } from './BaseViewModel';
+import { getDirectories, addDirectory, removeDirectory, rescanDirectory } from '../api/directories';
+import type { Directory } from '../types';
 
 export class DirectoryViewModel extends BaseViewModel {
   private _directories: Writable<Directory[]> = writable([]);

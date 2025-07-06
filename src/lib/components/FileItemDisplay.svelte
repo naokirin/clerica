@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { File, Tag } from "../types.js";
+  import type { File, Tag } from "../types";
   import {
     formatFileSize,
     formatDate,
@@ -8,9 +8,9 @@
     isAudioFile,
     isArchiveFile,
     getImageUrl,
-  } from "../utils.js";
+  } from "../utils";
   import { onMount } from "svelte";
-  import { errorStore } from "../stores/error.js";
+  import { errorStore } from "../stores/error";
 
   interface Props {
     file: File;

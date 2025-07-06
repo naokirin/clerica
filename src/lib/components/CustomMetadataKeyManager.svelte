@@ -5,14 +5,14 @@
     createCustomMetadataKey,
     updateCustomMetadataKey,
     deleteCustomMetadataKey,
-  } from "../api/metadata.js";
+  } from "../api/metadata";
   import type {
     CustomMetadataKey,
     CustomMetadataDataType,
     CreateCustomMetadataKeyRequest,
     UpdateCustomMetadataKeyRequest,
-  } from "../types.js";
-  import { errorStore } from "../stores/error.js";
+  } from "../types";
+  import { errorStore } from "../stores/error";
 
   interface Props {
     keys: CustomMetadataKey[];

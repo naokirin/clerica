@@ -2,7 +2,7 @@
   import { X } from "lucide-svelte";
   import { onMount } from "svelte";
   import { getSettings, updateSettingBool, updateSettingInt } from "../api/settings";
-  import { errorStore } from "../stores/error.js";
+  import { errorStore } from "../stores/error";
 
   export let isOpen = false;
   export let onClose: () => void;

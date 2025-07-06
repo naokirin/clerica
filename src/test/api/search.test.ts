@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { searchFiles } from '../../lib/api/search.js';
-import type { MetadataSearchFilter } from '../../lib/types.js';
+import { searchFiles } from '../../lib/api/search';
+import type { MetadataSearchFilter } from '../../lib/types';
 
 vi.mock('@tauri-apps/api/core', () => ({
   invoke: vi.fn()

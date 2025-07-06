@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { get } from 'svelte/store';
-import { AppViewModel } from '../../lib/viewmodels/AppViewModel.js';
+import { AppViewModel } from '../../lib/viewmodels/AppViewModel';
 
 // Mock child ViewModels
-vi.mock('../../lib/viewmodels/DirectoryViewModel.js', () => ({
+vi.mock('../../lib/viewmodels/DirectoryViewModel', () => ({
   DirectoryViewModel: vi.fn().mockImplementation(() => ({
     loadDirectories: vi.fn().mockResolvedValue(undefined),
     dispose: vi.fn(),
@@ -13,7 +13,7 @@ vi.mock('../../lib/viewmodels/DirectoryViewModel.js', () => ({
   }))
 }));
 
-vi.mock('../../lib/viewmodels/FileViewModel.js', () => ({
+vi.mock('../../lib/viewmodels/FileViewModel', () => ({
   FileViewModel: vi.fn().mockImplementation(() => ({
     loadFiles: vi.fn().mockResolvedValue(undefined),
     dispose: vi.fn(),
@@ -21,14 +21,14 @@ vi.mock('../../lib/viewmodels/FileViewModel.js', () => ({
   }))
 }));
 
-vi.mock('../../lib/viewmodels/SearchViewModel.js', () => ({
+vi.mock('../../lib/viewmodels/SearchViewModel', () => ({
   SearchViewModel: vi.fn().mockImplementation(() => ({
     dispose: vi.fn(),
     setSelectedDirectoryId: vi.fn()
   }))
 }));
 
-vi.mock('../../lib/viewmodels/TagViewModel.js', () => ({
+vi.mock('../../lib/viewmodels/TagViewModel', () => ({
   TagViewModel: vi.fn().mockImplementation(() => ({
     loadTags: vi.fn().mockResolvedValue(undefined),
     loadCustomMetadataKeys: vi.fn().mockResolvedValue(undefined),

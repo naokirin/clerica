@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { File, FileWithTags, SortOptions, Tag } from "../types.js";
+import type { File, FileWithTags, SortOptions, Tag } from "../types";
 
 export async function getFiles(sortOptions?: SortOptions): Promise<File[]> {
   return await invoke("get_files", {

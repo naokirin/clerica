@@ -1,28 +1,28 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { get } from 'svelte/store';
-import { TagViewModel } from '../../lib/viewmodels/TagViewModel.js';
+import { TagViewModel } from '../../lib/viewmodels/TagViewModel';
 import type { 
   Tag, 
   CustomMetadataKey, 
   CreateCustomMetadataKeyRequest, 
   UpdateCustomMetadataKeyRequest 
-} from '../../lib/types.js';
+} from '../../lib/types';
 
 // Mock APIs
-vi.mock('../../lib/api/tags.js', () => ({
+vi.mock('../../lib/api/tags', () => ({
   getTags: vi.fn(),
   createTag: vi.fn(),
   getCustomMetadataKeys: vi.fn()
 }));
 
-vi.mock('../../lib/api/metadata.js', () => ({
+vi.mock('../../lib/api/metadata', () => ({
   createCustomMetadataKey: vi.fn(),
   updateCustomMetadataKey: vi.fn(),
   deleteCustomMetadataKey: vi.fn()
 }));
 
-const { getTags: mockGetTags, createTag: mockCreateTag, getCustomMetadataKeys: mockGetCustomMetadataKeys } = vi.mocked(await import('../../lib/api/tags.js'));
-const { createCustomMetadataKey: mockCreateCustomMetadataKey, updateCustomMetadataKey: mockUpdateCustomMetadataKey, deleteCustomMetadataKey: mockDeleteCustomMetadataKey } = vi.mocked(await import('../../lib/api/metadata.js'));
+const { getTags: mockGetTags, createTag: mockCreateTag, getCustomMetadataKeys: mockGetCustomMetadataKeys } = vi.mocked(await import('../../lib/api/tags'));
+const { createCustomMetadataKey: mockCreateCustomMetadataKey, updateCustomMetadataKey: mockUpdateCustomMetadataKey, deleteCustomMetadataKey: mockDeleteCustomMetadataKey } = vi.mocked(await import('../../lib/api/metadata'));
 
 describe('TagViewModel', () => {
   let tagViewModel: TagViewModel;

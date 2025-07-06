@@ -1,25 +1,25 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { get } from 'svelte/store';
-import { SearchViewModel } from '../../lib/viewmodels/SearchViewModel.js';
-import type { SearchResult, MetadataSearchFilter, File } from '../../lib/types.js';
+import { SearchViewModel } from '../../lib/viewmodels/SearchViewModel';
+import type { SearchResult, MetadataSearchFilter, File } from '../../lib/types';
 
 // Mock APIs
-vi.mock('../../lib/api/search.js', () => ({
+vi.mock('../../lib/api/search', () => ({
   searchFiles: vi.fn()
 }));
 
-vi.mock('../../lib/api/settings.js', () => ({
+vi.mock('../../lib/api/settings', () => ({
   getSettings: vi.fn()
 }));
 
 // Mock utils
-vi.mock('../../lib/utils.js', () => ({
+vi.mock('../../lib/utils', () => ({
   getFileCategory: vi.fn()
 }));
 
-const { searchFiles: mockSearchFiles } = vi.mocked(await import('../../lib/api/search.js'));
-const { getSettings: mockGetSettings } = vi.mocked(await import('../../lib/api/settings.js'));
-const { getFileCategory: mockGetFileCategory } = vi.mocked(await import('../../lib/utils.js'));
+const { searchFiles: mockSearchFiles } = vi.mocked(await import('../../lib/api/search'));
+const { getSettings: mockGetSettings } = vi.mocked(await import('../../lib/api/settings'));
+const { getFileCategory: mockGetFileCategory } = vi.mocked(await import('../../lib/utils'));
 
 describe('SearchViewModel', () => {
   let searchViewModel: SearchViewModel;

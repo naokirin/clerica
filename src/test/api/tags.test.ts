@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { getTags, createTag, getCustomMetadataKeys } from '../../lib/api/tags.js';
+import { getTags, createTag, getCustomMetadataKeys } from '../../lib/api/tags';
 
 vi.mock('@tauri-apps/api/core', () => ({
   invoke: vi.fn()

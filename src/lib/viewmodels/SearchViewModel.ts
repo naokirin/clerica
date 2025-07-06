@@ -1,9 +1,9 @@
 import { writable, derived, type Writable, type Readable } from 'svelte/store';
-import { BaseViewModel } from './BaseViewModel.js';
-import { searchFiles } from '../api/search.js';
-import { getSettings } from '../api/settings.js';
-import type { SearchResult, FileCategory, MetadataSearchFilter, MetadataSearchLogic, SortOptions } from '../types.js';
-import { getFileCategory } from '../utils.js';
+import { BaseViewModel } from './BaseViewModel';
+import { searchFiles } from '../api/search';
+import { getSettings } from '../api/settings';
+import type { SearchResult, FileCategory, MetadataSearchFilter, MetadataSearchLogic, SortOptions } from '../types';
+import { getFileCategory } from '../utils';
 
 export class SearchViewModel extends BaseViewModel {
   private _searchQuery: Writable<string> = writable("");

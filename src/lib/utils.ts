@@ -1,5 +1,5 @@
 import { convertFileSrc } from '@tauri-apps/api/core';
-import type { File, FileCategory, FileCategoryInfo } from './types.js';
+import type { File, FileCategory, FileCategoryInfo } from './types';
 
 export function formatFileSize(bytes: number): string {
   if (bytes === 0) return '0 Bytes';

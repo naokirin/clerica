@@ -1,10 +1,10 @@
 import { writable, derived, type Writable, type Readable, type Unsubscriber } from 'svelte/store';
-import { BaseViewModel } from './BaseViewModel.js';
-import { DirectoryViewModel } from './DirectoryViewModel.js';
-import { FileViewModel } from './FileViewModel.js';
-import { SearchViewModel } from './SearchViewModel.js';
-import { TagViewModel } from './TagViewModel.js';
-import type { LoadingSteps } from '../types.js';
+import { BaseViewModel } from './BaseViewModel';
+import { DirectoryViewModel } from './DirectoryViewModel';
+import { FileViewModel } from './FileViewModel';
+import { SearchViewModel } from './SearchViewModel';
+import { TagViewModel } from './TagViewModel';
+import type { LoadingSteps } from '../types';
 
 export type ActiveTab = "files" | "search" | "tags" | "metadata";
 

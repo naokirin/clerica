@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { get } from 'svelte/store';
-import { FileViewModel } from '../../lib/viewmodels/FileViewModel.js';
-import type { File } from '../../lib/types.js';
+import { FileViewModel } from '../../lib/viewmodels/FileViewModel';
+import type { File } from '../../lib/types';
 
 // Mock APIs
-vi.mock('../../lib/api/files.js', () => ({
+vi.mock('../../lib/api/files', () => ({
   getFiles: vi.fn(),
   getFilesWithTags: vi.fn(),
   getFilesByDirectory: vi.fn(),
@@ -14,12 +14,12 @@ vi.mock('../../lib/api/files.js', () => ({
   deleteFile: vi.fn()
 }));
 
-vi.mock('../../lib/api/settings.js', () => ({
+vi.mock('../../lib/api/settings', () => ({
   getSettings: vi.fn()
 }));
 
 // Mock utils
-vi.mock('../../lib/utils.js', () => ({
+vi.mock('../../lib/utils', () => ({
   getFileCategory: vi.fn()
 }));
 
@@ -31,9 +31,9 @@ const {
   openFile: mockOpenFile, 
   revealInFinder: mockRevealInFinder, 
   deleteFile: mockDeleteFile 
-} = vi.mocked(await import('../../lib/api/files.js'));
-const { getSettings: mockGetSettings } = vi.mocked(await import('../../lib/api/settings.js'));
-const { getFileCategory: mockGetFileCategory } = vi.mocked(await import('../../lib/utils.js'));
+} = vi.mocked(await import('../../lib/api/files'));
+const { getSettings: mockGetSettings } = vi.mocked(await import('../../lib/api/settings'));
+const { getFileCategory: mockGetFileCategory } = vi.mocked(await import('../../lib/utils'));
 
 describe('FileViewModel', () => {
   let fileViewModel: FileViewModel;

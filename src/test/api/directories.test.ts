@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { getDirectories, addDirectory, removeDirectory, rescanDirectory } from '../../lib/api/directories.js';
+import { getDirectories, addDirectory, removeDirectory, rescanDirectory } from '../../lib/api/directories';
 
 vi.mock('@tauri-apps/api/core', () => ({
   invoke: vi.fn()

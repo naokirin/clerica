@@ -1,14 +1,14 @@
 <script lang="ts">
   import { X, Trash2, Loader2, ExternalLink, Folder } from "lucide-svelte";
-  import type { File, CustomMetadataKey, Tag } from "../types.js";
-  import { formatFileSize, formatDate } from "../utils.js";
+  import type { File, CustomMetadataKey, Tag } from "../types";
+  import { formatFileSize, formatDate } from "../utils";
   import CustomMetadataEditor from "./CustomMetadataEditor.svelte";
   import TagInput from "./TagInput.svelte";
   import Dropdown from "./Dropdown.svelte";
-  import * as exifApi from "../api/exif.js";
-  import * as filesApi from "../api/files.js";
-  import * as tagsApi from "../api/tags.js";
-  import { errorStore } from "../stores/error.js";
+  import * as exifApi from "../api/exif";
+  import * as filesApi from "../api/files";
+  import * as tagsApi from "../api/tags";
+  import { errorStore } from "../stores/error";
 
   interface Props {
     file: File | null;

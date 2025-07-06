@@ -4,7 +4,7 @@ import type {
   CreateCustomMetadataKeyRequest,
   UpdateCustomMetadataKeyRequest,
   SetCustomMetadataValueRequest
-} from "../types.js";
+} from "../types";
 
 export async function getCustomMetadataValuesByFile(fileId: string): Promise<CustomMetadataValue[]> {
   return await invoke("get_custom_metadata_values_by_file", { fileId });

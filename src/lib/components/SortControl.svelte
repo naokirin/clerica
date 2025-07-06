@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { SortField, SortOrder, SortOptions } from "../types.js";
+  import type { SortField, SortOrder, SortOptions } from "../types";
   import { ChevronUp, ChevronDown } from "lucide-svelte";
 
   interface Props {

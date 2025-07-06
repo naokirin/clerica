@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { getFiles, openFile, revealInFinder, deleteFile } from '../../lib/api/files.js';
+import { getFiles, openFile, revealInFinder, deleteFile } from '../../lib/api/files';
 
 vi.mock('@tauri-apps/api/core', () => ({
   invoke: vi.fn()
