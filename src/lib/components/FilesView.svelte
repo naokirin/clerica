@@ -195,8 +195,8 @@
     {/each}
   </div>
 
-  {#if totalPages > 1}
-    <div class="pagination-controls">
+  <div class="pagination-controls">
+    {#if totalPages > 1}
       <div class="pagination-buttons">
         <button
           class="pagination-btn"
@@ -242,15 +242,19 @@
           ≫
         </button>
       </div>
-      <div class="sort-section">
-        <SortControl
-          sortField={sortOptions.field}
-          sortOrder={sortOptions.order}
-          {onSortChange}
-        />
+    {:else}
+      <div class="empty-pagination">
+        <!-- Empty div to maintain layout spacing when no pagination needed -->
       </div>
+    {/if}
+    <div class="sort-section">
+      <SortControl
+        sortField={sortOptions.field}
+        sortOrder={sortOptions.order}
+        {onSortChange}
+      />
     </div>
-  {/if}
+  </div>
 
   <FileList
     {filesWithTags}

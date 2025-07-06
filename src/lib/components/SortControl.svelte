@@ -62,12 +62,6 @@
     gap: 0.5rem;
   }
 
-  .sort-label {
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: #374151;
-    white-space: nowrap;
-  }
 
   .sort-field-select {
     padding: 0.5rem 0.75rem;
