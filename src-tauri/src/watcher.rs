@@ -2,11 +2,12 @@ use crate::database::{Database, DatabaseTrait, File};
 use chrono::Utc;
 use notify::{Event, EventKind, RecursiveMode, Watcher};
 use sqlx::SqlitePool;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::Path;
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
+use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter, State};
 use uuid::Uuid;
 
@@ -25,12 +26,45 @@ impl FileWatcher {
 
         thread::spawn(move || {
             let rt = tokio::runtime::Runtime::new().unwrap();
-            while let Ok(event) = rx.recv() {
-                if let Err(e) =
-                    rt.block_on(handle_file_event(&pool_clone, event, app_handle.clone()))
-                {
-                    eprintln!("ファイルイベント処理エラー: {e}");
+            let mut last_event_time = Instant::now();
+            let mut event_queue: Vec<Event> = Vec::new();
+            let debounce_duration = Duration::from_millis(200);
+
+            loop {
+                // イベントをキューにためる
+                if let Ok(event) = rx.try_recv() {
+                    event_queue.push(event);
+                    last_event_time = Instant::now();
                 }
+
+                // 最後のイベントから200ms経過し、キューにイベントがあれば処理
+                if !event_queue.is_empty() && last_event_time.elapsed() > debounce_duration {
+                    // イベントの重複を排除
+                    let mut processed_paths = HashSet::new();
+                    let mut unique_events = Vec::new();
+
+                    // 最新のイベントから処理するため、逆順で重複チェック
+                    for event in event_queue.drain(..).rev() {
+                        if let Some(path) = event.paths.first() {
+                            // 同じパスに対するイベントは最新のものだけを処理
+                            if processed_paths.insert(path.clone()) {
+                                unique_events.push(event);
+                            }
+                        }
+                    }
+
+                    // 元の順序に戻して処理
+                    for event in unique_events.into_iter().rev() {
+                        if let Err(e) =
+                            rt.block_on(handle_file_event(&pool_clone, event, app_handle.clone()))
+                        {
+                            eprintln!("ファイルイベント処理エラー: {e}");
+                        }
+                    }
+                }
+
+                // CPU負荷を下げるために少し待つ
+                thread::sleep(Duration::from_millis(50));
             }
         });
 
