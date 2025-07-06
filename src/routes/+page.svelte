@@ -94,7 +94,6 @@
       // ファイルシステム変更のリスナーを追加
       const { listen } = await import("@tauri-apps/api/event");
       unlisten = await listen("file_system_change", (event) => {
-        console.log("ファイルシステム変更イベント:", event.payload);
         // ファイル一覧を再読み込み
         fileViewModel.loadFiles();
       });

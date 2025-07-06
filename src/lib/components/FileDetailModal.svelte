@@ -385,7 +385,6 @@
         onTagsUpdated();
       }
       
-      console.log('タグが正常に保存されました');
     } catch (error) {
       console.error('タグの保存エラー:', error);
       errorStore.showError('タグの保存に失敗しました');

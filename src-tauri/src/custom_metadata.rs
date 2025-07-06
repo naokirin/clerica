@@ -166,7 +166,6 @@ pub async fn set_custom_metadata_value(
     pool: State<'_, SqlitePool>,
     request: SetCustomMetadataValueRequest,
 ) -> Result<CustomMetadataValue, String> {
-    println!("[set_custom_metadata_value] request: {:?}", request);
     let db = Database;
     match db.set_custom_metadata_value(&pool, &request.file_id, &request.key_id, request.value).await {
         Ok(value) => Ok(value),

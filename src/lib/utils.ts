@@ -136,7 +136,6 @@ export async function getImageUrl(filePath: string): Promise<string> {
     // Tauriの convertFileSrc を使用してファイルパスをURLに変換
     // v2では asset プロトコルが使用される
     const url = convertFileSrc(filePath);
-    console.log('Converted file URL:', url);
     return url;
   } catch (error) {
     console.error('Failed to convert file src:', error);

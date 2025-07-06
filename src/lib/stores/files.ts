@@ -218,7 +218,6 @@ function createFilesStore(): FilesStore {
 
     async updateFileTags(fileId: string, tagIds: string[]): Promise<void> {
       // TODO: API呼び出しの実装
-      console.log('Update file tags:', fileId, tagIds);
     },
 
     getFilesByCategory(category: FileCategory): FileWithTags[] {

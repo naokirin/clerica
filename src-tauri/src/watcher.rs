@@ -163,7 +163,6 @@ async fn handle_create_event(
     let db = Database;
 
     for path in paths {
-        println!("ファイル作成検知: {}", path.display());
         
         match fs::metadata(path) {
             Ok(metadata) => {
@@ -201,7 +200,6 @@ async fn handle_remove_event(
 
     for path in paths {
         let path_str = path.to_string_lossy().to_string();
-        println!("ファイル削除検知: {path_str}");
         
         match db.remove_file_by_path(pool, &path_str).await {
             Ok(()) => {
@@ -220,7 +218,6 @@ async fn handle_modify_event(
     app_handle: &Option<AppHandle>,
 ) -> Result<(), String> {
     for path in paths {
-        println!("ファイル変更検知: {}", path.display());
         
         match fs::metadata(path) {
             Ok(metadata) => {
@@ -325,7 +322,6 @@ async fn handle_file_rename(
 
     match db.update_file_path(pool, &existing_file.id, path_str, &new_name).await {
         Ok(()) => {
-            println!("ファイル名変更検知: {} -> {}", existing_file.path, path_str);
             notify_ui(app_handle, "file_renamed", path_str);
         }
         Err(e) => {
@@ -389,22 +385,16 @@ async fn handle_file_update_fallback(
 async fn handle_modify_without_metadata(
     pool: &SqlitePool,
     path: &Path,
-    error: std::io::Error,
+    _error: std::io::Error,
     app_handle: &Option<AppHandle>,
 ) -> Result<(), String> {
     let db = Database;
     let path_str = path.to_string_lossy().to_string();
     
-    println!(
-        "ファイル不存在によるメタデータ取得エラー: {} (パス: {})",
-        error,
-        path.display()
-    );
 
     // データベースから該当ファイルを削除
     match db.remove_file_by_path(pool, &path_str).await {
         Ok(()) => {
-            println!("ディレクトリ外移動によりファイルレコード削除: {path_str}");
             notify_ui(app_handle, "file_deleted", &path_str);
         }
         Err(e) => eprintln!("移動ファイル削除エラー: {e}"),
