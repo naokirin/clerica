@@ -23,6 +23,7 @@ export class AppViewModel extends BaseViewModel {
     files: false,
   });
   private _loadingProgress: Writable<number> = writable(0);
+  private _isAppLoading: Writable<boolean> = writable(true);
   
   // サブスクリプション管理
   private _unsubscribers: Unsubscriber[] = [];
@@ -30,12 +31,7 @@ export class AppViewModel extends BaseViewModel {
   public readonly activeTab = this._activeTab;
   public readonly loadingSteps = this._loadingSteps;
   public readonly loadingProgress = this._loadingProgress;
-
-  // 全体の読み込み状態を管理
-  public readonly isAppLoading: Readable<boolean> = derived(
-    this._loadingProgress,
-    (progress) => progress < 100
-  );
+  public readonly isAppLoading = this._isAppLoading;
 
   constructor() {
     super();
@@ -62,6 +58,7 @@ export class AppViewModel extends BaseViewModel {
   }
 
   public async initializeApp(): Promise<void> {
+    this._isAppLoading.set(true);
     this.setLoading(true);
     this._loadingProgress.set(0);
     this._loadingSteps.set({ directories: false, tags: false, files: false });
@@ -85,14 +82,16 @@ export class AppViewModel extends BaseViewModel {
       this._loadingSteps.update(steps => ({ ...steps, files: true }));
       this._loadingProgress.set(100);
 
-      // 読み込み完了後、少し遅延してから状態をクリア
+      // 100%表示を確認してから遅延後にローディング画面を終了
       setTimeout(() => {
+        this._isAppLoading.set(false);
         this.setLoading(false);
-      }, 500);
+      }, 1000); // 1秒間100%を表示
 
     } catch (error) {
       console.error('App initialization failed:', error);
       this.setError('アプリケーションの初期化に失敗しました');
+      this._isAppLoading.set(false);
       this.setLoading(false);
     }
   }

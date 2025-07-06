@@ -1075,6 +1075,11 @@
   color: white;
 }
 
+.loading-complete {
+  margin-bottom: 2.75rem;
+  color: white;
+}
+
 .loading-progress {
   margin-bottom: 2rem;
 }

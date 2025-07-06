@@ -18,22 +18,25 @@
         <h1>Clerica</h1>
         <p>Mac向けファイル整理・検索ツール</p>
       </div>
-      
+
       <div class="loading-content">
-        <div class="loading-spinner">
-          <Loader2 size={48} class="animate-spin" />
-        </div>
-        
+        {#if progress < 100}
+          <div class="loading-spinner">
+            <Loader2 size={48} class="animate-spin" />
+          </div>
+        {:else}
+          <div class="loading-complete">
+            <p>準備が完了しました！</p>
+          </div>
+        {/if}
+
         <div class="loading-progress">
           <div class="progress-bar">
-            <div 
-              class="progress-fill" 
-              style="width: {progress}%"
-            ></div>
+            <div class="progress-fill" style="width: {progress}%"></div>
           </div>
           <div class="progress-text">{progress}%</div>
         </div>
-        
+
         <div class="loading-steps">
           <div class="loading-step {steps.directories ? 'completed' : ''}">
             <div class="step-icon">
@@ -43,9 +46,13 @@
                 <div class="step-dot"></div>
               {/if}
             </div>
-            <span>ディレクトリを読み込み中...</span>
+            <span
+              >{steps.directories
+                ? "ディレクトリ読み込み完了"
+                : "ディレクトリを読み込み中..."}</span
+            >
           </div>
-          
+
           <div class="loading-step {steps.tags ? 'completed' : ''}">
             <div class="step-icon">
               {#if steps.tags}
@@ -54,9 +61,11 @@
                 <div class="step-dot"></div>
               {/if}
             </div>
-            <span>タグを読み込み中...</span>
+            <span
+              >{steps.tags ? "タグ読み込み完了" : "タグを読み込み中..."}</span
+            >
           </div>
-          
+
           <div class="loading-step {steps.files ? 'completed' : ''}">
             <div class="step-icon">
               {#if steps.files}
@@ -65,7 +74,11 @@
                 <div class="step-dot"></div>
               {/if}
             </div>
-            <span>ファイルを読み込み中...</span>
+            <span
+              >{steps.files
+                ? "ファイル読み込み完了"
+                : "ファイルを読み込み中..."}</span
+            >
           </div>
         </div>
       </div>
