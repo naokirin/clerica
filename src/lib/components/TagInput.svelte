@@ -1,15 +1,11 @@
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
   import type { Tag } from '../types';
   import { t } from '$lib/i18n';
 
   export let tags: Tag[] = [];
   export let placeholder = $t('common.tags.inputPlaceholder');
   export let disabled = false;
-
-  const dispatch = createEventDispatcher<{
-    change: Tag[];
-  }>();
+  export let onchange: (tags: Tag[]) => void = () => {};
 
   let inputValue = '';
   let inputRef: HTMLInputElement;
@@ -58,12 +54,12 @@
 
     tags = [...tags, newTag];
     inputValue = '';
-    dispatch('change', tags);
+    onchange(tags);
   }
 
   function removeTag(tagToRemove: Tag) {
     tags = tags.filter(tag => tag.id !== tagToRemove.id);
-    dispatch('change', tags);
+    onchange(tags);
   }
 
   function onInputBlur() {
