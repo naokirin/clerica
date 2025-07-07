@@ -119,7 +119,7 @@ pub async fn remove_directory(
     watcher: State<'_, Arc<Mutex<FileWatcher>>>,
     id: String,
 ) -> Result<DirectoryRemovalResult, String> {
-    let db = Database;
+    let _db = Database;
     
     // ファイル監視を停止
     {
@@ -190,6 +190,30 @@ pub async fn get_files(
 ) -> Result<Vec<File>, String> {
     let db = Database;
     let mut files = db.get_all_files_sorted(&pool, sort_field, sort_order)
+        .await
+        .map_err(|e| e.to_string())?;
+    
+    // 設定を取得して隠しファイルを除外するかどうかを決定
+    let settings = settings::get_all_settings(&pool).await
+        .map_err(|e| e.to_string())?;
+    
+    if !settings.show_hidden_files {
+        files.retain(|file| !settings::is_hidden_file(&file.path));
+    }
+    
+    Ok(files)
+}
+
+#[tauri::command]
+pub async fn get_files_paginated(
+    pool: State<'_, SqlitePool>,
+    sort_field: Option<String>,
+    sort_order: Option<String>,
+    limit: u32,
+    offset: u32,
+) -> Result<Vec<File>, String> {
+    let db = Database;
+    let mut files = db.get_all_files_paginated(&pool, sort_field, sort_order, limit, offset)
         .await
         .map_err(|e| e.to_string())?;
     
@@ -504,6 +528,52 @@ pub async fn get_files_by_directory(
     }
     
     Ok(files)
+}
+
+#[tauri::command]
+pub async fn get_files_by_directory_paginated(
+    pool: State<'_, SqlitePool>,
+    directory_id: String,
+    sort_field: Option<String>,
+    sort_order: Option<String>,
+    limit: u32,
+    offset: u32,
+) -> Result<Vec<File>, String> {
+    let db = Database;
+    let mut files = db.get_files_by_directory_paginated(&pool, &directory_id, sort_field, sort_order, limit, offset)
+        .await
+        .map_err(|e| e.to_string())?;
+    
+    // 設定を取得して隠しファイルを除外するかどうかを決定
+    let settings = settings::get_all_settings(&pool).await
+        .map_err(|e| e.to_string())?;
+    
+    if !settings.show_hidden_files {
+        files.retain(|file| !settings::is_hidden_file(&file.path));
+    }
+    
+    Ok(files)
+}
+
+#[tauri::command]
+pub async fn count_files(
+    pool: State<'_, SqlitePool>,
+) -> Result<u32, String> {
+    let db = Database;
+    db.count_all_files(&pool)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn count_files_by_directory(
+    pool: State<'_, SqlitePool>,
+    directory_id: String,
+) -> Result<u32, String> {
+    let db = Database;
+    db.count_files_by_directory(&pool, &directory_id)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]

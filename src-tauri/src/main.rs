@@ -46,7 +46,15 @@ async fn main() {
         );
     }
 
-    let ops = SqliteConnectOptions::from_str(&database_url).unwrap().create_if_missing(true); // データベースが存在しない場合は自動的に作成
+    let ops = SqliteConnectOptions::from_str(&database_url)
+        .unwrap()
+        .create_if_missing(true) // データベースが存在しない場合は自動的に作成
+        .journal_mode(sqlx::sqlite::SqliteJournalMode::Persist) // Persistモードを有効化
+        .synchronous(sqlx::sqlite::SqliteSynchronous::Off) // 同期をオフにしてパフォーマンス向上
+        .busy_timeout(std::time::Duration::from_secs(30)) // ロックタイムアウトを30秒に設定
+        .pragma("cache_size", "10000") // キャッシュサイズを10MB（デフォルトの約5倍）に設定
+        .pragma("temp_store", "memory") // 一時テーブルをメモリに保存
+        .pragma("foreign_keys", "on"); // 外部キー制約を有効化
 
     // SQLiteプールを作成（ファイルが存在しない場合は自動的に作成される）
     let pool = SqlitePool::connect_with(ops)
@@ -125,10 +133,14 @@ async fn main() {
             file_manager::add_directory,
             file_manager::remove_directory,
             file_manager::get_files,
+            file_manager::get_files_paginated,
             file_manager::get_files_with_tags,
             file_manager::get_directories,
             file_manager::get_files_by_directory,
+            file_manager::get_files_by_directory_paginated,
             file_manager::get_files_by_directory_with_tags,
+            file_manager::count_files,
+            file_manager::count_files_by_directory,
             file_manager::get_file_info,
             file_manager::get_file_tags,
             file_manager::update_file_tags,

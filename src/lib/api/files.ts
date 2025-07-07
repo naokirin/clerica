@@ -31,6 +31,43 @@ export async function getFilesByDirectoryWithTags(directoryId: string, sortOptio
   });
 }
 
+// ページネーション対応API
+export async function getFilesPaginated(
+  sortOptions?: SortOptions,
+  limit: number = 20,
+  offset: number = 0
+): Promise<File[]> {
+  return await invoke("get_files_paginated", {
+    sortField: sortOptions?.field || "modified_at",
+    sortOrder: sortOptions?.order || "desc",
+    limit,
+    offset
+  });
+}
+
+export async function getFilesByDirectoryPaginated(
+  directoryId: string,
+  sortOptions?: SortOptions,
+  limit: number = 20,
+  offset: number = 0
+): Promise<File[]> {
+  return await invoke("get_files_by_directory_paginated", {
+    directoryId,
+    sortField: sortOptions?.field || "modified_at",
+    sortOrder: sortOptions?.order || "desc",
+    limit,
+    offset
+  });
+}
+
+export async function countFiles(): Promise<number> {
+  return await invoke("count_files");
+}
+
+export async function countFilesByDirectory(directoryId: string): Promise<number> {
+  return await invoke("count_files_by_directory", { directoryId });
+}
+
 export async function openFile(filePath: string): Promise<void> {
   return await invoke("open_file", { filePath });
 }

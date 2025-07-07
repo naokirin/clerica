@@ -28,17 +28,25 @@ impl FileWatcher {
             let rt = tokio::runtime::Runtime::new().unwrap();
             let mut last_event_time = Instant::now();
             let mut event_queue: Vec<Event> = Vec::new();
-            let debounce_duration = Duration::from_millis(200);
+            let debounce_duration = Duration::from_millis(300); // デバウンス時間を少し長く
+            const MAX_QUEUE_SIZE: usize = 1000; // キューの最大サイズを制限
 
             loop {
-                // イベントをキューにためる
-                if let Ok(event) = rx.try_recv() {
-                    event_queue.push(event);
-                    last_event_time = Instant::now();
+                // イベントをキューにためる（最大サイズ制限）
+                while event_queue.len() < MAX_QUEUE_SIZE {
+                    if let Ok(event) = rx.try_recv() {
+                        event_queue.push(event);
+                        last_event_time = Instant::now();
+                    } else {
+                        break;
+                    }
                 }
 
-                // 最後のイベントから200ms経過し、キューにイベントがあれば処理
-                if !event_queue.is_empty() && last_event_time.elapsed() > debounce_duration {
+                // キューが満杯の場合は強制的に処理
+                let should_process = !event_queue.is_empty() && 
+                    (last_event_time.elapsed() > debounce_duration || event_queue.len() >= MAX_QUEUE_SIZE);
+
+                if should_process {
                     // イベントの重複を排除
                     let mut processed_paths = HashSet::new();
                     let mut unique_events = Vec::new();
@@ -53,12 +61,26 @@ impl FileWatcher {
                         }
                     }
 
-                    // 元の順序に戻して処理
-                    for event in unique_events.into_iter().rev() {
-                        if let Err(e) =
-                            rt.block_on(handle_file_event(&pool_clone, event, app_handle.clone()))
-                        {
-                            eprintln!("ファイルイベント処理エラー: {e}");
+                    // バッチサイズを制限（一度に処理するイベント数を制限）
+                    const BATCH_SIZE: usize = 50;
+                    let batches: Vec<_> = unique_events.chunks(BATCH_SIZE).collect();
+                    let batch_count = batches.len();
+                    
+                    for batch in batches {
+                        // 各バッチを元の順序に戻して処理
+                        for event in batch.iter().rev() {
+                            // データベースロック競合を避けるため、各イベント間に少し待機
+                            if let Err(e) = rt.block_on(async {
+                                tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
+                                handle_file_event(&pool_clone, event.clone(), app_handle.clone()).await
+                            }) {
+                                eprintln!("ファイルイベント処理エラー: {e}");
+                            }
+                        }
+                        
+                        // バッチ間にも少し待機
+                        if batch_count > 1 {
+                            thread::sleep(Duration::from_millis(100));
                         }
                     }
                 }
