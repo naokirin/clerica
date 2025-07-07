@@ -90,6 +90,10 @@ pub async fn update_setting_float(pool: &SqlitePool, key: &str, value: f64) -> R
     set_setting(pool, key, &value.to_string()).await
 }
 
+pub async fn update_setting_string(pool: &SqlitePool, key: &str, value: &str) -> Result<(), Box<dyn Error>> {
+    set_setting(pool, key, value).await
+}
+
 #[tauri::command]
 pub async fn get_settings(pool: tauri::State<'_, SqlitePool>) -> Result<AppSettings, String> {
     get_all_settings(&pool).await
@@ -124,6 +128,23 @@ pub async fn update_setting_float_cmd(
 ) -> Result<(), String> {
     update_setting_float(&pool, &key, value).await
         .map_err(|e| format!("Failed to update setting: {}", e))
+}
+
+#[tauri::command]
+pub async fn update_setting_string_cmd(
+    pool: tauri::State<'_, SqlitePool>,
+    key: String,
+    value: String,
+) -> Result<(), String> {
+    update_setting_string(&pool, &key, &value).await
+        .map_err(|e| format!("Failed to update setting: {}", e))
+}
+
+#[tauri::command]
+pub async fn get_language_setting(pool: tauri::State<'_, SqlitePool>) -> Result<String, String> {
+    get_setting(&pool, "language").await
+        .map(|lang| lang.unwrap_or_else(|| "ja".to_string()))
+        .map_err(|e| format!("Failed to get language setting: {}", e))
 }
 
 pub fn is_hidden_file(path: &str) -> bool {

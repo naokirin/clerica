@@ -164,6 +164,8 @@ async fn main() {
             settings::update_setting_bool_cmd,
             settings::update_setting_int_cmd,
             settings::update_setting_float_cmd,
+            settings::update_setting_string_cmd,
+            settings::get_language_setting,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

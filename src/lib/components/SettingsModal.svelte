@@ -1,9 +1,9 @@
 <script lang="ts">
   import { X } from "lucide-svelte";
   import { onMount } from "svelte";
-  import { getSettings, updateSettingBool, updateSettingInt } from "../api/settings";
+  import { getSettings, updateSettingBool, updateSettingInt, updateSettingString, getLanguageSetting } from "../api/settings";
   import { errorStore } from "../stores/error";
-  import { t } from "$lib/i18n";
+  import { t, locale } from "$lib/i18n";
   import LanguageSwitcher from "./LanguageSwitcher.svelte";
 
   export let isOpen = false;
@@ -17,14 +17,19 @@
   let showHiddenFiles = false;
   let useFuzzySearch = true;
   let highlightSearchResults = true;
+  let language = 'en';
   let isLoading = false;
 
   // 設定を読み込み
   onMount(async () => {
     try {
-      const settings = await getSettings();
+      const [settings, lang] = await Promise.all([
+        getSettings(),
+        getLanguageSetting()
+      ]);
       showHiddenFiles = settings.show_hidden_files;
       filesPerPage = settings.files_per_page;
+      language = lang;
     } catch (error) {
       console.error('設定の読み込みに失敗しました:', error);
       errorStore.showError($t("common.error.settingsLoadFailed"));
@@ -38,9 +43,13 @@
 
   const loadSettings = async () => {
     try {
-      const settings = await getSettings();
+      const [settings, lang] = await Promise.all([
+        getSettings(),
+        getLanguageSetting()
+      ]);
       showHiddenFiles = settings.show_hidden_files;
       filesPerPage = settings.files_per_page;
+      language = lang;
     } catch (error) {
       console.error('設定の読み込みに失敗しました:', error);
       errorStore.showError($t("common.error.settingsLoadFailed"));
@@ -62,6 +71,11 @@
     try {
       await updateSettingBool('show_hidden_files', showHiddenFiles);
       await updateSettingInt('files_per_page', filesPerPage);
+      await updateSettingString('language', language);
+      
+      // i18nライブラリのlocaleを即座に更新
+      $locale = language;
+      
       console.log("Settings saved:", {
         darkMode,
         detailViewDefault,
@@ -69,6 +83,7 @@
         showHiddenFiles,
         useFuzzySearch,
         highlightSearchResults,
+        language,
       });
       
       errorStore.showSuccess($t("common.settings.saved"));
@@ -111,7 +126,13 @@
         <div class="settings-section">
           <h4>{$t("common.settings.language")}</h4>
           <div class="setting-item">
-            <LanguageSwitcher />
+            <label class="setting-label">
+              {$t("common.settings.language")}:
+              <select class="setting-select" bind:value={language}>
+                <option value="ja">日本語</option>
+                <option value="en">English</option>
+              </select>
+            </label>
           </div>
         </div>
 

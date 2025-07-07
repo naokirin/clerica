@@ -10,7 +10,7 @@
 
   const switchLanguage = (lang: string) => {
     $locale = lang;
-    localStorage.setItem('locale', lang);
+    // localStorageは削除してデータベース保存に一本化
   };
 </script>
 

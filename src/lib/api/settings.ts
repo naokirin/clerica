@@ -19,17 +19,29 @@ export const updateSettingInt = async (key: string, value: number): Promise<void
   return await invoke('update_setting_int_cmd', { key, value });
 };
 
+export const updateSettingString = async (key: string, value: string): Promise<void> => {
+  return await invoke('update_setting_string_cmd', { key, value });
+};
+
+export const getLanguageSetting = async (): Promise<string> => {
+  return await invoke('get_language_setting');
+};
+
 // 新しい統一API
 export async function getAppSettings(): Promise<Settings> {
   try {
-    const settings = await invoke<AppSettings>('get_settings');
+    const [settings, language] = await Promise.all([
+      invoke<AppSettings>('get_settings'),
+      getLanguageSetting()
+    ]);
     // 既存の設定を新しい型に変換
     return {
       itemsPerPage: settings.files_per_page,
       defaultSortKey: 'name',
       defaultSortOrder: 'asc',
       showHiddenFiles: settings.show_hidden_files,
-      autoSave: true
+      autoSave: true,
+      language
     };
   } catch (error) {
     console.error('Failed to get settings:', error);
@@ -39,7 +51,8 @@ export async function getAppSettings(): Promise<Settings> {
       defaultSortKey: 'name',
       defaultSortOrder: 'asc',
       showHiddenFiles: false,
-      autoSave: true
+      autoSave: true,
+      language: 'ja'
     };
   }
 }
@@ -52,6 +65,9 @@ export async function updateAppSettings(settings: SettingsUpdateRequest): Promis
     }
     if (settings.showHiddenFiles !== undefined) {
       await updateSettingBool('show_hidden_files', settings.showHiddenFiles);
+    }
+    if (settings.language !== undefined) {
+      await updateSettingString('language', settings.language);
     }
     // TODO: 他の設定項目は将来のRustコマンド実装で対応
   } catch (error) {
