@@ -9,11 +9,11 @@
     emptyMessage?: string;
     showEmptyState?: boolean;
     onSelectFile: (file: any) => void;
-    onGoToPage: (page: number) => void;
-    onGoToPreviousPage: () => void;
-    onGoToNextPage: () => void;
-    onGoToFirstPage: () => void;
-    onGoToLastPage: () => void;
+    onGoToPage: (page: number) => Promise<void>;
+    onGoToPreviousPage: () => Promise<void>;
+    onGoToNextPage: () => Promise<void>;
+    onGoToFirstPage: () => Promise<void>;
+    onGoToLastPage: () => Promise<void>;
   }
 
   let {

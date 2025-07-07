@@ -6,7 +6,7 @@
     selectedCategory: FileCategory;
     categoryCounts: Record<FileCategory, number>;
     fileCategories?: FileCategoryInfo[];
-    onSelectCategory: (category: FileCategory) => void;
+    onSelectCategory: (category: FileCategory) => Promise<void>;
   }
 
   let {
@@ -120,8 +120,8 @@
 
   const categories = $derived(() => fileCategories ?? defaultFileCategories);
 
-  function handleCategorySelect(category: FileCategory) {
-    onSelectCategory(category);
+  async function handleCategorySelect(category: FileCategory) {
+    await onSelectCategory(category);
   }
 </script>
 

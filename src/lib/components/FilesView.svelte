@@ -24,13 +24,13 @@
     selectedDirectoryId: string | "all";
     sortOptions: SortOptions;
     onSelectFile: (file: File) => void;
-    onSelectCategory: (category: FileCategory) => void;
-    onGoToPage: (page: number) => void;
-    onGoToPreviousPage: () => void;
-    onGoToNextPage: () => void;
-    onGoToFirstPage: () => void;
-    onGoToLastPage: () => void;
-    onSortChange: (options: SortOptions) => void;
+    onSelectCategory: (category: FileCategory) => Promise<void>;
+    onGoToPage: (page: number) => Promise<void>;
+    onGoToPreviousPage: () => Promise<void>;
+    onGoToNextPage: () => Promise<void>;
+    onGoToFirstPage: () => Promise<void>;
+    onGoToLastPage: () => Promise<void>;
+    onSortChange: (options: SortOptions) => Promise<void>;
   }
 
   let {
@@ -90,11 +90,11 @@
     <Pagination
       {currentPage}
       {totalPages}
-      on:goToPage={(e) => onGoToPage(e.detail.page)}
-      on:goToPreviousPage={onGoToPreviousPage}
-      on:goToNextPage={onGoToNextPage}
-      on:goToFirstPage={onGoToFirstPage}
-      on:goToLastPage={onGoToLastPage}
+      on:goToPage={async (e) => await onGoToPage(e.detail.page)}
+      on:goToPreviousPage={async () => await onGoToPreviousPage()}
+      on:goToNextPage={async () => await onGoToNextPage()}
+      on:goToFirstPage={async () => await onGoToFirstPage()}
+      on:goToLastPage={async () => await onGoToLastPage()}
     />
     <div class="sort-section">
       <SortControl

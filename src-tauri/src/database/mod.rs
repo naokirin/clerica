@@ -122,6 +122,27 @@ pub trait DatabaseTrait {
     ) -> Result<Vec<File>, sqlx::Error>;
     async fn count_all_files(&self, pool: &SqlitePool) -> Result<u32, sqlx::Error>;
     async fn count_files_by_directory(&self, pool: &SqlitePool, directory_id: &str) -> Result<u32, sqlx::Error>;
+    async fn get_files_paginated_with_category(
+        &self,
+        pool: &SqlitePool,
+        category: &str,
+        sort_field: Option<String>,
+        sort_order: Option<String>,
+        limit: u32,
+        offset: u32,
+    ) -> Result<Vec<File>, sqlx::Error>;
+    async fn get_files_by_directory_paginated_with_category(
+        &self,
+        pool: &SqlitePool,
+        directory_id: &str,
+        category: &str,
+        sort_field: Option<String>,
+        sort_order: Option<String>,
+        limit: u32,
+        offset: u32,
+    ) -> Result<Vec<File>, sqlx::Error>;
+    async fn count_files_with_category(&self, pool: &SqlitePool, category: &str) -> Result<u32, sqlx::Error>;
+    async fn count_files_by_directory_with_category(&self, pool: &SqlitePool, directory_id: &str, category: &str) -> Result<u32, sqlx::Error>;
     async fn get_all_tags(&self, pool: &SqlitePool) -> Result<Vec<Tag>, sqlx::Error>;
     async fn get_top_tags(&self, pool: &SqlitePool, limit: u32) -> Result<Vec<Tag>, sqlx::Error>;
     async fn search_tags_by_name(
@@ -1279,6 +1300,194 @@ impl DatabaseTrait for Database {
 
         Ok(())
     }
+
+    async fn get_files_paginated_with_category(
+        &self,
+        pool: &SqlitePool,
+        category: &str,
+        sort_field: Option<String>,
+        sort_order: Option<String>,
+        limit: u32,
+        offset: u32,
+    ) -> Result<Vec<File>, sqlx::Error> {
+        let sort_field = sort_field.as_deref().unwrap_or("modified_at");
+        let sort_order = sort_order.as_deref().unwrap_or("desc");
+
+        let sort_column = match sort_field {
+            "name" => "name",
+            "size" => "size",
+            "created_at" => "created_at",
+            "modified_at" => "modified_at",
+            "last_accessed" => "last_accessed",
+            "file_type" => "file_type",
+            _ => "modified_at",
+        };
+
+        let order_direction = match sort_order {
+            "asc" => "ASC",
+            _ => "DESC",
+        };
+
+        let category_where_clause = build_category_where_clause(category);
+
+        let query = format!(
+            "SELECT * FROM files WHERE 1=1{} ORDER BY {} {} NULLS LAST LIMIT ? OFFSET ?",
+            category_where_clause, sort_column, order_direction
+        );
+
+        let rows = sqlx::query(&query)
+            .bind(limit)
+            .bind(offset)
+            .fetch_all(pool)
+            .await?;
+
+        let mut files = Vec::new();
+        for row in rows {
+            files.push(File {
+                id: row.get("id"),
+                path: row.get("path"),
+                name: row.get("name"),
+                directory_id: row.get("directory_id"),
+                size: row.get("size"),
+                file_type: row.get("file_type"),
+                created_at: row.get("created_at"),
+                modified_at: row.get("modified_at"),
+                birth_time: row.get("birth_time"),
+                inode: row.get("inode"),
+                is_directory: row.get("is_directory"),
+                created_at_db: row.get("created_at_db"),
+                updated_at_db: row.get("updated_at_db"),
+                file_size: row.get("file_size"),
+                mime_type: row.get("mime_type"),
+                permissions: row.get("permissions"),
+                owner_uid: row.get("owner_uid"),
+                group_gid: row.get("group_gid"),
+                hard_links: row.get("hard_links"),
+                device_id: row.get("device_id"),
+                last_accessed: row.get("last_accessed"),
+                metadata: row.get("metadata"),
+            });
+        }
+
+        Ok(files)
+    }
+
+    async fn get_files_by_directory_paginated_with_category(
+        &self,
+        pool: &SqlitePool,
+        directory_id: &str,
+        category: &str,
+        sort_field: Option<String>,
+        sort_order: Option<String>,
+        limit: u32,
+        offset: u32,
+    ) -> Result<Vec<File>, sqlx::Error> {
+        let sort_field = sort_field.as_deref().unwrap_or("modified_at");
+        let sort_order = sort_order.as_deref().unwrap_or("desc");
+
+        let sort_column = match sort_field {
+            "name" => "name",
+            "size" => "size",
+            "created_at" => "created_at",
+            "modified_at" => "modified_at",
+            "last_accessed" => "last_accessed",
+            "file_type" => "file_type",
+            _ => "modified_at",
+        };
+
+        let order_direction = match sort_order {
+            "asc" => "ASC",
+            _ => "DESC",
+        };
+
+        let category_where_clause = build_category_where_clause(category);
+
+        let query = format!(
+            "SELECT * FROM files WHERE directory_id = ?{} ORDER BY {} {} NULLS LAST LIMIT ? OFFSET ?",
+            category_where_clause, sort_column, order_direction
+        );
+
+        let rows = sqlx::query(&query)
+            .bind(directory_id)
+            .bind(limit)
+            .bind(offset)
+            .fetch_all(pool)
+            .await?;
+
+        let mut files = Vec::new();
+        for row in rows {
+            files.push(File {
+                id: row.get("id"),
+                path: row.get("path"),
+                name: row.get("name"),
+                directory_id: row.get("directory_id"),
+                size: row.get("size"),
+                file_type: row.get("file_type"),
+                created_at: row.get("created_at"),
+                modified_at: row.get("modified_at"),
+                birth_time: row.get("birth_time"),
+                inode: row.get("inode"),
+                is_directory: row.get("is_directory"),
+                created_at_db: row.get("created_at_db"),
+                updated_at_db: row.get("updated_at_db"),
+                file_size: row.get("file_size"),
+                mime_type: row.get("mime_type"),
+                permissions: row.get("permissions"),
+                owner_uid: row.get("owner_uid"),
+                group_gid: row.get("group_gid"),
+                hard_links: row.get("hard_links"),
+                device_id: row.get("device_id"),
+                last_accessed: row.get("last_accessed"),
+                metadata: row.get("metadata"),
+            });
+        }
+
+        Ok(files)
+    }
+
+    async fn count_files_with_category(&self, pool: &SqlitePool, category: &str) -> Result<u32, sqlx::Error> {
+        let category_where_clause = build_category_where_clause(category);
+        let query = format!("SELECT COUNT(*) FROM files WHERE 1=1{}", category_where_clause);
+        
+        let count: i64 = sqlx::query_scalar(&query)
+            .fetch_one(pool)
+            .await?;
+        Ok(count as u32)
+    }
+
+    async fn count_files_by_directory_with_category(&self, pool: &SqlitePool, directory_id: &str, category: &str) -> Result<u32, sqlx::Error> {
+        let category_where_clause = build_category_where_clause(category);
+        let query = format!("SELECT COUNT(*) FROM files WHERE directory_id = ?{}", category_where_clause);
+        
+        let count: i64 = sqlx::query_scalar(&query)
+            .bind(directory_id)
+            .fetch_one(pool)
+            .await?;
+        Ok(count as u32)
+    }
+
+}
+
+fn build_category_where_clause(category: &str) -> String {
+    if category == "all" {
+        return String::new();
+    }
+    
+    let extensions = match category {
+        "image" => vec!["jpg", "jpeg", "png", "gif", "bmp", "webp", "svg", "ico", "tiff", "raw"],
+        "audio" => vec!["mp3", "wav", "ogg", "flac", "aac", "m4a", "wma", "opus"],
+        "video" => vec!["mp4", "avi", "mov", "wmv", "flv", "webm", "mkv", "m4v", "3gp"],
+        "document" => vec!["pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt", "md", "html", "htm", "css", "js", "json", "xml", "csv", "rtf"],
+        "archive" => vec!["zip", "rar", "7z", "tar", "gz", "bz2", "xz", "lzma"],
+        "other" => return " AND (path NOT LIKE '%.jpg' AND path NOT LIKE '%.jpeg' AND path NOT LIKE '%.png' AND path NOT LIKE '%.gif' AND path NOT LIKE '%.bmp' AND path NOT LIKE '%.webp' AND path NOT LIKE '%.svg' AND path NOT LIKE '%.ico' AND path NOT LIKE '%.tiff' AND path NOT LIKE '%.raw' AND path NOT LIKE '%.mp3' AND path NOT LIKE '%.wav' AND path NOT LIKE '%.ogg' AND path NOT LIKE '%.flac' AND path NOT LIKE '%.aac' AND path NOT LIKE '%.m4a' AND path NOT LIKE '%.wma' AND path NOT LIKE '%.opus' AND path NOT LIKE '%.mp4' AND path NOT LIKE '%.avi' AND path NOT LIKE '%.mov' AND path NOT LIKE '%.wmv' AND path NOT LIKE '%.flv' AND path NOT LIKE '%.webm' AND path NOT LIKE '%.mkv' AND path NOT LIKE '%.m4v' AND path NOT LIKE '%.3gp' AND path NOT LIKE '%.pdf' AND path NOT LIKE '%.doc' AND path NOT LIKE '%.docx' AND path NOT LIKE '%.xls' AND path NOT LIKE '%.xlsx' AND path NOT LIKE '%.ppt' AND path NOT LIKE '%.pptx' AND path NOT LIKE '%.txt' AND path NOT LIKE '%.md' AND path NOT LIKE '%.html' AND path NOT LIKE '%.htm' AND path NOT LIKE '%.css' AND path NOT LIKE '%.js' AND path NOT LIKE '%.json' AND path NOT LIKE '%.xml' AND path NOT LIKE '%.csv' AND path NOT LIKE '%.rtf' AND path NOT LIKE '%.zip' AND path NOT LIKE '%.rar' AND path NOT LIKE '%.7z' AND path NOT LIKE '%.tar' AND path NOT LIKE '%.gz' AND path NOT LIKE '%.bz2' AND path NOT LIKE '%.xz' AND path NOT LIKE '%.lzma')".to_string(),
+        _ => return String::new(),
+    };
+    
+    let conditions: Vec<String> = extensions.iter()
+        .map(|ext| format!("path LIKE '%.{}' OR path LIKE '%.{}'", ext, ext.to_uppercase()))
+        .collect();
+    
+    format!(" AND ({})", conditions.join(" OR "))
 }
 
 #[cfg(test)]

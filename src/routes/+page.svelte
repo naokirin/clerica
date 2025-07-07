@@ -46,6 +46,7 @@
     selectedFile,
     selectedCategory,
     currentPage,
+    totalFiles,
     isDeleting,
     categoryCounts,
     filteredFiles,
@@ -326,20 +327,20 @@
             selectedCategory={$selectedCategory}
             categoryCounts={$categoryCounts}
             currentPage={$currentPage}
-            totalFiles={$filteredFiles.length}
+            totalFiles={$totalFiles}
             totalPages={$totalPages}
             itemsPerPage={$itemsPerPage}
             selectedDirectoryId={$selectedDirectoryId}
             sortOptions={$sortOptions}
             onSelectFile={selectFile}
-            onSelectCategory={(category) =>
-              fileViewModel.selectCategory(category)}
-            onGoToPage={(page) => fileViewModel.goToPage(page)}
-            onGoToPreviousPage={() => fileViewModel.goToPreviousPage()}
-            onGoToNextPage={() => fileViewModel.goToNextPage()}
-            onGoToFirstPage={() => fileViewModel.goToFirstPage()}
-            onGoToLastPage={() => fileViewModel.goToLastPage($totalPages)}
-            onSortChange={(options) => fileViewModel.setSortOptions(options)}
+            onSelectCategory={async (category) =>
+              await fileViewModel.selectCategory(category)}
+            onGoToPage={async (page) => await fileViewModel.goToPage(page)}
+            onGoToPreviousPage={async () => await fileViewModel.goToPreviousPage()}
+            onGoToNextPage={async () => await fileViewModel.goToNextPage()}
+            onGoToFirstPage={async () => await fileViewModel.goToFirstPage()}
+            onGoToLastPage={async () => await fileViewModel.goToLastPage()}
+            onSortChange={async (options) => await fileViewModel.setSortOptions(options)}
           />
         {/if}
 

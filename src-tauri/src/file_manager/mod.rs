@@ -577,6 +577,151 @@ pub async fn count_files_by_directory(
 }
 
 #[tauri::command]
+pub async fn count_files_by_category(
+    pool: State<'_, SqlitePool>,
+    directory_id: String,
+) -> Result<std::collections::HashMap<String, u32>, String> {
+    use std::collections::HashMap;
+
+    let query = if directory_id == "all" {
+        "SELECT path FROM files WHERE is_directory = false".to_string()
+    } else {
+        "SELECT path FROM files WHERE is_directory = false AND directory_id = ?".to_string()
+    };
+
+    let files: Vec<String> = if directory_id == "all" {
+        sqlx::query_scalar(&query)
+            .fetch_all(pool.inner())
+            .await
+            .map_err(|e| e.to_string())?
+    } else {
+        sqlx::query_scalar(&query)
+            .bind(&directory_id)
+            .fetch_all(pool.inner())
+            .await
+            .map_err(|e| e.to_string())?
+    };
+
+    let mut counts = HashMap::new();
+    counts.insert("all".to_string(), files.len() as u32);
+    counts.insert("image".to_string(), 0);
+    counts.insert("audio".to_string(), 0);
+    counts.insert("video".to_string(), 0);
+    counts.insert("document".to_string(), 0);
+    counts.insert("archive".to_string(), 0);
+    counts.insert("other".to_string(), 0);
+
+    for file_path in &files {
+        let category = get_file_category_from_path(file_path);
+        let count = counts.get(&category).unwrap_or(&0) + 1;
+        counts.insert(category, count);
+    }
+
+    Ok(counts)
+}
+
+#[tauri::command]
+pub async fn get_files_paginated_with_category(
+    pool: State<'_, SqlitePool>,
+    category: String,
+    sort_field: Option<String>,
+    sort_order: Option<String>,
+    limit: u32,
+    offset: u32,
+) -> Result<Vec<File>, String> {
+    let db = Database;
+    db.get_files_paginated_with_category(&pool, &category, sort_field, sort_order, limit, offset)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn get_files_by_directory_paginated_with_category(
+    pool: State<'_, SqlitePool>,
+    directory_id: String,
+    category: String,
+    sort_field: Option<String>,
+    sort_order: Option<String>,
+    limit: u32,
+    offset: u32,
+) -> Result<Vec<File>, String> {
+    let db = Database;
+    db.get_files_by_directory_paginated_with_category(&pool, &directory_id, &category, sort_field, sort_order, limit, offset)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn count_files_with_category(
+    pool: State<'_, SqlitePool>,
+    category: String,
+) -> Result<u32, String> {
+    let db = Database;
+    db.count_files_with_category(&pool, &category)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn count_files_by_directory_with_category(
+    pool: State<'_, SqlitePool>,
+    directory_id: String,
+    category: String,
+) -> Result<u32, String> {
+    let db = Database;
+    db.count_files_by_directory_with_category(&pool, &directory_id, &category)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+// ファイルパスからカテゴリを判定する関数
+fn get_file_category_from_path(file_path: &str) -> String {
+    let path = std::path::Path::new(file_path);
+    let extension = path.extension()
+        .and_then(|ext| ext.to_str())
+        .unwrap_or("")
+        .to_lowercase();
+
+    match extension.as_str() {
+        // 画像
+        "jpg" | "jpeg" | "png" | "gif" | "bmp" | "webp" | "svg" | "ico" | "tiff" | "raw" => "image".to_string(),
+        // 音声
+        "mp3" | "wav" | "ogg" | "flac" | "aac" | "m4a" | "wma" | "opus" => "audio".to_string(),
+        // 動画
+        "mp4" | "avi" | "mov" | "wmv" | "flv" | "webm" | "mkv" | "m4v" | "3gp" => "video".to_string(),
+        // ドキュメント
+        "pdf" | "doc" | "docx" | "xls" | "xlsx" | "ppt" | "pptx" | "txt" | "md" | "html" | "htm" | "css" | "js" | "json" | "xml" | "csv" | "rtf" => "document".to_string(),
+        // アーカイブ
+        "zip" | "rar" | "7z" | "tar" | "gz" | "bz2" | "xz" | "lzma" => "archive".to_string(),
+        // その他
+        _ => "other".to_string(),
+    }
+}
+
+// カテゴリ条件をSQL WHERE句に変換する関数
+fn build_category_where_clause(category: &str) -> String {
+    if category == "all" {
+        return String::new();
+    }
+    
+    let extensions = match category {
+        "image" => vec!["jpg", "jpeg", "png", "gif", "bmp", "webp", "svg", "ico", "tiff", "raw"],
+        "audio" => vec!["mp3", "wav", "ogg", "flac", "aac", "m4a", "wma", "opus"],
+        "video" => vec!["mp4", "avi", "mov", "wmv", "flv", "webm", "mkv", "m4v", "3gp"],
+        "document" => vec!["pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt", "md", "html", "htm", "css", "js", "json", "xml", "csv", "rtf"],
+        "archive" => vec!["zip", "rar", "7z", "tar", "gz", "bz2", "xz", "lzma"],
+        "other" => return " AND (path NOT LIKE '%.jpg' AND path NOT LIKE '%.jpeg' AND path NOT LIKE '%.png' AND path NOT LIKE '%.gif' AND path NOT LIKE '%.bmp' AND path NOT LIKE '%.webp' AND path NOT LIKE '%.svg' AND path NOT LIKE '%.ico' AND path NOT LIKE '%.tiff' AND path NOT LIKE '%.raw' AND path NOT LIKE '%.mp3' AND path NOT LIKE '%.wav' AND path NOT LIKE '%.ogg' AND path NOT LIKE '%.flac' AND path NOT LIKE '%.aac' AND path NOT LIKE '%.m4a' AND path NOT LIKE '%.wma' AND path NOT LIKE '%.opus' AND path NOT LIKE '%.mp4' AND path NOT LIKE '%.avi' AND path NOT LIKE '%.mov' AND path NOT LIKE '%.wmv' AND path NOT LIKE '%.flv' AND path NOT LIKE '%.webm' AND path NOT LIKE '%.mkv' AND path NOT LIKE '%.m4v' AND path NOT LIKE '%.3gp' AND path NOT LIKE '%.pdf' AND path NOT LIKE '%.doc' AND path NOT LIKE '%.docx' AND path NOT LIKE '%.xls' AND path NOT LIKE '%.xlsx' AND path NOT LIKE '%.ppt' AND path NOT LIKE '%.pptx' AND path NOT LIKE '%.txt' AND path NOT LIKE '%.md' AND path NOT LIKE '%.html' AND path NOT LIKE '%.htm' AND path NOT LIKE '%.css' AND path NOT LIKE '%.js' AND path NOT LIKE '%.json' AND path NOT LIKE '%.xml' AND path NOT LIKE '%.csv' AND path NOT LIKE '%.rtf' AND path NOT LIKE '%.zip' AND path NOT LIKE '%.rar' AND path NOT LIKE '%.7z' AND path NOT LIKE '%.tar' AND path NOT LIKE '%.gz' AND path NOT LIKE '%.bz2' AND path NOT LIKE '%.xz' AND path NOT LIKE '%.lzma')".to_string(),
+        _ => return String::new(),
+    };
+    
+    let conditions: Vec<String> = extensions.iter()
+        .map(|ext| format!("path LIKE '%.{}' OR path LIKE '%.{}'", ext, ext.to_uppercase()))
+        .collect();
+    
+    format!(" AND ({})", conditions.join(" OR "))
+}
+
+#[tauri::command]
 pub async fn get_files_by_directory_with_tags(
     pool: State<'_, SqlitePool>,
     directory_id: String,

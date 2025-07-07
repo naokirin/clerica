@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { File, FileWithTags, SortOptions, Tag } from "../types";
+import type { File, FileWithTags, SortOptions, Tag, FileCategory } from "../types";
 
 export async function getFiles(sortOptions?: SortOptions): Promise<File[]> {
   return await invoke("get_files", {
@@ -98,4 +98,48 @@ export async function updateFileTags(fileId: string, tagIds: string[]): Promise<
 
 export async function getFileTags(fileId: string): Promise<Tag[]> {
   return await invoke("get_file_tags", { fileId: fileId });
+}
+
+export async function countFilesByCategory(directoryId: string = "all"): Promise<Record<FileCategory, number>> {
+  return await invoke("count_files_by_category", { directoryId });
+}
+
+export async function getFilesPaginatedWithCategory(
+  category: FileCategory,
+  sortOptions?: SortOptions,
+  limit: number = 20,
+  offset: number = 0
+): Promise<File[]> {
+  return await invoke("get_files_paginated_with_category", {
+    category,
+    sortField: sortOptions?.field || "modified_at",
+    sortOrder: sortOptions?.order || "desc",
+    limit,
+    offset
+  });
+}
+
+export async function getFilesByDirectoryPaginatedWithCategory(
+  directoryId: string,
+  category: FileCategory,
+  sortOptions?: SortOptions,
+  limit: number = 20,
+  offset: number = 0
+): Promise<File[]> {
+  return await invoke("get_files_by_directory_paginated_with_category", {
+    directoryId,
+    category,
+    sortField: sortOptions?.field || "modified_at",
+    sortOrder: sortOptions?.order || "desc",
+    limit,
+    offset
+  });
+}
+
+export async function countFilesWithCategory(category: FileCategory): Promise<number> {
+  return await invoke("count_files_with_category", { category });
+}
+
+export async function countFilesByDirectoryWithCategory(directoryId: string, category: FileCategory): Promise<number> {
+  return await invoke("count_files_by_directory_with_category", { directoryId, category });
 }

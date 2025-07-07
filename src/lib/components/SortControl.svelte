@@ -6,7 +6,7 @@
   interface Props {
     sortField: SortField;
     sortOrder: SortOrder;
-    onSortChange: (options: SortOptions) => void;
+    onSortChange: (options: SortOptions) => Promise<void>;
   }
 
   let { sortField, sortOrder, onSortChange }: Props = $props();
@@ -22,15 +22,15 @@
 
   let sortFields = $derived(getSortFields());
 
-  function handleFieldChange(event: Event) {
+  async function handleFieldChange(event: Event) {
     const target = event.target as HTMLSelectElement;
     const newField = target.value as SortField;
-    onSortChange({ field: newField, order: sortOrder });
+    await onSortChange({ field: newField, order: sortOrder });
   }
 
-  function toggleSortOrder() {
+  async function toggleSortOrder() {
     const newOrder: SortOrder = sortOrder === "asc" ? "desc" : "asc";
-    onSortChange({ field: sortField, order: newOrder });
+    await onSortChange({ field: sortField, order: newOrder });
   }
 </script>
 
