@@ -155,10 +155,15 @@
       { title: $t("common.dialog.confirm"), kind: "warning" },
     );
     if (confirmed) {
-      const success =
-        await directoryViewModel.removeExistingDirectory(directoryId);
-      if (success) {
+      const result =
+        await directoryViewModel.removeExistingDirectory(directoryId, tagViewModel);
+      if (result) {
         await fileViewModel.loadFiles();
+        
+        // タグが削除された場合の通知
+        if (result.deleted_tags_count > 0) {
+          console.log(`ディレクトリ削除により${result.deleted_tags_count}個のタグが削除されました`);
+        }
       } else {
         errorStore.showError($t("common.error.directoryRemoveFailed"));
       }

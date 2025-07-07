@@ -1,6 +1,6 @@
 import { writable, type Writable } from 'svelte/store';
 import { BaseViewModel } from './BaseViewModel';
-import { getDirectories, addDirectory, removeDirectory, rescanDirectory } from '../api/directories';
+import { getDirectories, addDirectory, removeDirectory, rescanDirectory, type DirectoryRemovalResult } from '../api/directories';
 import type { Directory } from '../types';
 
 export class DirectoryViewModel extends BaseViewModel {
@@ -44,17 +44,23 @@ export class DirectoryViewModel extends BaseViewModel {
     return false;
   }
 
-  public async removeExistingDirectory(id: string): Promise<boolean> {
+  public async removeExistingDirectory(id: string, tagViewModel?: any): Promise<DirectoryRemovalResult | null> {
     const result = await this.executeAsync(async () => {
-      await removeDirectory(id);
-      return true;
+      return await removeDirectory(id);
     });
 
     if (result) {
       await this.loadDirectories();
-      return true;
+      
+      // タグが削除された場合、タグ情報を更新
+      if (result.deleted_tags_count > 0 && tagViewModel) {
+        console.log(`${result.deleted_tags_count}個のタグが削除されました: ${result.deleted_tag_ids.join(', ')}`);
+        await tagViewModel.refreshAllTags();
+      }
+      
+      return result;
     }
-    return false;
+    return null;
   }
 
   public async rescanExistingDirectory(directoryId: string, tagViewModel?: any): Promise<boolean> {

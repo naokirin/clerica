@@ -106,12 +106,19 @@ pub async fn add_directory(
     Ok(directory)
 }
 
+#[derive(Debug, serde::Serialize)]
+pub struct DirectoryRemovalResult {
+    pub success: bool,
+    pub deleted_tags_count: usize,
+    pub deleted_tag_ids: Vec<String>,
+}
+
 #[tauri::command]
 pub async fn remove_directory(
     pool: State<'_, SqlitePool>,
     watcher: State<'_, Arc<Mutex<FileWatcher>>>,
     id: String,
-) -> Result<(), String> {
+) -> Result<DirectoryRemovalResult, String> {
     let db = Database;
     
     // ファイル監視を停止
@@ -122,9 +129,47 @@ pub async fn remove_directory(
         }
     }
     
-    db.remove_directory(&pool, &id)
+    // トランザクション開始
+    let mut tx = pool.begin().await.map_err(|e| e.to_string())?;
+    
+    // ディレクトリを削除（ON DELETE CASCADEにより関連ファイルも自動削除）
+    sqlx::query("DELETE FROM directories WHERE id = ?")
+        .bind(&id)
+        .execute(&mut *tx)
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|e| e.to_string())?;
+    
+    // 孤児タグを削除
+    let orphaned_tag_ids: Vec<String> = sqlx::query_scalar(
+        "SELECT t.id FROM tags t 
+         LEFT JOIN file_tags ft ON t.id = ft.tag_id 
+         WHERE ft.tag_id IS NULL"
+    )
+    .fetch_all(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    // 孤児タグを削除
+    let deleted_tags_count = orphaned_tag_ids.len();
+    if !orphaned_tag_ids.is_empty() {
+        for tag_id in &orphaned_tag_ids {
+            sqlx::query("DELETE FROM tags WHERE id = ?")
+                .bind(tag_id)
+                .execute(&mut *tx)
+                .await
+                .map_err(|e| e.to_string())?;
+        }
+        println!("削除されたタグ数: {}", deleted_tags_count);
+    }
+    
+    // トランザクションをコミット
+    tx.commit().await.map_err(|e| e.to_string())?;
+    
+    Ok(DirectoryRemovalResult {
+        success: true,
+        deleted_tags_count,
+        deleted_tag_ids: orphaned_tag_ids,
+    })
 }
 
 #[tauri::command]
