@@ -11,6 +11,7 @@
   } from "../types";
   import FileList from "./FileList.svelte";
   import SortControl from "./SortControl.svelte";
+  import FileCategoryFilters from "./FileCategoryFilters.svelte";
   import { t } from "$lib/i18n";
 
   interface Props {
@@ -79,107 +80,6 @@
     onSortChange,
   }: Props = $props();
 
-  const fileCategories: FileCategoryInfo[] = [
-    {
-      key: "all",
-      label: $t("common.files.category.all"),
-      icon: "📁",
-      mimeTypes: [],
-      extensions: [],
-    },
-    {
-      key: "image",
-      label: $t("common.files.category.image"),
-      icon: "🖼️",
-      mimeTypes: ["image/"],
-      extensions: [
-        "jpg",
-        "jpeg",
-        "png",
-        "gif",
-        "bmp",
-        "webp",
-        "svg",
-        "ico",
-        "tiff",
-        "raw",
-      ],
-    },
-    {
-      key: "audio",
-      label: $t("common.files.category.audio"),
-      icon: "🎵",
-      mimeTypes: ["audio/"],
-      extensions: ["mp3", "wav", "ogg", "flac", "aac", "m4a", "wma", "opus"],
-    },
-    {
-      key: "video",
-      label: $t("common.files.category.video"),
-      icon: "🎬",
-      mimeTypes: ["video/"],
-      extensions: [
-        "mp4",
-        "avi",
-        "mov",
-        "wmv",
-        "flv",
-        "webm",
-        "mkv",
-        "m4v",
-        "3gp",
-      ],
-    },
-    {
-      key: "document",
-      label: $t("common.files.category.document"),
-      icon: "📄",
-      mimeTypes: [
-        "application/pdf",
-        "application/msword",
-        "application/vnd.",
-        "text/",
-      ],
-      extensions: [
-        "pdf",
-        "doc",
-        "docx",
-        "xls",
-        "xlsx",
-        "ppt",
-        "pptx",
-        "txt",
-        "md",
-        "html",
-        "htm",
-        "css",
-        "js",
-        "json",
-        "xml",
-        "csv",
-        "rtf",
-      ],
-    },
-    {
-      key: "archive",
-      label: $t("common.files.category.archive"),
-      icon: "📦",
-      mimeTypes: [
-        "application/zip",
-        "application/x-rar",
-        "application/x-7z",
-        "application/x-tar",
-        "application/gzip",
-      ],
-      extensions: ["zip", "rar", "7z", "tar", "gz", "bz2", "xz", "lzma"],
-    },
-    {
-      key: "other",
-      label: $t("common.files.category.other"),
-      icon: "📄",
-      mimeTypes: [],
-      extensions: [],
-    },
-  ];
 
   function getOperatorLabel(operator: string): string {
     switch (operator) {
@@ -248,7 +148,7 @@
         <span class="total-results">
           {selectedCategory === "all"
             ? $t("common.search.results")
-            : fileCategories.find((c) => c.key === selectedCategory)?.label}:
+            : $t(`common.files.category.${selectedCategory}`)}:
           {filteredResults.length.toLocaleString()}
           {$t("common.search.items")}
         </span>
@@ -514,24 +414,11 @@
 
   <!-- 検索結果のファイル種別フィルター -->
   {#if searchResults.length > 0}
-    <div class="file-category-filters">
-      {#each fileCategories as category (category.key)}
-        <button
-          class="category-filter-btn {selectedCategory === category.key
-            ? 'active'
-            : ''}"
-          onclick={() => onSelectCategory(category.key)}
-          disabled={category.key !== "all" &&
-            categoryCounts[category.key] === 0}
-        >
-          <span class="category-icon">{category.icon}</span>
-          <span class="category-label">{category.label}</span>
-          <span class="category-count"
-            >({categoryCounts[category.key].toLocaleString()})</span
-          >
-        </button>
-      {/each}
-    </div>
+    <FileCategoryFilters
+      {selectedCategory}
+      {categoryCounts}
+      onSelectCategory={onSelectCategory}
+    />
   {/if}
 
   {#if totalPages > 1}

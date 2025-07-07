@@ -109,6 +109,7 @@ npm run test:e2e:debug
 - Rustは`cargo clippy`でコード品質確認
 - SQLクエリの安全性確保（SQLx使用）
 - 適切なエラーハンドリング実装
+- Deprecatedになっている機能は使わない
 - テストのカバレッジは90%以上を目指す
 
 ### Performance Considerations
