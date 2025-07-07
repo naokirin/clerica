@@ -100,13 +100,12 @@ describe('AppViewModel', () => {
       appViewModel = new AppViewModel();
     });
 
-    it('should be true when progress is less than 100', () => {
-      appViewModel['_loadingProgress'].set(50);
+    it('should be true initially', () => {
       expect(get(appViewModel.isAppLoading)).toBe(true);
     });
 
-    it('should be false when progress is 100', () => {
-      appViewModel['_loadingProgress'].set(100);
+    it('should be false when explicitly set to false', () => {
+      appViewModel['_isAppLoading'].set(false);
       expect(get(appViewModel.isAppLoading)).toBe(false);
     });
   });
