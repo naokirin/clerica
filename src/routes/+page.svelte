@@ -343,6 +343,7 @@
             bind:searchQuery={$searchQuery}
             searchResults={$searchResults}
             filteredResults={$paginatedSearchResults}
+            allFilteredResults={$filteredSearchResults}
             selectedCategory={$searchSelectedCategory}
             categoryCounts={$searchCategoryCounts}
             currentPage={$searchCurrentPage}

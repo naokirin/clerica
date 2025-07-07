@@ -19,6 +19,7 @@
     searchQuery: string;
     searchResults: SearchResult[];
     filteredResults: SearchResult[];
+    allFilteredResults: SearchResult[];
     selectedCategory: FileCategory;
     categoryCounts: Record<FileCategory, number>;
     currentPage: number;
@@ -52,6 +53,7 @@
     searchQuery = $bindable(),
     searchResults,
     filteredResults,
+    allFilteredResults,
     selectedCategory,
     categoryCounts,
     currentPage,
@@ -150,20 +152,19 @@
           {selectedCategory === "all"
             ? $t("common.search.results")
             : $t(`common.files.category.${selectedCategory}`)}:
-          {filteredResults.length.toLocaleString()}
+          {allFilteredResults.length.toLocaleString()}
           {$t("common.search.items")}
         </span>
-        {#if totalPages > 1}
-          <span class="page-info">
-            {$t("common.pagination.page")}
-            {currentPage}
-            {$t("common.pagination.of", { total: totalPages })}
-            ({((currentPage - 1) * itemsPerPage + 1).toLocaleString()} - {Math.min(
+        <span class="page-info">
+          {#if totalPages > 1}
+            ページ {currentPage} / {totalPages} ({((currentPage - 1) * itemsPerPage + 1).toLocaleString()} - {Math.min(
               currentPage * itemsPerPage,
-              filteredResults.length,
-            ).toLocaleString()})
-          </span>
-        {/if}
+              allFilteredResults.length,
+            ).toLocaleString()} / {allFilteredResults.length.toLocaleString()} 件を表示)
+          {:else}
+            {allFilteredResults.length.toLocaleString()} 件を表示
+          {/if}
+        </span>
       </div>
     {/if}
   </div>
