@@ -12,6 +12,7 @@
   import FileList from "./FileList.svelte";
   import SortControl from "./SortControl.svelte";
   import FileCategoryFilters from "./FileCategoryFilters.svelte";
+  import Pagination from "./Pagination.svelte";
   import { t } from "$lib/i18n";
 
   interface Props {
@@ -421,62 +422,24 @@
     />
   {/if}
 
-  {#if totalPages > 1}
-    <div class="pagination-controls">
-      <div class="pagination-buttons">
-        <button
-          class="pagination-btn"
-          onclick={onGoToFirstPage}
-          disabled={currentPage === 1}
-        >
-          ≪
-        </button>
-        <button
-          class="pagination-btn"
-          onclick={onGoToPreviousPage}
-          disabled={currentPage === 1}
-        >
-          ‹
-        </button>
-
-        {#each Array.from({ length: Math.min(7, totalPages) }, (_, i) => {
-          let start = Math.max(1, currentPage - 3);
-          let end = Math.min(totalPages, start + 6);
-          start = Math.max(1, end - 6);
-          return start + i;
-        }).filter((page) => page <= totalPages) as page}
-          <button
-            class="pagination-btn {currentPage === page ? 'active' : ''}"
-            onclick={() => onGoToPage(page)}
-          >
-            {page}
-          </button>
-        {/each}
-
-        <button
-          class="pagination-btn"
-          onclick={onGoToNextPage}
-          disabled={currentPage === totalPages}
-        >
-          ›
-        </button>
-        <button
-          class="pagination-btn"
-          onclick={onGoToLastPage}
-          disabled={currentPage === totalPages}
-        >
-          ≫
-        </button>
-      </div>
-      <div class="sort-section">
-        <SortControl
-          sortField={sortOptions.field}
-          sortOrder={sortOptions.order}
-          {onSortChange}
-        />
-      </div>
+  <div class="pagination-controls">
+    <Pagination
+      {currentPage}
+      {totalPages}
+      on:goToPage={(e) => onGoToPage(e.detail.page)}
+      on:goToPreviousPage={onGoToPreviousPage}
+      on:goToNextPage={onGoToNextPage}
+      on:goToFirstPage={onGoToFirstPage}
+      on:goToLastPage={onGoToLastPage}
+    />
+    <div class="sort-section">
+      <SortControl
+        sortField={sortOptions.field}
+        sortOrder={sortOptions.order}
+        {onSortChange}
+      />
     </div>
-  {/if}
+  </div>
 
   <FileList
     filesWithTags={filteredResults.map((result) => ({
@@ -600,11 +563,6 @@
     justify-content: space-between;
     align-items: center;
     margin: 1rem 0;
-  }
-
-  .pagination-buttons {
-    display: flex;
-    gap: 0.5rem;
   }
 
   .sort-section {
