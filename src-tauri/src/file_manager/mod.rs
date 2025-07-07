@@ -887,16 +887,23 @@ async fn analyze_and_auto_tag_single_directory(
     
     let mut category_counts: HashMap<String, usize> = HashMap::new();
     let mut total_files = 0;
+    let mut has_git_directory = false;
     
     // ディレクトリ直下のファイルをスキャンしてカテゴリを分析
     for entry in entries {
         if let Ok(entry) = entry {
             let path = entry.path();
             
-            // ディレクトリは除外
+            // .gitディレクトリをチェック
             if let Ok(metadata) = entry.metadata() {
                 if metadata.is_dir() {
-                    continue;
+                    // .gitディレクトリが存在するかチェック
+                    if let Some(file_name) = path.file_name() {
+                        if file_name == ".git" {
+                            has_git_directory = true;
+                        }
+                    }
+                    continue; // ディレクトリはファイルカウントから除外
                 }
             }
             
@@ -911,7 +918,33 @@ async fn analyze_and_auto_tag_single_directory(
         }
     }
     
-    // ファイルが少ない場合はスキップ
+    // Gitディレクトリが存在する場合はgitタグを追加
+    if has_git_directory {
+        let db = Database;
+        let git_tag = match db.get_tag_by_name(&pool, "git").await {
+            Ok(existing_tag) => existing_tag,
+            Err(_) => {
+                // gitタグが存在しない場合は新規作成
+                let new_tag = db.create_tag(&pool, "git", "#F05032") // Git オレンジ色
+                    .await.map_err(|e| e.to_string())?;
+                new_tag
+            }
+        };
+        
+        // ディレクトリにgitタグを付与
+        if let Ok(directory_file_id) = get_or_create_directory_file_entry(pool, directory_path).await {
+            if let Err(e) = db.add_file_tag(&pool, &directory_file_id, &git_tag.id).await {
+                // 既に存在する場合のエラーは無視
+                if !e.to_string().contains("UNIQUE constraint failed") {
+                    eprintln!("Gitタグ追加エラー (directory_file_id: {}, tag_id: {}): {}", directory_file_id, git_tag.id, e);
+                }
+            } else {
+                println!("Git自動タグ付け完了: ディレクトリ '{}' に 'git' タグを追加", directory_path.display());
+            }
+        }
+    }
+    
+    // ファイルが少ない場合はファイルカテゴリ分析をスキップ（Gitタグは付与済み）
     if total_files < 2 {
         return Ok(());
     }
