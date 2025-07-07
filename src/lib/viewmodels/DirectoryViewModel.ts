@@ -25,7 +25,7 @@ export class DirectoryViewModel extends BaseViewModel {
     }
   }
 
-  public async addNewDirectory(path: string, name: string): Promise<boolean> {
+  public async addNewDirectory(path: string, name: string, tagViewModel?: any): Promise<boolean> {
     const result = await this.executeAsync(async () => {
       await addDirectory(path, name);
       return true;
@@ -33,6 +33,12 @@ export class DirectoryViewModel extends BaseViewModel {
 
     if (result) {
       await this.loadDirectories();
+      
+      // 自動タグ付けによって新しいタグが作成された可能性があるため、タグ情報を更新
+      if (tagViewModel) {
+        await tagViewModel.refreshAllTags();
+      }
+      
       return true;
     }
     return false;
@@ -51,13 +57,17 @@ export class DirectoryViewModel extends BaseViewModel {
     return false;
   }
 
-  public async rescanExistingDirectory(directoryId: string): Promise<boolean> {
+  public async rescanExistingDirectory(directoryId: string, tagViewModel?: any): Promise<boolean> {
     const result = await this.executeAsync(async () => {
       await rescanDirectory(directoryId);
       return true;
     });
 
     if (result) {
+      // 再スキャンによって新しいタグが作成された可能性があるため、タグ情報を更新
+      if (tagViewModel) {
+        await tagViewModel.refreshAllTags();
+      }
       return true;
     }
     return false;

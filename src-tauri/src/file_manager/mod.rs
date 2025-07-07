@@ -11,6 +11,7 @@ use std::os::unix::fs::MetadataExt;
 use std::os::unix::fs::PermissionsExt;
 use std::process::Command;
 use std::sync::{Arc, Mutex};
+use std::collections::HashMap;
 
 #[cfg(test)]
 mod tests;
@@ -19,6 +20,54 @@ mod tests;
 pub struct FileWithTags {
     pub file: File,
     pub tags: Vec<Tag>,
+}
+
+#[derive(Debug, Clone)]
+pub enum FileCategory {
+    Image,
+    Video,
+    Audio,
+    Document,
+    Text,
+    Programming,
+    Archive,
+    Other,
+}
+
+impl FileCategory {
+    pub fn from_extension(extension: &str) -> Self {
+        match extension.to_lowercase().as_str() {
+            // 画像
+            "jpg" | "jpeg" | "png" | "gif" | "bmp" | "webp" | "svg" | "ico" => FileCategory::Image,
+            // 動画
+            "mp4" | "avi" | "mov" | "wmv" | "flv" | "webm" | "mkv" => FileCategory::Video,
+            // 音声
+            "mp3" | "wav" | "ogg" | "flac" | "aac" | "m4a" => FileCategory::Audio,
+            // ドキュメント
+            "pdf" | "doc" | "docx" | "xls" | "xlsx" | "ppt" | "pptx" => FileCategory::Document,
+            // テキスト
+            "txt" | "md" | "html" | "htm" | "css" | "json" | "xml" | "csv" => FileCategory::Text,
+            // プログラミング
+            "rs" | "py" | "java" | "c" | "cpp" | "cc" | "cxx" | "h" | "hpp" | "go" | "php" | "rb" | "swift" | "kt" | "scala" | "js" => FileCategory::Programming,
+            // アーカイブ
+            "zip" | "rar" | "7z" | "tar" | "gz" | "bz2" => FileCategory::Archive,
+            // その他
+            _ => FileCategory::Other,
+        }
+    }
+    
+    pub fn to_string(&self) -> String {
+        match self {
+            FileCategory::Image => "Image".to_string(),
+            FileCategory::Video => "Video".to_string(),
+            FileCategory::Audio => "Audio".to_string(),
+            FileCategory::Document => "Document".to_string(),
+            FileCategory::Text => "Text".to_string(),
+            FileCategory::Programming => "Programming".to_string(),
+            FileCategory::Archive => "Archive".to_string(),
+            FileCategory::Other => "Other".to_string(),
+        }
+    }
 }
 
 #[tauri::command]
@@ -36,6 +85,14 @@ pub async fn add_directory(
     // ディレクトリ追加後、ファイルスキャンを実行
     if let Err(e) = scan_directory(&pool, &directory.id, &path).await {
         eprintln!("ファイルスキャンエラー: {e}");
+    }
+    
+    // 設定を確認して自動タグ付けが有効な場合のみ実行
+    let settings = settings::get_all_settings(&pool).await.unwrap_or_default();
+    if settings.auto_tag_directories {
+        if let Err(e) = analyze_and_auto_tag_directory(&pool, &directory.id, &path, settings.auto_tag_threshold).await {
+            eprintln!("ファイルカテゴリ分析エラー: {e}");
+        }
     }
     
     // ファイル監視を開始
@@ -234,6 +291,7 @@ pub async fn move_file(
     // 実装予定
     Err("Not implemented".to_string())
 }
+
 
 fn infer_mime_type(path: &std::path::Path) -> Option<String> {
     path.extension()
@@ -775,5 +833,243 @@ fn get_tag_name(tag: exif::Tag) -> String {
             // 不明なタグの場合は数値で表示
             format!("Tag_{}", tag.number())
         }
+    }
+}
+
+/// ディレクトリツリー全体のファイル分析と自動タグ付けを実行する関数
+async fn analyze_and_auto_tag_directory(
+    pool: &SqlitePool,
+    _directory_id: &str,
+    directory_path: &str,
+    threshold: f64,
+) -> Result<(), String> {
+    println!("ディレクトリツリー '{}' の自動タグ付けを開始", directory_path);
+    
+    // ディレクトリツリー内のすべてのディレクトリを取得
+    let walker = WalkDir::new(directory_path)
+        .follow_links(false)
+        .max_depth(100)
+        .into_iter()
+        .filter_map(|e| e.ok())
+        .filter(|e| e.file_type().is_dir()); // ディレクトリのみを対象
+    
+    let mut processed_directories = 0;
+    
+    // 各ディレクトリを個別に分析
+    for dir_entry in walker {
+        let dir_path = dir_entry.path();
+        
+        if let Err(e) = analyze_and_auto_tag_single_directory(pool, dir_path, threshold).await {
+            eprintln!("ディレクトリ '{}' の分析エラー: {}", dir_path.display(), e);
+        }
+        
+        processed_directories += 1;
+    }
+    
+    println!("自動タグ付け完了: {} 個のディレクトリを処理しました", processed_directories);
+    Ok(())
+}
+
+/// 単一ディレクトリのファイル分析と自動タグ付けを実行する関数
+async fn analyze_and_auto_tag_single_directory(
+    pool: &SqlitePool,
+    directory_path: &std::path::Path,
+    threshold: f64,
+) -> Result<(), String> {
+    // 直下のファイルのみを取得（サブディレクトリは含まない）
+    let entries = match std::fs::read_dir(directory_path) {
+        Ok(entries) => entries,
+        Err(e) => {
+            eprintln!("ディレクトリ読み取りエラー: {}: {}", directory_path.display(), e);
+            return Ok(());
+        }
+    };
+    
+    let mut category_counts: HashMap<String, usize> = HashMap::new();
+    let mut total_files = 0;
+    
+    // ディレクトリ直下のファイルをスキャンしてカテゴリを分析
+    for entry in entries {
+        if let Ok(entry) = entry {
+            let path = entry.path();
+            
+            // ディレクトリは除外
+            if let Ok(metadata) = entry.metadata() {
+                if metadata.is_dir() {
+                    continue;
+                }
+            }
+            
+            // 拡張子がある通常ファイルのみを対象にする
+            if let Some(extension) = path.extension().and_then(|ext| ext.to_str()) {
+                let category = FileCategory::from_extension(extension);
+                let category_name = category.to_string();
+                
+                *category_counts.entry(category_name).or_insert(0) += 1;
+                total_files += 1;
+            }
+        }
+    }
+    
+    // ファイルが少ない場合はスキップ
+    if total_files < 2 {
+        return Ok(());
+    }
+    
+    // 設定された閾値を超えるカテゴリをチェック
+    for (category_name, count) in category_counts {
+        if total_files > 0 && (count as f64 / total_files as f64) >= threshold {
+            // 自動タグを作成・取得
+            let db = Database;
+            let tag = match db.get_tag_by_name(&pool, &category_name).await {
+                Ok(existing_tag) => existing_tag,
+                Err(_) => {
+                    // タグが存在しない場合は新規作成
+                    let new_tag = db.create_tag(&pool, &category_name, &get_default_color_for_category(&category_name))
+                        .await.map_err(|e| e.to_string())?;
+                    new_tag
+                }
+            };
+            
+            // ディレクトリにタグを付与（ディレクトリをfilesテーブルのエントリとして扱う）
+            if let Ok(directory_file_id) = get_or_create_directory_file_entry(pool, directory_path).await {
+                if let Err(e) = db.add_file_tag(&pool, &directory_file_id, &tag.id).await {
+                    // 既に存在する場合のエラーは無視
+                    if !e.to_string().contains("UNIQUE constraint failed") {
+                        eprintln!("ディレクトリタグ追加エラー (directory_file_id: {}, tag_id: {}): {}", directory_file_id, tag.id, e);
+                    }
+                } else {
+                    println!("自動タグ付け完了: ディレクトリ '{}' に '{}' タグを追加 ({}% - {} ファイル)", 
+                             directory_path.display(),
+                             category_name, 
+                             ((count as f64 / total_files as f64) * 100.0) as u32,
+                             count);
+                }
+            }
+        }
+    }
+    
+    Ok(())
+}
+
+/// ファイルパスからファイルIDを取得する関数
+async fn get_file_id_by_path(pool: &SqlitePool, file_path: &str) -> Result<String, sqlx::Error> {
+    let file_id: String = sqlx::query_scalar("SELECT id FROM files WHERE path = ?")
+        .bind(file_path)
+        .fetch_one(pool)
+        .await?;
+    Ok(file_id)
+}
+
+/// ディレクトリをfilesテーブルのエントリとして作成または取得する関数
+async fn get_or_create_directory_file_entry(
+    pool: &SqlitePool,
+    directory_path: &std::path::Path,
+) -> Result<String, String> {
+    let path_str = directory_path.to_string_lossy().to_string();
+    
+    // 既存のディレクトリファイルエントリを検索
+    if let Ok(file_id) = sqlx::query_scalar::<_, String>(
+        "SELECT id FROM files WHERE path = ? AND is_directory = true"
+    )
+    .bind(&path_str)
+    .fetch_one(pool)
+    .await
+    {
+        return Ok(file_id);
+    }
+    
+    // ディレクトリファイルエントリが存在しない場合は作成
+    let file_id = Uuid::new_v4().to_string();
+    let name = directory_path
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("unknown")
+        .to_string();
+    
+    // 親ディレクトリIDを取得（存在しない場合は空文字列）
+    let parent_path = directory_path.parent();
+    let directory_id = if let Some(parent) = parent_path {
+        match sqlx::query_scalar::<_, String>(
+            "SELECT id FROM directories WHERE path = ?"
+        )
+        .bind(parent.to_string_lossy().as_ref())
+        .fetch_optional(pool)
+        .await
+        {
+            Ok(Some(id)) => id,
+            _ => String::new(), // 親が見つからない場合は空文字列
+        }
+    } else {
+        String::new()
+    };
+    
+    let now = Utc::now();
+    
+    // ディレクトリメタデータを取得
+    let (size, created_at, modified_at, inode, permissions, owner_uid, group_gid, hard_links, device_id, last_accessed) = 
+        if let Ok(metadata) = std::fs::metadata(directory_path) {
+            use std::os::unix::fs::MetadataExt;
+            (
+                metadata.len() as i64,
+                metadata.created().ok().map(DateTime::from),
+                metadata.modified().ok().map(DateTime::from),
+                Some(metadata.ino() as i64),
+                Some(format!("{:o}", metadata.mode() & 0o777)),
+                Some(metadata.uid() as i64),
+                Some(metadata.gid() as i64),
+                Some(metadata.nlink() as i64),
+                Some(metadata.dev() as i64),
+                metadata.accessed().ok().map(DateTime::from),
+            )
+        } else {
+            (0, None::<DateTime<Utc>>, None::<DateTime<Utc>>, None, None, None, None, None, None, None::<DateTime<Utc>>)
+        };
+    
+    // ディレクトリをfilesテーブルに挿入
+    sqlx::query(
+        "INSERT INTO files (id, path, name, directory_id, size, file_type, created_at, modified_at, birth_time, inode, is_directory, created_at_db, updated_at_db, file_size, mime_type, permissions, owner_uid, group_gid, hard_links, device_id, last_accessed, metadata) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+    )
+    .bind(&file_id)
+    .bind(&path_str)
+    .bind(&name)
+    .bind(&directory_id)
+    .bind(size)
+    .bind(None::<String>) // file_type (ディレクトリなのでnull)
+    .bind(created_at)
+    .bind(modified_at)
+    .bind(None::<DateTime<Utc>>) // birth_time
+    .bind(inode)
+    .bind(true) // is_directory
+    .bind(now)
+    .bind(now)
+    .bind(Some(size))
+    .bind(Some("inode/directory".to_string())) // mime_type
+    .bind(permissions)
+    .bind(owner_uid)
+    .bind(group_gid)
+    .bind(hard_links)
+    .bind(device_id)
+    .bind(last_accessed)
+    .bind(Some("{}".to_string())) // metadata (JSON)
+    .execute(pool)
+    .await
+    .map_err(|e| e.to_string())?;
+    
+    Ok(file_id)
+}
+
+/// カテゴリに応じたデフォルトカラーを取得
+fn get_default_color_for_category(category: &str) -> String {
+    match category {
+        "Image" => "#FF6B6B".to_string(),     // 赤系
+        "Video" => "#4ECDC4".to_string(),     // 青緑系
+        "Audio" => "#45B7D1".to_string(),     // 青系
+        "Document" => "#96CEB4".to_string(),  // 緑系
+        "Text" => "#FFEAA7".to_string(),      // 黄系
+        "Programming" => "#DDA0DD".to_string(), // 紫系
+        "Archive" => "#F4A261".to_string(),   // オレンジ系
+        "Other" => "#95A5A6".to_string(),     // グレー系
+        _ => "#95A5A6".to_string(),           // デフォルト
     }
 }

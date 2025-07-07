@@ -105,7 +105,12 @@ pub trait DatabaseTrait {
     ) -> Result<Vec<File>, sqlx::Error>;
     async fn get_all_tags(&self, pool: &SqlitePool) -> Result<Vec<Tag>, sqlx::Error>;
     async fn get_top_tags(&self, pool: &SqlitePool, limit: u32) -> Result<Vec<Tag>, sqlx::Error>;
-    async fn search_tags_by_name(&self, pool: &SqlitePool, query: &str) -> Result<Vec<Tag>, sqlx::Error>;
+    async fn search_tags_by_name(
+        &self,
+        pool: &SqlitePool,
+        query: &str,
+    ) -> Result<Vec<Tag>, sqlx::Error>;
+    async fn get_tag_by_name(&self, pool: &SqlitePool, name: &str) -> Result<Tag, sqlx::Error>;
     async fn create_tag(
         &self,
         pool: &SqlitePool,
@@ -387,7 +392,7 @@ impl DatabaseTrait for Database {
     ) -> Result<Vec<File>, sqlx::Error> {
         let sort_field = sort_field.as_deref().unwrap_or("modified_at");
         let sort_order = sort_order.as_deref().unwrap_or("desc");
-        
+
         let sort_column = match sort_field {
             "name" => "name",
             "size" => "size",
@@ -397,17 +402,17 @@ impl DatabaseTrait for Database {
             "file_type" => "file_type",
             _ => "modified_at",
         };
-        
+
         let order_direction = match sort_order {
             "asc" => "ASC",
             _ => "DESC",
         };
-        
+
         let query = format!(
             "SELECT * FROM files ORDER BY {} {} NULLS LAST",
             sort_column, order_direction
         );
-        
+
         let rows = sqlx::query(&query).fetch_all(pool).await?;
 
         let mut files = Vec::new();
@@ -450,7 +455,7 @@ impl DatabaseTrait for Database {
     ) -> Result<Vec<File>, sqlx::Error> {
         let sort_field = sort_field.as_deref().unwrap_or("modified_at");
         let sort_order = sort_order.as_deref().unwrap_or("desc");
-        
+
         let sort_column = match sort_field {
             "name" => "name",
             "size" => "size",
@@ -460,17 +465,17 @@ impl DatabaseTrait for Database {
             "file_type" => "file_type",
             _ => "modified_at",
         };
-        
+
         let order_direction = match sort_order {
             "asc" => "ASC",
             _ => "DESC",
         };
-        
+
         let query = format!(
             "SELECT * FROM files WHERE directory_id = ? ORDER BY {} {} NULLS LAST",
             sort_column, order_direction
         );
-        
+
         let rows = sqlx::query(&query)
             .bind(directory_id)
             .fetch_all(pool)
@@ -532,7 +537,7 @@ impl DatabaseTrait for Database {
              LEFT JOIN file_tags ft ON t.id = ft.tag_id
              GROUP BY t.id, t.name, t.color, t.created_at
              ORDER BY file_count DESC, t.name ASC
-             LIMIT ?"
+             LIMIT ?",
         )
         .bind(limit)
         .fetch_all(pool)
@@ -551,12 +556,16 @@ impl DatabaseTrait for Database {
         Ok(tags)
     }
 
-    async fn search_tags_by_name(&self, pool: &SqlitePool, query: &str) -> Result<Vec<Tag>, sqlx::Error> {
+    async fn search_tags_by_name(
+        &self,
+        pool: &SqlitePool,
+        query: &str,
+    ) -> Result<Vec<Tag>, sqlx::Error> {
         let search_pattern = format!("%{}%", query);
         let rows = sqlx::query(
             "SELECT * FROM tags 
              WHERE name LIKE ? 
-             ORDER BY name ASC"
+             ORDER BY name ASC",
         )
         .bind(&search_pattern)
         .fetch_all(pool)
@@ -573,6 +582,20 @@ impl DatabaseTrait for Database {
         }
 
         Ok(tags)
+    }
+
+    async fn get_tag_by_name(&self, pool: &SqlitePool, name: &str) -> Result<Tag, sqlx::Error> {
+        let row = sqlx::query("SELECT * FROM tags WHERE name = ? LIMIT 1")
+            .bind(name)
+            .fetch_one(pool)
+            .await?;
+
+        Ok(Tag {
+            id: row.get("id"),
+            name: row.get("name"),
+            color: row.get("color"),
+            created_at: row.get("created_at"),
+        })
     }
 
     async fn create_tag(
@@ -631,11 +654,11 @@ impl DatabaseTrait for Database {
     }
 
     async fn delete_orphaned_tags(&self, pool: &SqlitePool) -> Result<Vec<String>, sqlx::Error> {
-        // 参照されていないタグのIDを取得
+        // 参照されていないタグのIDを取得（ファイルタグのみをチェック）
         let orphaned_tag_ids: Vec<String> = sqlx::query_scalar(
             "SELECT t.id FROM tags t 
              LEFT JOIN file_tags ft ON t.id = ft.tag_id 
-             WHERE ft.tag_id IS NULL"
+             WHERE ft.tag_id IS NULL",
         )
         .fetch_all(pool)
         .await?;

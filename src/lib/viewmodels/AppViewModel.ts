@@ -106,6 +106,30 @@ export class AppViewModel extends BaseViewModel {
     ]);
   }
 
+  // ディレクトリ追加用のヘルパーメソッド（タグ更新を含む）
+  public async addNewDirectory(path: string, name: string): Promise<boolean> {
+    const result = await this.directoryViewModel.addNewDirectory(path, name, this.tagViewModel);
+    
+    // ディレクトリ追加が成功した場合、ファイル読み込みも更新
+    if (result) {
+      await this.fileViewModel.loadFiles();
+    }
+    
+    return result;
+  }
+
+  // ディレクトリ再スキャン用のヘルパーメソッド（タグ更新を含む）
+  public async rescanDirectory(directoryId: string): Promise<boolean> {
+    const result = await this.directoryViewModel.rescanExistingDirectory(directoryId, this.tagViewModel);
+    
+    // 再スキャンが成功した場合、ファイル読み込みも更新
+    if (result) {
+      await this.fileViewModel.loadFiles();
+    }
+    
+    return result;
+  }
+
   // リソースクリーンアップ
   public dispose(): void {
     super.dispose();

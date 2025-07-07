@@ -80,6 +80,14 @@ export class TagViewModel extends BaseViewModel {
     this._tagSearchResults.set([]);
   }
 
+  // 自動タグ付け後にタグ情報を自動更新するためのメソッド
+  public async refreshAllTags(): Promise<void> {
+    await Promise.all([
+      this.loadTags(),
+      this.loadTopTags()
+    ]);
+  }
+
   public async createNewTag(name: string, color: string = "#3B82F6"): Promise<boolean> {
     const result = await this.executeAsync(async () => {
       await createTag(name, color);

@@ -120,8 +120,7 @@
 
       if (selected && typeof selected === "string") {
         const name = selected.split("/").pop() || selected;
-        await directoryViewModel.addNewDirectory(selected, name);
-        await fileViewModel.loadFiles(); // ファイル一覧も更新
+        await appViewModel.addNewDirectory(selected, name);
       }
     } catch (error) {
       console.error("Failed to add directory:", error);
@@ -130,8 +129,7 @@
       );
       if (fallbackPath && fallbackPath.trim()) {
         const name = fallbackPath.split("/").pop() || fallbackPath;
-        await directoryViewModel.addNewDirectory(fallbackPath.trim(), name);
-        await fileViewModel.loadFiles();
+        await appViewModel.addNewDirectory(fallbackPath.trim(), name);
       }
     }
   };
@@ -142,11 +140,8 @@
   };
 
   const rescanDirectory = async (directoryId: string) => {
-    const success =
-      await directoryViewModel.rescanExistingDirectory(directoryId);
-    if (success) {
-      await fileViewModel.loadFiles();
-    } else {
+    const success = await appViewModel.rescanDirectory(directoryId);
+    if (!success) {
       errorStore.showError($t("common.error.directoryRescanFailed"));
     }
   };

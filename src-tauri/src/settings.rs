@@ -16,6 +16,8 @@ pub struct Setting {
 pub struct AppSettings {
     pub show_hidden_files: bool,
     pub files_per_page: i32,
+    pub auto_tag_directories: bool,
+    pub auto_tag_threshold: f64,
 }
 
 impl Default for AppSettings {
@@ -23,6 +25,8 @@ impl Default for AppSettings {
         Self {
             show_hidden_files: false,
             files_per_page: 20,
+            auto_tag_directories: true,
+            auto_tag_threshold: 0.5,
         }
     }
 }
@@ -58,10 +62,18 @@ pub async fn get_all_settings(pool: &SqlitePool) -> Result<AppSettings, Box<dyn 
     
     let files_per_page = get_setting(pool, "files_per_page").await?
         .unwrap_or_else(|| "20".to_string());
+    
+    let auto_tag_directories = get_setting(pool, "auto_tag_directories").await?
+        .unwrap_or_else(|| "true".to_string());
+    
+    let auto_tag_threshold = get_setting(pool, "auto_tag_threshold").await?
+        .unwrap_or_else(|| "0.7".to_string());
 
     Ok(AppSettings {
         show_hidden_files: show_hidden_files == "true",
         files_per_page: files_per_page.parse().unwrap_or(20),
+        auto_tag_directories: auto_tag_directories == "true",
+        auto_tag_threshold: auto_tag_threshold.parse().unwrap_or(0.7),
     })
 }
 
@@ -71,6 +83,10 @@ pub async fn update_setting_bool(pool: &SqlitePool, key: &str, value: bool) -> R
 }
 
 pub async fn update_setting_int(pool: &SqlitePool, key: &str, value: i32) -> Result<(), Box<dyn Error>> {
+    set_setting(pool, key, &value.to_string()).await
+}
+
+pub async fn update_setting_float(pool: &SqlitePool, key: &str, value: f64) -> Result<(), Box<dyn Error>> {
     set_setting(pool, key, &value.to_string()).await
 }
 
@@ -97,6 +113,16 @@ pub async fn update_setting_int_cmd(
     value: i32,
 ) -> Result<(), String> {
     update_setting_int(&pool, &key, value).await
+        .map_err(|e| format!("Failed to update setting: {}", e))
+}
+
+#[tauri::command]
+pub async fn update_setting_float_cmd(
+    pool: tauri::State<'_, SqlitePool>,
+    key: String,
+    value: f64,
+) -> Result<(), String> {
+    update_setting_float(&pool, &key, value).await
         .map_err(|e| format!("Failed to update setting: {}", e))
 }
 
