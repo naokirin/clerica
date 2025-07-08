@@ -44,6 +44,13 @@ export interface SearchResult {
   score: number;
 }
 
+export interface PaginatedSearchResult {
+  results: SearchResult[];
+  total_count: number;
+  category_counts: Record<string, number>;
+  total_category_counts: Record<string, number>;
+}
+
 export interface FileWithTags {
   file: File;
   tags: Tag[];

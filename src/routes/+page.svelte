@@ -14,10 +14,7 @@
   import SettingsModal from "../lib/components/SettingsModal.svelte";
 
   // ViewModel のインポート
-  import {
-    AppViewModel,
-    type ActiveTab,
-  } from "../lib/viewmodels/AppViewModel";
+  import { AppViewModel, type ActiveTab } from "../lib/viewmodels/AppViewModel";
   import type { File } from "../lib/types";
   import "../lib/App.css";
   import { errorStore } from "../lib/stores/error";
@@ -61,9 +58,11 @@
     metadataSearchFilters,
     metadataLogic,
     searchResults,
+    totalSearchResults,
     selectedCategory: searchSelectedCategory,
     currentPage: searchCurrentPage,
     searchCategoryCounts,
+    totalSearchCategoryCounts,
     filteredSearchResults,
     searchTotalPages,
     paginatedSearchResults,
@@ -125,9 +124,7 @@
       }
     } catch (error) {
       console.error("Failed to add directory:", error);
-      const fallbackPath = prompt(
-        $t("common.dialog.fallbackDirectoryInput"),
-      );
+      const fallbackPath = prompt($t("common.dialog.fallbackDirectoryInput"));
       if (fallbackPath && fallbackPath.trim()) {
         const name = fallbackPath.split("/").pop() || fallbackPath;
         await appViewModel.addNewDirectory(fallbackPath.trim(), name);
@@ -156,14 +153,18 @@
       { title: $t("common.dialog.confirm"), kind: "warning" },
     );
     if (confirmed) {
-      const result =
-        await directoryViewModel.removeExistingDirectory(directoryId, tagViewModel);
+      const result = await directoryViewModel.removeExistingDirectory(
+        directoryId,
+        tagViewModel,
+      );
       if (result) {
         await fileViewModel.loadFiles();
-        
+
         // タグが削除された場合の通知
         if (result.deleted_tags_count > 0) {
-          console.log(`ディレクトリ削除により${result.deleted_tags_count}個のタグが削除されました`);
+          console.log(
+            `ディレクトリ削除により${result.deleted_tags_count}個のタグが削除されました`,
+          );
         }
       } else {
         errorStore.showError($t("common.error.directoryRemoveFailed"));
@@ -205,10 +206,13 @@
   };
 
   const deleteFile = async (filePath: string, fileName: string) => {
-    const confirmed = await confirm($t("common.dialog.confirmDeleteFile", { name: fileName }), {
-      title: $t("common.dialog.confirm"),
-      kind: "warning",
-    });
+    const confirmed = await confirm(
+      $t("common.dialog.confirmDeleteFile", { name: fileName }),
+      {
+        title: $t("common.dialog.confirm"),
+        kind: "warning",
+      },
+    );
     if (confirmed) {
       const success = await fileViewModel.deleteSelectedFile(filePath);
       if (!success) {
@@ -336,11 +340,13 @@
             onSelectCategory={async (category) =>
               await fileViewModel.selectCategory(category)}
             onGoToPage={async (page) => await fileViewModel.goToPage(page)}
-            onGoToPreviousPage={async () => await fileViewModel.goToPreviousPage()}
+            onGoToPreviousPage={async () =>
+              await fileViewModel.goToPreviousPage()}
             onGoToNextPage={async () => await fileViewModel.goToNextPage()}
             onGoToFirstPage={async () => await fileViewModel.goToFirstPage()}
             onGoToLastPage={async () => await fileViewModel.goToLastPage()}
-            onSortChange={async (options) => await fileViewModel.setSortOptions(options)}
+            onSortChange={async (options) =>
+              await fileViewModel.setSortOptions(options)}
           />
         {/if}
 
@@ -350,8 +356,9 @@
             searchResults={$searchResults}
             filteredResults={$paginatedSearchResults}
             allFilteredResults={$filteredSearchResults}
+            totalSearchResults={$totalSearchResults}
             selectedCategory={$searchSelectedCategory}
-            categoryCounts={$searchCategoryCounts}
+            categoryCounts={$totalSearchCategoryCounts}
             currentPage={$searchCurrentPage}
             totalPages={$searchTotalPages}
             itemsPerPage={$searchItemsPerPage}

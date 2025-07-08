@@ -20,6 +20,7 @@
     searchResults: SearchResult[];
     filteredResults: SearchResult[];
     allFilteredResults: SearchResult[];
+    totalSearchResults: number;
     selectedCategory: FileCategory;
     categoryCounts: Record<FileCategory, number>;
     currentPage: number;
@@ -54,6 +55,7 @@
     searchResults,
     filteredResults,
     allFilteredResults,
+    totalSearchResults,
     selectedCategory,
     categoryCounts,
     currentPage,
@@ -82,7 +84,6 @@
     onMetadataLogicChange,
     onSortChange,
   }: Props = $props();
-
 
   function getOperatorLabel(operator: string): string {
     switch (operator) {
@@ -152,17 +153,20 @@
           {selectedCategory === "all"
             ? $t("common.search.results")
             : $t(`common.files.category.${selectedCategory}`)}:
-          {allFilteredResults.length.toLocaleString()}
+          {totalSearchResults.toLocaleString()}
           {$t("common.search.items")}
         </span>
         <span class="page-info">
           {#if totalPages > 1}
-            ページ {currentPage} / {totalPages} ({((currentPage - 1) * itemsPerPage + 1).toLocaleString()} - {Math.min(
+            ページ {currentPage} / {totalPages} ({(
+              (currentPage - 1) * itemsPerPage +
+              1
+            ).toLocaleString()} - {Math.min(
               currentPage * itemsPerPage,
-              allFilteredResults.length,
-            ).toLocaleString()} / {allFilteredResults.length.toLocaleString()} 件を表示)
+              totalSearchResults,
+            ).toLocaleString()} / {totalSearchResults.toLocaleString()} 件を表示)
           {:else}
-            {allFilteredResults.length.toLocaleString()} 件を表示
+            {totalSearchResults.toLocaleString()} 件を表示
           {/if}
         </span>
       </div>
@@ -419,7 +423,7 @@
     <FileCategoryFilters
       {selectedCategory}
       {categoryCounts}
-      onSelectCategory={onSelectCategory}
+      {onSelectCategory}
     />
   {/if}
 
@@ -452,8 +456,8 @@
     emptyMessage={searchResults.length === 0 &&
     (searchQuery || metadataSearchFilters.some((f) => f.keyId && f.value))
       ? $t("common.search.noSearchResults")
-      : $t("common.search.enterSearchCriteria")}
-    showEmptyState={filteredResults.length === 0}
+      : ""}
+    showEmptyState={false}
     {onSelectFile}
     {onGoToPage}
     {onGoToPreviousPage}

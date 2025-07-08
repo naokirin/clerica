@@ -155,6 +155,7 @@ async fn main() {
             file_manager::open_file,
             file_manager::reveal_in_finder,
             search::search_files,
+            search::search_files_paginated,
             search::get_tags,
             search::get_top_tags,
             search::search_tags_by_name,
