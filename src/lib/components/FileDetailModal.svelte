@@ -260,59 +260,89 @@
   }
 
   // タグの変更ハンドラー（自動保存付き）
-  function handleTagsChange(event: CustomEvent<Tag[]>) {
-    currentTags = event.detail;
+  function handleTagsChange(tags: Tag[]) {
+    console.log("TagInput change event:", tags);
+    currentTags = tags;
     // 変更があった場合は自動保存
     if (hasTagsChanged()) {
+      console.log("Tags changed, saving...");
       saveTagsChanges();
+    } else {
+      console.log("No changes detected");
     }
   }
 
   // タグが変更されているかチェック
   function hasTagsChanged(): boolean {
-    if (currentTags.length !== originalTags.length) return true;
+    if (currentTags.length !== originalTags.length) {
+      console.log(
+        "Tag count changed:",
+        originalTags.length,
+        "->",
+        currentTags.length,
+      );
+      return true;
+    }
 
     const currentIds = currentTags.map((t) => t.id).sort();
     const originalIds = originalTags.map((t) => t.id).sort();
 
-    return currentIds.some((id, index) => id !== originalIds[index]);
+    const hasChanges = currentIds.some(
+      (id, index) => id !== originalIds[index],
+    );
+    console.log("Tag IDs comparison:", { currentIds, originalIds, hasChanges });
+    return hasChanges;
   }
 
   // タグを保存する関数
   async function saveTagsChanges() {
-    if (!file || !hasTagsChanged()) return;
+    if (!file || !hasTagsChanged()) {
+      console.log("No changes to save or no file selected");
+      return;
+    }
 
+    console.log("Starting tag save process...");
     isSavingTags = true;
     try {
       // 全ての既存タグを取得
+      console.log("Fetching all existing tags...");
       const allExistingTags = await tagsApi.getTags();
+      console.log("All existing tags:", allExistingTags);
 
       // 新しいタグ（IDがtempで始まるもの）を処理
       const tagsToProcess = currentTags.filter((tag) =>
         tag.id.startsWith("temp_"),
       );
+      console.log("Tags to process (new tags):", tagsToProcess);
+
       const processedTags: Tag[] = [];
 
       for (const tagToProcess of tagsToProcess) {
+        console.log("Processing tag:", tagToProcess);
         // 既存タグから同じ名前のタグを検索
         const existingTag = allExistingTags.find(
-          (existing) => existing.name === tagToProcess.name,
+          (existing) =>
+            existing.name.toLowerCase() === tagToProcess.name.toLowerCase(),
         );
 
         if (existingTag) {
+          console.log("Found existing tag:", existingTag);
           // 既存のタグが見つかった場合はそれを使用
           processedTags.push(existingTag);
         } else {
+          console.log("Creating new tag:", tagToProcess.name);
           // 既存のタグが見つからない場合は新規作成
           try {
             const createdTag = await tagsApi.createTag(
               tagToProcess.name,
               tagToProcess.color,
             );
+            console.log("Created new tag:", createdTag);
             processedTags.push(createdTag);
           } catch (error) {
             console.error($t("common.error.tagsSaveError"), error);
             errorStore.showError($t("common.fileDetail.tagsCreateError"));
+            return; // エラーが発生した場合は処理を中断
           }
         }
       }
@@ -324,8 +354,16 @@
       const processedTagIds = processedTags.map((tag) => tag.id);
       const allTagIds = [...existingTagIds, ...processedTagIds];
 
+      console.log("Tag IDs to save:", {
+        existingTagIds,
+        processedTagIds,
+        allTagIds,
+      });
+
       // ファイルのタグを更新
+      console.log("Updating file tags...");
       await filesApi.updateFileTags(file.id, allTagIds);
+      console.log("File tags updated successfully");
 
       // 状態を更新
       const updatedTags = [
@@ -335,6 +373,8 @@
       currentTags = updatedTags;
       originalTags = [...updatedTags];
 
+      console.log("Updated current and original tags:", updatedTags);
+
       // 保存完了の視覚的フィードバック
       showSavedIndicator = true;
       setTimeout(() => {
@@ -343,6 +383,7 @@
 
       // 親コンポーネントにタグ更新を通知
       if (onTagsUpdated) {
+        console.log("Notifying parent component of tag updates");
         onTagsUpdated();
       }
     } catch (error) {
@@ -553,7 +594,7 @@
           {:else}
             <TagInput
               tags={currentTags}
-              on:change={handleTagsChange}
+              onchange={handleTagsChange}
               disabled={isSavingTags}
               placeholder={$t("common.fileDetail.tagsInputPlaceholder")}
             />

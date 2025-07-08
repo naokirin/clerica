@@ -1,19 +1,19 @@
 <script lang="ts">
-  import type { Tag } from '../types';
-  import { t } from '$lib/i18n';
+  import type { Tag } from "../types";
+  import { t } from "$lib/i18n";
 
   export let tags: Tag[] = [];
-  export let placeholder = $t('common.tags.inputPlaceholder');
+  export let placeholder = $t("common.tags.inputPlaceholder");
   export let disabled = false;
   export let onchange: (tags: Tag[]) => void = () => {};
 
-  let inputValue = '';
+  let inputValue = "";
   let inputRef: HTMLInputElement;
   let isComposing = false; // 日本語入力の変換中フラグ
   let pendingEnter = false; // 変換中にEnterが押されたかのフラグ
 
   function handleKeyDown(event: KeyboardEvent) {
-    if (event.key === 'Enter') {
+    if (event.key === "Enter") {
       if (!isComposing && inputValue.trim()) {
         // 変換中でない場合は、通常のタグ追加処理
         event.preventDefault();
@@ -38,9 +38,12 @@
     const tagName = inputValue.trim();
     if (!tagName) return;
 
+    console.log("Adding tag:", tagName);
+
     // 重複チェック
-    if (tags.find(tag => tag.name === tagName)) {
-      inputValue = '';
+    if (tags.find((tag) => tag.name.toLowerCase() === tagName.toLowerCase())) {
+      console.log("Tag already exists:", tagName);
+      inputValue = "";
       return;
     }
 
@@ -48,18 +51,25 @@
     const newTag: Tag = {
       id: `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       name: tagName,
-      color: '#3B82F6', // デフォルトブルー
-      created_at: new Date().toISOString()
+      color: "#3B82F6", // デフォルトブルー
+      created_at: new Date().toISOString(),
     };
 
-    tags = [...tags, newTag];
-    inputValue = '';
-    onchange(tags);
+    const updatedTags = [...tags, newTag];
+    console.log("Updated tags after adding:", updatedTags);
+    tags = updatedTags;
+    inputValue = "";
+    console.log("Calling onchange with:", updatedTags);
+    onchange(updatedTags);
   }
 
   function removeTag(tagToRemove: Tag) {
-    tags = tags.filter(tag => tag.id !== tagToRemove.id);
-    onchange(tags);
+    console.log("Removing tag:", tagToRemove);
+    const updatedTags = tags.filter((tag) => tag.id !== tagToRemove.id);
+    console.log("Updated tags after removing:", updatedTags);
+    tags = updatedTags;
+    console.log("Calling onchange with:", updatedTags);
+    onchange(updatedTags);
   }
 
   function onInputBlur() {
@@ -72,20 +82,23 @@
 <div class="tag-input-container">
   <div class="tag-list">
     {#each tags as tag (tag.id)}
-      <div class="tag-item" style="background-color: {tag.color}20; border-color: {tag.color};">
+      <div
+        class="tag-item"
+        style="background-color: {tag.color}20; border-color: {tag.color};"
+      >
         <span class="tag-name">{tag.name}</span>
         <button
           class="tag-remove"
           on:click={() => removeTag(tag)}
           {disabled}
-          aria-label={$t('common.tags.removeAriaLabel', { name: tag.name })}
+          aria-label={$t("common.tags.removeAriaLabel", { name: tag.name })}
         >
           ✕
         </button>
       </div>
     {/each}
   </div>
-  
+
   <input
     bind:this={inputRef}
     bind:value={inputValue}

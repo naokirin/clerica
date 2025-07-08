@@ -150,7 +150,7 @@
   ) => {
     const confirmed = await confirm(
       $t("common.dialog.confirmRemoveDirectory", { name: directoryName }),
-      { title: $t("common.dialog.confirm"), kind: "warning" },
+      { title: $t("common.dialog.confirm"), kind: "warning" } as any,
     );
     if (confirmed) {
       const result = await directoryViewModel.removeExistingDirectory(
@@ -211,7 +211,7 @@
       {
         title: $t("common.dialog.confirm"),
         kind: "warning",
-      },
+      } as any,
     );
     if (confirmed) {
       const success = await fileViewModel.deleteSelectedFile(filePath);
@@ -228,7 +228,7 @@
 
   // タグ追加ハンドラー
   const handleTagAdd = async (tagId: string) => {
-    let currentTags: string[];
+    let currentTags: string[] = [];
     const unsubscribe = selectedTags.subscribe((tags) => (currentTags = tags));
     unsubscribe();
 
@@ -240,7 +240,7 @@
 
   // タグ削除ハンドラー
   const handleTagRemove = async (tagId: string) => {
-    let currentTags: string[];
+    let currentTags: string[] = [];
     const unsubscribe = selectedTags.subscribe((tags) => (currentTags = tags));
     unsubscribe();
 
@@ -260,6 +260,8 @@
   // タグが更新された時の処理
   const handleTagsUpdated = async () => {
     await fileViewModel.loadFiles(); // ファイル一覧を再読み込み
+    await tagViewModel.loadTags(); // タグ一覧を再読み込み
+    await tagViewModel.loadTopTags(); // トップタグを再読み込み
     await searchViewModel.refreshSearchResults(); // 検索結果も再読み込み
   };
 </script>
@@ -380,14 +382,14 @@
             onGoToPreviousPage={() => searchViewModel.goToPreviousPage()}
             onGoToNextPage={() => searchViewModel.goToNextPage()}
             onGoToFirstPage={() => searchViewModel.goToFirstPage()}
-            onGoToLastPage={() =>
-              searchViewModel.goToLastPage($searchTotalPages)}
+            onGoToLastPage={() => searchViewModel.goToLastPage()}
             onTagAdd={(tagId) => handleTagAdd(tagId)}
             onTagRemove={(tagId) => handleTagRemove(tagId)}
             onTagSearch={(query) => tagViewModel.searchTags(query)}
             onMetadataLogicChange={(logic) =>
               searchViewModel.setMetadataLogic(logic)}
             onSortChange={(options) => searchViewModel.setSortOptions(options)}
+            onTagsUpdated={handleTagsUpdated}
           />
         {/if}
 

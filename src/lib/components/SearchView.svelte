@@ -48,6 +48,7 @@
     onTagSearch: (query: string) => void;
     onMetadataLogicChange: (logic: "AND" | "OR") => void;
     onSortChange: (options: SortOptions) => void;
+    onTagsUpdated?: () => void; // タグ更新時のコールバックを追加
   }
 
   let {
@@ -83,7 +84,43 @@
     onTagSearch,
     onMetadataLogicChange,
     onSortChange,
+    onTagsUpdated,
   }: Props = $props();
+
+  // タグが更新された時の処理
+  function handleTagsUpdated() {
+    if (onTagsUpdated) {
+      onTagsUpdated();
+    }
+  }
+
+  // allTagsが更新された時にタグ関連の情報も更新
+  $effect(() => {
+    // allTagsが変更された時に、選択されたタグの存在確認を行う
+    if (selectedTags.length > 0 && allTags.length > 0) {
+      const validSelectedTags = selectedTags.filter((tagId) =>
+        allTags.some((tag) => tag.id === tagId),
+      );
+
+      console.log(allTags);
+
+      // 無効なタグが選択されている場合は削除
+      if (validSelectedTags.length !== selectedTags.length) {
+        console.log("無効なタグが選択されているため、選択から削除します");
+        // 親コンポーネントに通知して選択タグを更新
+        validSelectedTags.forEach((tagId) => {
+          if (!selectedTags.includes(tagId)) {
+            onTagAdd(tagId);
+          }
+        });
+        selectedTags.forEach((tagId) => {
+          if (!validSelectedTags.includes(tagId)) {
+            onTagRemove(tagId);
+          }
+        });
+      }
+    }
+  });
 
   function getOperatorLabel(operator: string): string {
     switch (operator) {
