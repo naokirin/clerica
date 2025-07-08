@@ -458,13 +458,11 @@
   </div>
 
   <!-- 検索結果のファイル種別フィルター -->
-  {#if searchResults.length > 0}
-    <FileCategoryFilters
-      {selectedCategory}
-      {categoryCounts}
-      {onSelectCategory}
-    />
-  {/if}
+  <FileCategoryFilters
+    {selectedCategory}
+    {categoryCounts}
+    {onSelectCategory}
+  />
 
   <div class="pagination-controls">
     <Pagination
