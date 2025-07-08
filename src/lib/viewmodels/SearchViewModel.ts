@@ -12,7 +12,6 @@ export class SearchViewModel extends BaseViewModel {
   private _metadataLogic: Writable<MetadataSearchLogic> = writable("AND");
   private _searchResults: Writable<SearchResult[]> = writable([]);
   private _totalSearchResults: Writable<number> = writable(0);
-  private _useServerSidePagination: boolean = true; // サーバーサイドページネーションを有効化
   private _selectedCategory: Writable<FileCategory> = writable("all");
   private _currentPage: Writable<number> = writable(1);
   private _itemsPerPage: Writable<number> = writable(20);
@@ -86,50 +85,48 @@ export class SearchViewModel extends BaseViewModel {
     try {
       // 初期状態では空の検索クエリで全ファイルを取得
       // この時点でsearchQueryは空文字列なので、全ファイルが返される
-      if (this._useServerSidePagination) {
-        const currentPage = this.getCurrentPage();
-        const itemsPerPage = this.getCurrentItemsPerPage();
-        const offset = (currentPage - 1) * itemsPerPage;
+      const currentPage = this.getCurrentPage();
+      const itemsPerPage = this.getCurrentItemsPerPage();
+      const offset = (currentPage - 1) * itemsPerPage;
 
-        const result = await searchFilesPaginated(
-          "", // 空のクエリ
-          [], // 空のタグ
-          [], // 空のメタデータフィルタ
-          "AND",
-          "all", // 全ディレクトリ
-          { field: "modified_at", order: "desc" },
-          itemsPerPage,
-          offset,
-          "all" // 全カテゴリ
-        );
+      const result = await searchFilesPaginated(
+        "", // 空のクエリ
+        [], // 空のタグ
+        [], // 空のメタデータフィルタ
+        "AND",
+        "all", // 全ディレクトリ
+        { field: "modified_at", order: "desc" },
+        itemsPerPage,
+        offset,
+        "all" // 全カテゴリ
+      );
 
-        this._searchResults.set(result.results);
-        this._totalSearchResults.set(result.total_count);
+      this._searchResults.set(result.results);
+      this._totalSearchResults.set(result.total_count);
 
-        // カテゴリ別件数を更新（フィルタ適用後）
-        const categoryCounts: Record<FileCategory, number> = {
-          all: result.category_counts["all"] || 0,
-          image: result.category_counts["image"] || 0,
-          audio: result.category_counts["audio"] || 0,
-          video: result.category_counts["video"] || 0,
-          document: result.category_counts["document"] || 0,
-          archive: result.category_counts["archive"] || 0,
-          other: result.category_counts["other"] || 0,
-        };
-        this._searchCategoryCounts.set(categoryCounts);
+      // カテゴリ別件数を更新（フィルタ適用後）
+      const categoryCounts: Record<FileCategory, number> = {
+        all: result.category_counts["all"] || 0,
+        image: result.category_counts["image"] || 0,
+        audio: result.category_counts["audio"] || 0,
+        video: result.category_counts["video"] || 0,
+        document: result.category_counts["document"] || 0,
+        archive: result.category_counts["archive"] || 0,
+        other: result.category_counts["other"] || 0,
+      };
+      this._searchCategoryCounts.set(categoryCounts);
 
-        // 総カテゴリ別件数を更新（フィルタ適用前）
-        const totalCategoryCounts: Record<FileCategory, number> = {
-          all: result.total_category_counts["all"] || 0,
-          image: result.total_category_counts["image"] || 0,
-          audio: result.total_category_counts["audio"] || 0,
-          video: result.total_category_counts["video"] || 0,
-          document: result.total_category_counts["document"] || 0,
-          archive: result.total_category_counts["archive"] || 0,
-          other: result.total_category_counts["other"] || 0,
-        };
-        this._totalSearchCategoryCounts.set(totalCategoryCounts);
-      }
+      // 総カテゴリ別件数を更新（フィルタ適用前）
+      const totalCategoryCounts: Record<FileCategory, number> = {
+        all: result.total_category_counts["all"] || 0,
+        image: result.total_category_counts["image"] || 0,
+        audio: result.total_category_counts["audio"] || 0,
+        video: result.total_category_counts["video"] || 0,
+        document: result.total_category_counts["document"] || 0,
+        archive: result.total_category_counts["archive"] || 0,
+        other: result.total_category_counts["other"] || 0,
+      };
+      this._totalSearchCategoryCounts.set(totalCategoryCounts);
     } catch (error) {
       console.error('初期ファイル読み込みに失敗しました:', error);
     }
@@ -160,17 +157,13 @@ export class SearchViewModel extends BaseViewModel {
     this._selectedCategory.set(category);
     this._currentPage.set(1);
 
-    if (this._useServerSidePagination) {
-      await this.performSearch();
-    }
+    await this.performSearch();
   }
 
   public async goToPage(page: number): Promise<void> {
     this._currentPage.set(page);
 
-    if (this._useServerSidePagination) {
-      await this.performSearch();
-    }
+    await this.performSearch();
   }
 
   public async goToPreviousPage(): Promise<void> {
@@ -232,27 +225,21 @@ export class SearchViewModel extends BaseViewModel {
 
       const currentSortOptions = this.getCurrentSortOptions();
 
-      if (this._useServerSidePagination) {
-        const currentPage = this.getCurrentPage();
-        const itemsPerPage = this.getCurrentItemsPerPage();
-        const offset = (currentPage - 1) * itemsPerPage;
+      const currentPage = this.getCurrentPage();
+      const itemsPerPage = this.getCurrentItemsPerPage();
+      const offset = (currentPage - 1) * itemsPerPage;
 
-        return await searchFilesPaginated(
-          query!,
-          tags!,
-          filters!,
-          logic!,
-          directoryId!,
-          currentSortOptions,
-          itemsPerPage,
-          offset,
-          category!
-        );
-      } else {
-        // 従来の方法（後方互換性のため残す）
-        const results = await searchFiles(query!, tags!, filters!, logic!, directoryId!, currentSortOptions, category!);
-        return { results, total_count: results.length };
-      }
+      return await searchFilesPaginated(
+        query!,
+        tags!,
+        filters!,
+        logic!,
+        directoryId!,
+        currentSortOptions,
+        itemsPerPage,
+        offset,
+        category!
+      );
     });
 
     if (result) {
@@ -286,10 +273,6 @@ export class SearchViewModel extends BaseViewModel {
         this._totalSearchCategoryCounts.set(totalCategoryCounts);
       }
 
-      // 新しい検索の場合のみページをリセット（ページ移動の場合はリセットしない）
-      if (!this._useServerSidePagination) {
-        this._currentPage.set(1);
-      }
     }
   }
 

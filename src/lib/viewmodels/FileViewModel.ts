@@ -33,7 +33,6 @@ export class FileViewModel extends BaseViewModel {
   private _isDeleting: Writable<boolean> = writable(false);
   private _selectedDirectoryId: Writable<string | "all"> = writable("all");
   private _sortOptions: Writable<SortOptions> = writable({ field: "modified_at", order: "desc" });
-  private _useServerSidePagination: boolean = true; // サーバーサイドページネーションを有効化
   private _categoryCounts: Writable<Record<FileCategory, number>> = writable({
     all: 0,
     image: 0,
@@ -111,26 +110,7 @@ export class FileViewModel extends BaseViewModel {
   }
 
   public async loadFiles(directoryId?: string | "all"): Promise<void> {
-    const targetDirectoryId = directoryId || "all";
-    
-    if (this._useServerSidePagination) {
-      await this.loadFilesPaginated();
-    } else {
-      // 従来の方法（後方互換性のため残す）
-      const result = await this.executeAsync(async () => {
-        const currentSortOptions = this.getCurrentSortOptions();
-        if (targetDirectoryId === "all") {
-          return await getFilesWithTags(currentSortOptions);
-        } else {
-          return await getFilesByDirectoryWithTags(targetDirectoryId, currentSortOptions);
-        }
-      });
-
-      if (result) {
-        this._filesWithTags.set(result);
-        this._totalFiles.set(result.length);
-      }
-    }
+    await this.loadFilesPaginated();
   }
 
   private async loadFilesPaginated(): Promise<void> {
@@ -246,19 +226,13 @@ export class FileViewModel extends BaseViewModel {
     this._selectedCategory.set(category);
     this._currentPage.set(1); // カテゴリ変更時はページをリセット
     
-    if (this._useServerSidePagination) {
-      await this.loadFilesPaginated();
-    } else {
-      await this.loadFiles();
-    }
+    await this.loadFilesPaginated();
   }
 
   public async goToPage(page: number): Promise<void> {
     this._currentPage.set(page);
     
-    if (this._useServerSidePagination) {
-      await this.loadFilesPaginated();
-    }
+    await this.loadFilesPaginated();
   }
 
   public async goToPreviousPage(): Promise<void> {
@@ -333,11 +307,7 @@ export class FileViewModel extends BaseViewModel {
   public async setSortOptions(options: SortOptions): Promise<void> {
     this._sortOptions.set(options);
     this._currentPage.set(1); // ソート変更時はページをリセット
-    if (this._useServerSidePagination) {
-      await this.loadFilesPaginated();
-    } else {
-      await this.loadFiles();
-    }
+    await this.loadFilesPaginated();
   }
 
   // カテゴリカウントを読み込む新しいメソッド
