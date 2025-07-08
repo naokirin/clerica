@@ -372,6 +372,7 @@
             availableMetadataKeys={$customMetadataKeys}
             metadataLogic={$metadataLogic}
             sortOptions={$searchSortOptions}
+            selectedDirectoryId={$selectedDirectoryId}
             onSearchQueryChange={(query) =>
               searchViewModel.setSearchQuery(query)}
             onSearch={searchFiles}

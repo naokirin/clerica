@@ -34,6 +34,7 @@
     metadataLogic: "AND" | "OR";
     availableMetadataKeys: CustomMetadataKey[];
     sortOptions: SortOptions;
+    selectedDirectoryId: string | "all";
     onSearchQueryChange: (query: string) => void;
     onSearch: () => void;
     onSelectFile: (file: any) => void;
@@ -70,6 +71,7 @@
     metadataLogic,
     availableMetadataKeys,
     sortOptions,
+    selectedDirectoryId,
     onSearchQueryChange,
     onSearch,
     onSelectFile,
