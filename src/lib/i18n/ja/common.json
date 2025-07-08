@@ -279,7 +279,8 @@
     "tagsLoading": "タグを読み込み中...",
     "filesComplete": "ファイル読み込み完了",
     "filesLoading": "ファイルを読み込み中...",
-    "loading": "読み込み中..."
+    "loading": "読み込み中...",
+    "warningMessage": "処理中にアプリケーションを終了すると、ディレクトリ情報が適切に登録されない可能性があります。"
   },
   "placeholder": {
     "boolean": "true/false, yes/no, 1/0",

@@ -5,6 +5,7 @@
 
   // コンポーネントのインポート
   import LoadingScreen from "../lib/components/LoadingScreen.svelte";
+  import SimpleLoadingScreen from "../lib/components/SimpleLoadingScreen.svelte";
   import Sidebar from "../lib/components/Sidebar.svelte";
   import FilesView from "../lib/components/FilesView.svelte";
   import SearchView from "../lib/components/SearchView.svelte";
@@ -18,6 +19,7 @@
   import type { File } from "../lib/types";
   import "../lib/App.css";
   import { errorStore } from "../lib/stores/error";
+  import { isLoading, loadingMessage } from "../lib/stores/common";
   import { t } from "$lib/i18n";
 
   // AppViewModel インスタンス
@@ -120,14 +122,14 @@
 
       if (selected && typeof selected === "string") {
         const name = selected.split("/").pop() || selected;
-        await appViewModel.addNewDirectory(selected, name);
+        await directoryViewModel.addNewDirectoryWithLoading(selected, name, tagViewModel);
       }
     } catch (error) {
       console.error("Failed to add directory:", error);
       const fallbackPath = prompt($t("common.dialog.fallbackDirectoryInput"));
       if (fallbackPath && fallbackPath.trim()) {
         const name = fallbackPath.split("/").pop() || fallbackPath;
-        await appViewModel.addNewDirectory(fallbackPath.trim(), name);
+        await directoryViewModel.addNewDirectoryWithLoading(fallbackPath.trim(), name, tagViewModel);
       }
     }
   };
@@ -273,7 +275,11 @@
     steps={$loadingSteps}
   />
 
-  <div class="app-content {$isAppLoading ? 'loading' : ''}">
+  {#if $isLoading}
+    <SimpleLoadingScreen message={$loadingMessage} />
+  {/if}
+
+  <div class="app-content {$isAppLoading || $isLoading ? 'loading' : ''}">
     <Sidebar
       directories={$directories}
       tags={$tags}
@@ -283,6 +289,7 @@
       onRescanDirectory={rescanDirectory}
       onRemoveDirectory={removeDirectory}
       onCreateTag={createTag}
+      disabled={$isLoading}
     />
 
     <div class="main-content">

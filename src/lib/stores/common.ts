@@ -5,6 +5,10 @@
 
 import { writable, derived, type Readable, type Writable } from 'svelte/store';
 
+// ローディング状態管理
+export const isLoading = writable(false);
+export const loadingMessage = writable('');
+
 export interface PaginationState {
   currentPage: number;
   itemsPerPage: number;

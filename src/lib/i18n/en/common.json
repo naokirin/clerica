@@ -279,7 +279,8 @@
     "tagsLoading": "Loading tags...",
     "filesComplete": "Files loaded",
     "filesLoading": "Loading files...",
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "warningMessage": "If you close the application during processing, directory information may not be registered properly."
   },
   "placeholder": {
     "boolean": "true/false, yes/no, 1/0",

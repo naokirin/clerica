@@ -12,6 +12,7 @@
     onRescanDirectory: (id: string) => void;
     onRemoveDirectory: (id: string, name: string) => void;
     onCreateTag: () => void;
+    disabled?: boolean;
   }
 
   let {
@@ -23,13 +24,14 @@
     onRescanDirectory,
     onRemoveDirectory,
     onCreateTag,
+    disabled = false,
   }: Props = $props();
 </script>
 
-<div class="sidebar">
+<div class="sidebar" class:disabled>
   <div class="sidebar-section">
     <h3>{$t("common.sidebar.directories")}</h3>
-    <button onclick={onAddDirectory} class="add-button">
+    <button onclick={onAddDirectory} class="add-button" {disabled}>
       <FolderPlus size={16} />
       {$t("common.sidebar.addDirectory")}
     </button>
@@ -83,3 +85,10 @@
     </div>
   </div>
 </div>
+
+<style>
+  .sidebar.disabled {
+    pointer-events: none;
+    opacity: 0.7;
+  }
+</style>
