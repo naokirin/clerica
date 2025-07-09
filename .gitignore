@@ -1,6 +1,8 @@
 # Clerica
 /src-tauri/clerica.db
 *.db-journal
+*.db-shm
+*.db-wal
 /src-tauri/cache
 
 # Dependencies

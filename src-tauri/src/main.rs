@@ -1,26 +1,25 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use database::DatabaseTrait;
 use sqlx::sqlite::SqliteConnectOptions;
 use sqlx::SqlitePool;
 use std::env;
 use std::path::Path;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex};
-use watcher::FileWatcher;
-use database::DatabaseTrait;
 use tauri::Manager;
+use watcher::FileWatcher;
 
-
-mod database;
-mod file_manager;
-mod search;
-mod watcher;
 mod custom_metadata;
+mod database;
 mod exif_config;
 mod exif_constants;
-mod thumbnail;
+mod file_manager;
+mod search;
 mod settings;
+mod thumbnail;
+mod watcher;
 
 #[tokio::main]
 async fn main() {
@@ -41,17 +40,15 @@ async fn main() {
     // データベースファイルが存在しない場合の処理
     let db_exists = Path::new(&db_file_path).exists();
     if !db_exists {
-        println!(
-            "データベースファイルが存在しません。新規作成します: {db_file_path}"
-        );
+        println!("データベースファイルが存在しません。新規作成します: {db_file_path}");
     }
 
     let ops = SqliteConnectOptions::from_str(&database_url)
         .unwrap()
         .create_if_missing(true) // データベースが存在しない場合は自動的に作成
-        .journal_mode(sqlx::sqlite::SqliteJournalMode::Persist) // Persistモードを有効化
+        .journal_mode(sqlx::sqlite::SqliteJournalMode::Persist) // Walモードを有効化
         .synchronous(sqlx::sqlite::SqliteSynchronous::Off) // 同期をオフにしてパフォーマンス向上
-        .busy_timeout(std::time::Duration::from_secs(30)) // ロックタイムアウトを30秒に設定
+        .busy_timeout(std::time::Duration::from_secs(60)) // ロックタイムアウトを60秒に設定
         .pragma("cache_size", "10000") // キャッシュサイズを10MB（デフォルトの約5倍）に設定
         .pragma("temp_store", "memory") // 一時テーブルをメモリに保存
         .pragma("foreign_keys", "on"); // 外部キー制約を有効化
@@ -95,15 +92,13 @@ async fn main() {
             // ファイル監視の初期化（setup内でAppHandleが取得可能）
             let app_handle = app.handle().clone();
             let file_watcher = match FileWatcher::new(Arc::new(pool.clone()), Some(app_handle)) {
-                Ok(watcher) => {
-                    Arc::new(Mutex::new(watcher))
-                }
+                Ok(watcher) => Arc::new(Mutex::new(watcher)),
                 Err(e) => {
                     eprintln!("ファイル監視の初期化エラー: {e}");
                     std::process::exit(1);
                 }
             };
-            
+
             // 既存のディレクトリの監視を開始
             let watcher_clone = Arc::clone(&file_watcher);
             let pool_clone = pool.clone();
@@ -113,7 +108,9 @@ async fn main() {
                     Ok(directories) => {
                         let mut watcher_guard = watcher_clone.lock().unwrap();
                         for directory in directories {
-                            if let Err(e) = watcher_guard.watch_directory(&directory.id, &directory.path) {
+                            if let Err(e) =
+                                watcher_guard.watch_directory(&directory.id, &directory.path)
+                            {
                                 eprintln!("ディレクトリ監視開始エラー: {} ({})", e, directory.path);
                             } else {
                                 println!("ディレクトリの監視を開始しました: {}", directory.path);
@@ -125,7 +122,7 @@ async fn main() {
                     }
                 }
             });
-            
+
             app.manage(file_watcher);
             Ok(())
         })
