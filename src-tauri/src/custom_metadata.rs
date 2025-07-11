@@ -1,9 +1,9 @@
 use tauri::State;
-use sqlx::SqlitePool;
 use uuid::Uuid;
 use chrono::Utc;
 
 use crate::database::{Database, DatabaseTrait, CustomMetadataKey, CustomMetadataValue};
+use crate::DbPools;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct CreateCustomMetadataKeyRequest {
@@ -37,7 +37,7 @@ pub struct SetCustomMetadataValueRequest {
 /// カスタムメタデータキーを作成
 #[tauri::command]
 pub async fn create_custom_metadata_key(
-    pool: State<'_, SqlitePool>,
+    pools: State<'_, DbPools>,
     request: CreateCustomMetadataKeyRequest,
 ) -> Result<CustomMetadataKey, String> {
     // データ型の妥当性チェック
@@ -51,7 +51,7 @@ pub async fn create_custom_metadata_key(
 
     // 同じ名前のキーが既に存在しないかチェック
     let db = Database;
-    if let Ok(Some(_)) = db.get_custom_metadata_key_by_name(&pool, &request.name).await {
+    if let Ok(Some(_)) = db.get_custom_metadata_key_by_name(&pools.read, &request.name).await {
         return Err(format!("カスタムメタデータキー '{}' は既に存在します", request.name));
     }
 
@@ -68,7 +68,7 @@ pub async fn create_custom_metadata_key(
         updated_at: Utc::now(),
     };
 
-    match db.create_custom_metadata_key(&pool, &key).await {
+    match db.create_custom_metadata_key(&pools.write, &key).await {
         Ok(created_key) => Ok(created_key),
         Err(e) => Err(format!("カスタムメタデータキーの作成に失敗しました: {e}")),
     }
@@ -77,10 +77,10 @@ pub async fn create_custom_metadata_key(
 /// 全てのカスタムメタデータキーを取得
 #[tauri::command]
 pub async fn get_custom_metadata_keys(
-    pool: State<'_, SqlitePool>,
+    pools: State<'_, DbPools>,
 ) -> Result<Vec<CustomMetadataKey>, String> {
     let db = Database;
-    match db.get_all_custom_metadata_keys(&pool).await {
+    match db.get_all_custom_metadata_keys(&pools.read).await {
         Ok(keys) => Ok(keys),
         Err(e) => Err(format!("カスタムメタデータキーの取得に失敗しました: {e}")),
     }
@@ -89,7 +89,7 @@ pub async fn get_custom_metadata_keys(
 /// カスタムメタデータキーを更新
 #[tauri::command]
 pub async fn update_custom_metadata_key(
-    pool: State<'_, SqlitePool>,
+    pools: State<'_, DbPools>,
     request: UpdateCustomMetadataKeyRequest,
 ) -> Result<CustomMetadataKey, String> {
     // データ型の妥当性チェック
@@ -104,7 +104,7 @@ pub async fn update_custom_metadata_key(
     let db = Database;
 
     // 既存のキーを取得してnameを保持
-    let keys = match db.get_all_custom_metadata_keys(&pool).await {
+    let keys = match db.get_all_custom_metadata_keys(&pools.read).await {
         Ok(keys) => keys,
         Err(e) => return Err(format!("カスタムメタデータキーの取得に失敗しました: {e}")),
     };
@@ -128,7 +128,7 @@ pub async fn update_custom_metadata_key(
         updated_at: Utc::now(),
     };
 
-    match db.update_custom_metadata_key(&pool, &updated_key).await {
+    match db.update_custom_metadata_key(&pools.write, &updated_key).await {
         Ok(key) => Ok(key),
         Err(e) => Err(format!("カスタムメタデータキーの更新に失敗しました: {e}")),
     }
@@ -137,11 +137,11 @@ pub async fn update_custom_metadata_key(
 /// カスタムメタデータキーを削除
 #[tauri::command]
 pub async fn delete_custom_metadata_key(
-    pool: State<'_, SqlitePool>,
+    pools: State<'_, DbPools>,
     key_id: String,
 ) -> Result<(), String> {
     let db = Database;
-    match db.delete_custom_metadata_key(&pool, &key_id).await {
+    match db.delete_custom_metadata_key(&pools.write, &key_id).await {
         Ok(_) => Ok(()),
         Err(e) => Err(format!("カスタムメタデータキーの削除に失敗しました: {e}")),
     }
@@ -150,11 +150,11 @@ pub async fn delete_custom_metadata_key(
 /// 名前でカスタムメタデータキーを取得
 #[tauri::command]
 pub async fn get_custom_metadata_key_by_name(
-    pool: State<'_, SqlitePool>,
+    pools: State<'_, DbPools>,
     name: String,
 ) -> Result<Option<CustomMetadataKey>, String> {
     let db = Database;
-    match db.get_custom_metadata_key_by_name(&pool, &name).await {
+    match db.get_custom_metadata_key_by_name(&pools.read, &name).await {
         Ok(key) => Ok(key),
         Err(e) => Err(format!("カスタムメタデータキーの取得に失敗しました: {e}")),
     }
@@ -163,11 +163,11 @@ pub async fn get_custom_metadata_key_by_name(
 /// カスタムメタデータ値を設定
 #[tauri::command]
 pub async fn set_custom_metadata_value(
-    pool: State<'_, SqlitePool>,
+    pools: State<'_, DbPools>,
     request: SetCustomMetadataValueRequest,
 ) -> Result<CustomMetadataValue, String> {
     let db = Database;
-    match db.set_custom_metadata_value(&pool, &request.file_id, &request.key_id, request.value).await {
+    match db.set_custom_metadata_value(&pools.write, &request.file_id, &request.key_id, request.value).await {
         Ok(value) => Ok(value),
         Err(e) => Err(format!("カスタムメタデータ値の設定に失敗しました: {e}")),
     }
@@ -176,11 +176,11 @@ pub async fn set_custom_metadata_value(
 /// ファイルのカスタムメタデータ値を全て取得
 #[tauri::command]
 pub async fn get_custom_metadata_values_by_file(
-    pool: State<'_, SqlitePool>,
+    pools: State<'_, DbPools>,
     file_id: String,
 ) -> Result<Vec<CustomMetadataValue>, String> {
     let db = Database;
-    match db.get_custom_metadata_values_by_file(&pool, &file_id).await {
+    match db.get_custom_metadata_values_by_file(&pools.read, &file_id).await {
         Ok(values) => Ok(values),
         Err(e) => Err(format!("カスタムメタデータ値の取得に失敗しました: {e}")),
     }
@@ -189,12 +189,12 @@ pub async fn get_custom_metadata_values_by_file(
 /// 特定のカスタムメタデータ値を取得
 #[tauri::command]
 pub async fn get_custom_metadata_value(
-    pool: State<'_, SqlitePool>,
+    pools: State<'_, DbPools>,
     file_id: String,
     key_id: String,
 ) -> Result<Option<CustomMetadataValue>, String> {
     let db = Database;
-    match db.get_custom_metadata_value(&pool, &file_id, &key_id).await {
+    match db.get_custom_metadata_value(&pools.read, &file_id, &key_id).await {
         Ok(value) => Ok(value),
         Err(e) => Err(format!("カスタムメタデータ値の取得に失敗しました: {e}")),
     }
@@ -203,12 +203,12 @@ pub async fn get_custom_metadata_value(
 /// カスタムメタデータ値を削除
 #[tauri::command]
 pub async fn delete_custom_metadata_value(
-    pool: State<'_, SqlitePool>,
+    pools: State<'_, DbPools>,
     file_id: String,
     key_id: String,
 ) -> Result<(), String> {
     let db = Database;
-    match db.delete_custom_metadata_value(&pool, &file_id, &key_id).await {
+    match db.delete_custom_metadata_value(&pools.write, &file_id, &key_id).await {
         Ok(_) => Ok(()),
         Err(e) => Err(format!("カスタムメタデータ値の削除に失敗しました: {e}")),
     }

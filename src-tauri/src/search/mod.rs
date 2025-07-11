@@ -1,5 +1,6 @@
 use crate::database::{Database, DatabaseTrait, File, Tag};
 use crate::settings;
+use crate::DbPools;
 use chrono::Utc;
 use sqlx::{Row, SqlitePool};
 use std::collections::HashMap;
@@ -40,7 +41,7 @@ pub struct MetadataSearchFilter {
 
 #[tauri::command]
 pub async fn search_files(
-    pool: State<'_, SqlitePool>,
+    pools: State<'_, DbPools>,
     query: String,
     tag_ids: Option<Vec<String>>,
     metadata_filters: Vec<MetadataSearchFilter>,
@@ -52,7 +53,7 @@ pub async fn search_files(
 ) -> Result<Vec<SearchResult>, String> {
     // 後方互換性のため、全件取得版を残す
     let paginated_result = search_files_paginated(
-        pool,
+        pools,
         query,
         tag_ids,
         metadata_filters,
@@ -73,7 +74,7 @@ pub async fn search_files(
 
 #[tauri::command]
 pub async fn search_files_paginated(
-    pool: State<'_, SqlitePool>,
+    pools: State<'_, DbPools>,
     query: String,
     tag_ids: Option<Vec<String>>,
     metadata_filters: Vec<MetadataSearchFilter>,
@@ -342,7 +343,7 @@ pub async fn search_files_paginated(
     }
 
     let total_count: i64 = count_query
-        .fetch_one(&*pool)
+        .fetch_one(&pools.read)
         .await
         .map_err(|e| e.to_string())?
         .get("total_count");
@@ -364,7 +365,7 @@ pub async fn search_files_paginated(
     println!("============================");
 
     let rows = query_builder
-        .fetch_all(&*pool)
+        .fetch_all(&pools.read)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -418,7 +419,7 @@ pub async fn search_files_paginated(
     }
 
     // 設定を取得して隠しファイルを除外するかどうかを決定
-    let settings = settings::get_all_settings(&pool)
+    let settings = settings::get_all_settings(&pools.read)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -434,10 +435,10 @@ pub async fn search_files_paginated(
     }
     total_sql.push_str(" GROUP BY f.id");
     let total_category_counts =
-        calculate_category_counts(&pool, &total_sql, &pre_category_params).await?;
+        calculate_category_counts(&pools.read, &total_sql, &pre_category_params).await?;
 
     // カテゴリフィルタ適用後の件数を計算
-    let category_counts = calculate_category_counts(&pool, &sql, &params).await?;
+    let category_counts = calculate_category_counts(&pools.read, &sql, &params).await?;
 
     Ok(PaginatedSearchResult {
         results,
@@ -586,47 +587,47 @@ fn classify_file_category(file_name: &str, mime_type: Option<&str>) -> String {
 }
 
 #[tauri::command]
-pub async fn get_tags(pool: State<'_, SqlitePool>) -> Result<Vec<Tag>, String> {
+pub async fn get_tags(pools: State<'_, DbPools>) -> Result<Vec<Tag>, String> {
     let db = Database;
-    db.get_all_tags(&pool).await.map_err(|e| e.to_string())
+    db.get_all_tags(&pools.read).await.map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-pub async fn get_top_tags(pool: State<'_, SqlitePool>, limit: u32) -> Result<Vec<Tag>, String> {
+pub async fn get_top_tags(pools: State<'_, DbPools>, limit: u32) -> Result<Vec<Tag>, String> {
     let db = Database;
-    db.get_top_tags(&pool, limit)
+    db.get_top_tags(&pools.read, limit)
         .await
         .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 pub async fn search_tags_by_name(
-    pool: State<'_, SqlitePool>,
+    pools: State<'_, DbPools>,
     query: String,
 ) -> Result<Vec<Tag>, String> {
     let db = Database;
-    db.search_tags_by_name(&pool, &query)
+    db.search_tags_by_name(&pools.read, &query)
         .await
         .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 pub async fn create_tag(
-    pool: State<'_, SqlitePool>,
+    pools: State<'_, DbPools>,
     name: String,
     color: String,
 ) -> Result<Tag, String> {
     let db = Database;
-    db.create_tag(&pool, &name, &color)
+    db.create_tag(&pools.write, &name, &color)
         .await
         .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-pub async fn delete_tag(pool: State<'_, SqlitePool>, id: String) -> Result<(), String> {
+pub async fn delete_tag(pools: State<'_, DbPools>, id: String) -> Result<(), String> {
     sqlx::query("DELETE FROM tags WHERE id = ?")
         .bind(&id)
-        .execute(&*pool)
+        .execute(&pools.write)
         .await
         .map_err(|e| e.to_string())?;
 

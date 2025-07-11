@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 use std::error::Error;
 use std::path::Path;
+use crate::DbPools;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Setting {
@@ -95,54 +96,54 @@ pub async fn update_setting_string(pool: &SqlitePool, key: &str, value: &str) ->
 }
 
 #[tauri::command]
-pub async fn get_settings(pool: tauri::State<'_, SqlitePool>) -> Result<AppSettings, String> {
-    get_all_settings(&pool).await
+pub async fn get_settings(pools: tauri::State<'_, DbPools>) -> Result<AppSettings, String> {
+    get_all_settings(&pools.read).await
         .map_err(|e| format!("Failed to get settings: {}", e))
 }
 
 #[tauri::command]
 pub async fn update_setting_bool_cmd(
-    pool: tauri::State<'_, SqlitePool>,
+    pools: tauri::State<'_, DbPools>,
     key: String,
     value: bool,
 ) -> Result<(), String> {
-    update_setting_bool(&pool, &key, value).await
+    update_setting_bool(&pools.write, &key, value).await
         .map_err(|e| format!("Failed to update setting: {}", e))
 }
 
 #[tauri::command]
 pub async fn update_setting_int_cmd(
-    pool: tauri::State<'_, SqlitePool>,
+    pools: tauri::State<'_, DbPools>,
     key: String,
     value: i32,
 ) -> Result<(), String> {
-    update_setting_int(&pool, &key, value).await
+    update_setting_int(&pools.write, &key, value).await
         .map_err(|e| format!("Failed to update setting: {}", e))
 }
 
 #[tauri::command]
 pub async fn update_setting_float_cmd(
-    pool: tauri::State<'_, SqlitePool>,
+    pools: tauri::State<'_, DbPools>,
     key: String,
     value: f64,
 ) -> Result<(), String> {
-    update_setting_float(&pool, &key, value).await
+    update_setting_float(&pools.write, &key, value).await
         .map_err(|e| format!("Failed to update setting: {}", e))
 }
 
 #[tauri::command]
 pub async fn update_setting_string_cmd(
-    pool: tauri::State<'_, SqlitePool>,
+    pools: tauri::State<'_, DbPools>,
     key: String,
     value: String,
 ) -> Result<(), String> {
-    update_setting_string(&pool, &key, &value).await
+    update_setting_string(&pools.write, &key, &value).await
         .map_err(|e| format!("Failed to update setting: {}", e))
 }
 
 #[tauri::command]
-pub async fn get_language_setting(pool: tauri::State<'_, SqlitePool>) -> Result<String, String> {
-    get_setting(&pool, "language").await
+pub async fn get_language_setting(pools: tauri::State<'_, DbPools>) -> Result<String, String> {
+    get_setting(&pools.read, "language").await
         .map(|lang| lang.unwrap_or_else(|| "ja".to_string()))
         .map_err(|e| format!("Failed to get language setting: {}", e))
 }

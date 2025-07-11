@@ -11,6 +11,12 @@ use std::sync::{Arc, Mutex};
 use tauri::Manager;
 use watcher::FileWatcher;
 
+#[derive(Clone)]
+pub struct DbPools {
+    pub write: SqlitePool,
+    pub read: SqlitePool,
+}
+
 mod custom_metadata;
 mod database;
 mod exif_config;
@@ -43,24 +49,53 @@ async fn main() {
         println!("データベースファイルが存在しません。新規作成します: {db_file_path}");
     }
 
-    let ops = SqliteConnectOptions::from_str(&database_url)
+    // 書き込み用プールの設定
+    let write_ops = SqliteConnectOptions::from_str(&database_url)
         .unwrap()
         .create_if_missing(true) // データベースが存在しない場合は自動的に作成
-        .journal_mode(sqlx::sqlite::SqliteJournalMode::Persist) // Walモードを有効化
+        .journal_mode(sqlx::sqlite::SqliteJournalMode::Wal) // Walモードを有効化
         .synchronous(sqlx::sqlite::SqliteSynchronous::Off) // 同期をオフにしてパフォーマンス向上
         .busy_timeout(std::time::Duration::from_secs(60)) // ロックタイムアウトを60秒に設定
         .pragma("cache_size", "10000") // キャッシュサイズを10MB（デフォルトの約5倍）に設定
         .pragma("temp_store", "memory") // 一時テーブルをメモリに保存
         .pragma("foreign_keys", "on"); // 外部キー制約を有効化
 
-    // SQLiteプールを作成（ファイルが存在しない場合は自動的に作成される）
-    let pool = SqlitePool::connect_with(ops)
-        .await
-        .expect("Failed to connect to database");
+    // 読み取り用プールの設定（読み取り専用）
+    let read_ops = SqliteConnectOptions::from_str(&database_url)
+        .unwrap()
+        .create_if_missing(false) // 読み取り専用では作成しない
+        .read_only(true) // 読み取り専用モード
+        .journal_mode(sqlx::sqlite::SqliteJournalMode::Wal) // Walモードを有効化
+        .synchronous(sqlx::sqlite::SqliteSynchronous::Off) // 同期をオフにしてパフォーマンス向上
+        .busy_timeout(std::time::Duration::from_secs(30)) // 読み取り専用は短めのタイムアウト
+        .pragma("cache_size", "15000") // 読み取り専用は大きなキャッシュ
+        .pragma("temp_store", "memory") // 一時テーブルをメモリに保存
+        .pragma("foreign_keys", "on"); // 外部キー制約を有効化
 
-    // マイグレーション実行
+    // 書き込み用プールを作成（最大5接続）
+    let write_pool = sqlx::sqlite::SqlitePoolOptions::new()
+        .max_connections(5)
+        .min_connections(1)
+        .connect_with(write_ops)
+        .await
+        .expect("Failed to connect to write database");
+
+    // 読み取り用プールを作成（最大20接続）
+    let read_pool = sqlx::sqlite::SqlitePoolOptions::new()
+        .max_connections(20)
+        .min_connections(3)
+        .connect_with(read_ops)
+        .await
+        .expect("Failed to connect to read database");
+
+    let pools = DbPools {
+        write: write_pool,
+        read: read_pool,
+    };
+
+    // マイグレーション実行（書き込み用プールを使用）
     println!("マイグレーションを実行しています...");
-    if let Err(e) = sqlx::migrate!("./migrations").run(&pool).await {
+    if let Err(e) = sqlx::migrate!("./migrations").run(&pools.write).await {
         eprintln!("マイグレーション実行エラー: {e}");
         std::process::exit(1);
     }
@@ -75,7 +110,7 @@ async fn main() {
 
     // データベース初期化（テーブル作成など）
     let db = database::Database;
-    if let Err(e) = database::DatabaseTrait::init_database(&db, &pool).await {
+    if let Err(e) = database::DatabaseTrait::init_database(&db, &pools.write).await {
         eprintln!("データベース初期化エラー: {e}");
         std::process::exit(1);
     }
@@ -87,11 +122,11 @@ async fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_sql::Builder::default().build())
         .plugin(tauri_plugin_dialog::init())
-        .manage(pool.clone())
+        .manage(pools.clone())
         .setup(move |app| {
             // ファイル監視の初期化（setup内でAppHandleが取得可能）
             let app_handle = app.handle().clone();
-            let file_watcher = match FileWatcher::new(Arc::new(pool.clone()), Some(app_handle)) {
+            let file_watcher = match FileWatcher::new(Arc::new(pools.clone()), Some(app_handle)) {
                 Ok(watcher) => Arc::new(Mutex::new(watcher)),
                 Err(e) => {
                     eprintln!("ファイル監視の初期化エラー: {e}");
@@ -101,10 +136,10 @@ async fn main() {
 
             // 既存のディレクトリの監視を開始
             let watcher_clone = Arc::clone(&file_watcher);
-            let pool_clone = pool.clone();
+            let pools_clone = pools.clone();
             tauri::async_runtime::spawn(async move {
                 let db = database::Database;
-                match db.get_directories(&pool_clone).await {
+                match db.get_directories(&pools_clone.read).await {
                     Ok(directories) => {
                         let mut watcher_guard = watcher_clone.lock().unwrap();
                         for directory in directories {
