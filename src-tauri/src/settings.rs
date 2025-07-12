@@ -1,4 +1,4 @@
-use crate::GroupManager;
+use crate::ShelfManager;
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 use std::error::Error;
@@ -114,7 +114,7 @@ pub async fn update_setting_string(
 }
 
 #[tauri::command]
-pub async fn get_settings(pools: tauri::State<'_, GroupManager>) -> Result<AppSettings, String> {
+pub async fn get_settings(pools: tauri::State<'_, ShelfManager>) -> Result<AppSettings, String> {
     get_all_settings(pools.get_settings_pool())
         .await
         .map_err(|e| format!("Failed to get settings: {}", e))
@@ -122,7 +122,7 @@ pub async fn get_settings(pools: tauri::State<'_, GroupManager>) -> Result<AppSe
 
 #[tauri::command]
 pub async fn update_setting_bool_cmd(
-    pools: tauri::State<'_, GroupManager>,
+    pools: tauri::State<'_, ShelfManager>,
     key: String,
     value: bool,
 ) -> Result<(), String> {
@@ -133,7 +133,7 @@ pub async fn update_setting_bool_cmd(
 
 #[tauri::command]
 pub async fn update_setting_int_cmd(
-    pools: tauri::State<'_, GroupManager>,
+    pools: tauri::State<'_, ShelfManager>,
     key: String,
     value: i32,
 ) -> Result<(), String> {
@@ -144,7 +144,7 @@ pub async fn update_setting_int_cmd(
 
 #[tauri::command]
 pub async fn update_setting_float_cmd(
-    pools: tauri::State<'_, GroupManager>,
+    pools: tauri::State<'_, ShelfManager>,
     key: String,
     value: f64,
 ) -> Result<(), String> {
@@ -155,7 +155,7 @@ pub async fn update_setting_float_cmd(
 
 #[tauri::command]
 pub async fn update_setting_string_cmd(
-    pools: tauri::State<'_, GroupManager>,
+    pools: tauri::State<'_, ShelfManager>,
     key: String,
     value: String,
 ) -> Result<(), String> {
@@ -166,7 +166,7 @@ pub async fn update_setting_string_cmd(
 
 #[tauri::command]
 pub async fn get_language_setting(
-    pools: tauri::State<'_, GroupManager>,
+    pools: tauri::State<'_, ShelfManager>,
 ) -> Result<String, String> {
     get_setting(pools.get_settings_pool(), "language")
         .await

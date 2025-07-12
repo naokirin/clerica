@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { groupsApi, type Group } from "$lib/api/groups";
+  import { shelvesApi, type Shelf } from "$lib/api/shelves";
   import { onMount } from "svelte";
   import { Edit, Trash2 } from "lucide-svelte";
   import type { AppViewModel } from "$lib/viewmodels/AppViewModel";
@@ -10,127 +10,127 @@
 
   let { appViewModel }: Props = $props();
 
-  let groups = $state<Group[]>([]);
-  let activeGroupId = $state("");
+  let shelves = $state<Shelf[]>([]);
+  let activeShelfId = $state("");
   let showCreateForm = $state(false);
-  let newGroupName = $state("");
-  let editingGroupId = $state<string | null>(null);
-  let editingGroupName = $state("");
+  let newShelfName = $state("");
+  let editingShelfId = $state<string | null>(null);
+  let editingShelfName = $state("");
   let loading = $state(false);
   let error = $state<string | null>(null);
 
   onMount(async () => {
     try {
-      await loadGroups();
-      await loadActiveGroup();
+      await loadShelves();
+      await loadActiveShelf();
     } catch (e) {
       console.error("初期化エラー:", e);
       error = e instanceof Error ? e.message : String(e);
     }
   });
 
-  async function loadGroups() {
+  async function loadShelves() {
     try {
-      console.log("グループ読み込み開始...");
-      groups = await groupsApi.getGroups();
-      console.log("グループ読み込み完了:", groups);
+      console.log("シェルフ読み込み開始...");
+      shelves = await shelvesApi.getShelves();
+      console.log("シェルフ読み込み完了:", shelves);
     } catch (error) {
-      console.error("グループの読み込みに失敗しました:", error);
+      console.error("シェルフの読み込みに失敗しました:", error);
       throw error;
     }
   }
 
-  async function loadActiveGroup() {
+  async function loadActiveShelf() {
     try {
-      console.log("アクティブグループ読み込み開始...");
-      activeGroupId = await groupsApi.getActiveGroupId();
-      console.log("アクティブグループ読み込み完了:", activeGroupId);
+      console.log("アクティブシェルフ読み込み開始...");
+      activeShelfId = await shelvesApi.getActiveShelfId();
+      console.log("アクティブシェルフ読み込み完了:", activeShelfId);
     } catch (error) {
-      console.error("アクティブグループの読み込みに失敗しました:", error);
+      console.error("アクティブシェルフの読み込みに失敗しました:", error);
       throw error;
     }
   }
 
-  async function switchGroup(groupId: string) {
-    if (loading || groupId === activeGroupId) return;
+  async function switchShelf(shelfId: string) {
+    if (loading || shelfId === activeShelfId) return;
 
     loading = true;
     try {
-      await groupsApi.switchGroup(groupId);
-      activeGroupId = groupId;
+      await shelvesApi.switchShelf(shelfId);
+      activeShelfId = shelfId;
 
       // AppViewModelを使ってデータを再読み込み
       if (appViewModel) {
-        await appViewModel.switchGroup(groupId);
+        await appViewModel.switchShelf(shelfId);
       } else {
         // AppViewModelが利用できない場合はページリロード
         window.location.reload();
       }
     } catch (error) {
-      console.error("グループの切り替えに失敗しました:", error);
-      alert("グループの切り替えに失敗しました");
+      console.error("シェルフの切り替えに失敗しました:", error);
+      alert("シェルフの切り替えに失敗しました");
     } finally {
       loading = false;
     }
   }
 
-  async function createGroup() {
-    if (!newGroupName.trim()) return;
+  async function createShelf() {
+    if (!newShelfName.trim()) return;
 
     try {
-      await groupsApi.createGroup({ name: newGroupName.trim() });
-      await loadGroups();
-      newGroupName = "";
+      await shelvesApi.createShelf({ name: newShelfName.trim() });
+      await loadShelves();
+      newShelfName = "";
       showCreateForm = false;
     } catch (error) {
-      console.error("グループの作成に失敗しました:", error);
-      alert("グループの作成に失敗しました");
+      console.error("シェルフの作成に失敗しました:", error);
+      alert("シェルフの作成に失敗しました");
     }
   }
 
-  async function startEdit(group: Group) {
-    editingGroupId = group.id;
-    editingGroupName = group.name;
+  async function startEdit(shelf: Shelf) {
+    editingShelfId = shelf.id;
+    editingShelfName = shelf.name;
   }
 
   async function saveEdit() {
-    if (!editingGroupId || !editingGroupName.trim()) return;
+    if (!editingShelfId || !editingShelfName.trim()) return;
 
     try {
-      await groupsApi.updateGroupName({
-        id: editingGroupId,
-        name: editingGroupName.trim(),
+      await shelvesApi.updateShelfName({
+        id: editingShelfId,
+        name: editingShelfName.trim(),
       });
-      await loadGroups();
-      editingGroupId = null;
-      editingGroupName = "";
+      await loadShelves();
+      editingShelfId = null;
+      editingShelfName = "";
     } catch (error) {
-      console.error("グループ名の更新に失敗しました:", error);
-      alert("グループ名の更新に失敗しました");
+      console.error("シェルフ名の更新に失敗しました:", error);
+      alert("シェルフ名の更新に失敗しました");
     }
   }
 
   function cancelEdit() {
-    editingGroupId = null;
-    editingGroupName = "";
+    editingShelfId = null;
+    editingShelfName = "";
   }
 
-  async function deleteGroup(groupId: string) {
+  async function deleteShelf(shelfId: string) {
     if (
       !confirm(
-        "このグループを削除しますか？グループ内のすべてのデータが削除されます。",
+        "このシェルフを削除しますか？シェルフ内のすべてのデータが削除されます。",
       )
     ) {
       return;
     }
 
     try {
-      await groupsApi.deleteGroup(groupId);
-      await loadGroups();
-      await loadActiveGroup();
+      await shelvesApi.deleteShelf(shelfId);
+      await loadShelves();
+      await loadActiveShelf();
     } catch (error) {
-      console.error("グループの削除に失敗しました:", error);
-      alert("グループの削除に失敗しました: " + error);
+      console.error("シェルフの削除に失敗しました:", error);
+      alert("シェルフの削除に失敗しました: " + error);
     }
   }
 </script>
@@ -142,15 +142,15 @@
       <button
         on:click={() => {
           error = null;
-          loadGroups();
-          loadActiveGroup();
+          loadShelves();
+          loadActiveShelf();
         }}>再試行</button
       >
     </div>
   {/if}
 
   <div class="section-header">
-    <h3>グループ管理</h3>
+    <h3>シェルフ</h3>
     <button
       class="add-button"
       on:click={() => (showCreateForm = !showCreateForm)}
@@ -164,17 +164,17 @@
     <div class="create-form">
       <input
         type="text"
-        placeholder="グループ名を入力"
-        bind:value={newGroupName}
-        on:keydown={(e) => e.key === "Enter" && createGroup()}
+        placeholder="シェルフ名を入力"
+        bind:value={newShelfName}
+        on:keydown={(e) => e.key === "Enter" && createShelf()}
       />
       <div class="form-actions">
-        <button class="btn-save" on:click={createGroup}>作成</button>
+        <button class="btn-save" on:click={createShelf}>作成</button>
         <button
           class="btn-cancel"
           on:click={() => {
             showCreateForm = false;
-            newGroupName = "";
+            newShelfName = "";
           }}
         >
           キャンセル
@@ -183,17 +183,17 @@
     </div>
   {/if}
 
-  <div class="group-list">
-    {#each groups as group (group.id)}
+  <div class="shelf-list">
+    {#each shelves as shelf (shelf.id)}
       <div
-        class="group-item {group.id === activeGroupId ? 'selected' : ''}"
-        on:click={() => switchGroup(group.id)}
+        class="shelf-item {shelf.id === activeShelfId ? 'selected' : ''}"
+        on:click={() => switchShelf(shelf.id)}
       >
-        {#if editingGroupId === group.id}
+        {#if editingShelfId === shelf.id}
           <div class="edit-form">
             <input
               type="text"
-              bind:value={editingGroupName}
+              bind:value={editingShelfName}
               on:keydown={(e) => e.key === "Enter" && saveEdit()}
             />
             <div class="edit-actions">
@@ -204,27 +204,27 @@
             </div>
           </div>
         {:else}
-          <div class="group-content">
-            <div class="group-name">{group.name}</div>
+          <div class="shelf-content">
+            <div class="shelf-name">{shelf.name}</div>
             <div
-              class="group-status {group.id === activeGroupId ? 'active' : ''}"
+              class="shelf-status {shelf.id === activeShelfId ? 'active' : ''}"
             >
-              {#if group.id === activeGroupId}
+              {#if shelf.id === activeShelfId}
                 アクティブ
               {:else}
                 クリックして切り替え
               {/if}
             </div>
           </div>
-          <div class="group-actions">
+          <div class="shelf-actions">
             <button
               class="edit-btn"
               on:click={(e) => {
                 e.stopPropagation();
-                startEdit(group);
+                startEdit(shelf);
               }}
               disabled={loading}
-              title="グループ名を編集"
+              title="シェルフ名を編集"
             >
               <Edit size={14} />
             </button>
@@ -232,10 +232,10 @@
               class="delete-btn"
               on:click={(e) => {
                 e.stopPropagation();
-                deleteGroup(group.id);
+                deleteShelf(shelf.id);
               }}
-              disabled={loading || groups.length <= 1}
-              title="グループを削除"
+              disabled={loading || shelves.length <= 1}
+              title="シェルフを削除"
             >
               <Trash2 size={14} />
             </button>
@@ -342,13 +342,13 @@
     gap: 0.5rem;
   }
 
-  .group-list {
+  .shelf-list {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
   }
 
-  .group-item {
+  .shelf-item {
     position: relative;
     margin-bottom: 0.25rem;
     background-color: #f9fafb;
@@ -359,27 +359,27 @@
     border: 1px solid transparent;
   }
 
-  .group-item:hover {
+  .shelf-item:hover {
     background-color: #f3f4f6;
   }
 
-  .group-item.selected {
+  .shelf-item.selected {
     background-color: #e0f2fe;
     border-left: 3px solid #3b82f6;
   }
 
-  .group-item.selected .group-content {
+  .shelf-item.selected .shelf-content {
     padding-left: 0.75rem;
   }
 
-  .group-content {
+  .shelf-content {
     padding: 0.5rem;
     padding-right: 4rem;
     flex: 1;
     min-width: 0;
   }
 
-  .group-name {
+  .shelf-name {
     font-weight: 500;
     color: #111827;
     white-space: nowrap;
@@ -387,19 +387,19 @@
     text-overflow: ellipsis;
   }
 
-  .group-status {
+  .shelf-status {
     font-size: 0.75rem;
     color: #6b7280;
     margin-top: 0.25rem;
     opacity: 0.8;
   }
 
-  .group-status.active {
+  .shelf-status.active {
     color: #10b981;
     font-weight: 500;
   }
 
-  .group-actions {
+  .shelf-actions {
     position: absolute;
     top: 50%;
     right: 0.5rem;
@@ -410,7 +410,7 @@
     transition: opacity 0.2s;
   }
 
-  .group-item:hover .group-actions {
+  .shelf-item:hover .shelf-actions {
     opacity: 1;
   }
 

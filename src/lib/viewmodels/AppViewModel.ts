@@ -24,7 +24,7 @@ export class AppViewModel extends BaseViewModel {
   });
   private _loadingProgress: Writable<number> = writable(0);
   private _isAppLoading: Writable<boolean> = writable(true);
-  private _currentGroupId: Writable<string> = writable("");
+  private _currentShelfId: Writable<string> = writable("");
   
   // サブスクリプション管理
   private _unsubscribers: Unsubscriber[] = [];
@@ -33,7 +33,7 @@ export class AppViewModel extends BaseViewModel {
   public readonly loadingSteps = this._loadingSteps;
   public readonly loadingProgress = this._loadingProgress;
   public readonly isAppLoading = this._isAppLoading;
-  public readonly currentGroupId = this._currentGroupId;
+  public readonly currentShelfId = this._currentShelfId;
 
   constructor() {
     super();
@@ -59,20 +59,20 @@ export class AppViewModel extends BaseViewModel {
     this._activeTab.set(tab);
   }
 
-  public async switchGroup(groupId: string): Promise<void> {
-    if (this._currentGroupId && groupId === this.getCurrentGroupId()) {
-      return; // 同じグループなら何もしない
+  public async switchShelf(shelfId: string): Promise<void> {
+    if (this._currentShelfId && shelfId === this.getCurrentShelfId()) {
+      return; // 同じシェルフなら何もしない
     }
 
-    this._currentGroupId.set(groupId);
-    // グループ変更時にすべてのデータを再読み込み
+    this._currentShelfId.set(shelfId);
+    // シェルフ変更時にすべてのデータを再読み込み
     await this.reloadAllData();
   }
 
-  public getCurrentGroupId(): string {
-    let currentGroupId = "";
-    this._currentGroupId.subscribe(id => currentGroupId = id)();
-    return currentGroupId;
+  public getCurrentShelfId(): string {
+    let currentShelfId = "";
+    this._currentShelfId.subscribe(id => currentShelfId = id)();
+    return currentShelfId;
   }
 
   public async reloadAllData(): Promise<void> {

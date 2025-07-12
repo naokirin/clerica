@@ -3,7 +3,7 @@
 
 use database::DatabaseTrait;
 use database_manager::DatabaseManager;
-use group_manager::GroupManager;
+// use shelf_manager::ShelfManager; // Imported via pub use below
 use std::sync::{Arc, Mutex};
 use tauri::Manager;
 use watcher::FileWatcher;
@@ -14,12 +14,15 @@ mod database_manager;
 mod exif_config;
 mod exif_constants;
 mod file_manager;
-mod group_commands;
-mod group_manager;
+mod shelf_commands;
+mod shelf_manager;
 mod search;
 mod settings;
 mod thumbnail;
 mod watcher;
+
+// Public re-exports
+pub use shelf_manager::{Shelf, ShelfManager};
 
 #[tokio::main]
 async fn main() {
@@ -32,19 +35,19 @@ async fn main() {
         }
     };
 
-    // グループマネージャを初期化
-    let group_manager = match GroupManager::new(db_manager.get_settings_pool().clone()).await {
+    // シェルフマネージャを初期化
+    let shelf_manager = match ShelfManager::new(db_manager.get_settings_pool().clone()).await {
         Ok(manager) => manager,
         Err(e) => {
-            eprintln!("グループマネージャの初期化に失敗しました: {}", e);
+            eprintln!("シェルフマネージャの初期化に失敗しました: {}", e);
             std::process::exit(1);
         }
     };
 
-    // データベース初期化（設定のみ - データベースは各グループで管理）
+    // データベース初期化（設定のみ - データベースは各シェルフで管理）
     let db = database::Database;
     if let Err(e) = db.init_database(
-        &group_manager.get_active_data_pool().unwrap(),
+        &shelf_manager.get_active_data_pool().unwrap(),
         db_manager.get_settings_pool()
     ).await {
         eprintln!("データベース初期化エラー: {e}");
@@ -63,11 +66,11 @@ async fn main() {
         .plugin(tauri_plugin_sql::Builder::default().build())
         .plugin(tauri_plugin_dialog::init())
         .manage(db_manager.clone())
-        .manage(group_manager.clone())
+        .manage(shelf_manager.clone())
         .setup(move |app| {
             // ファイル監視の初期化（setup内でAppHandleが取得可能）
             let app_handle = app.handle().clone();
-            let file_watcher = match FileWatcher::new(Arc::new(group_manager.clone()), Some(app_handle)) {
+            let file_watcher = match FileWatcher::new(Arc::new(shelf_manager.clone()), Some(app_handle)) {
                 Ok(watcher) => Arc::new(Mutex::new(watcher)),
                 Err(e) => {
                     eprintln!("ファイル監視の初期化エラー: {e}");
@@ -77,10 +80,10 @@ async fn main() {
 
             // 既存のディレクトリの監視を開始
             let watcher_clone = Arc::clone(&file_watcher);
-            let group_manager_clone = group_manager.clone();
+            let shelf_manager_clone = shelf_manager.clone();
             tauri::async_runtime::spawn(async move {
                 let db = database::Database;
-                match group_manager_clone.get_active_data_pool() {
+                match shelf_manager_clone.get_active_data_pool() {
                     Ok(active_pool) => {
                         match db.get_directories(&active_pool).await {
                             Ok(directories) => {
@@ -164,12 +167,12 @@ async fn main() {
             settings::update_setting_float_cmd,
             settings::update_setting_string_cmd,
             settings::get_language_setting,
-            group_commands::get_groups,
-            group_commands::get_active_group_id,
-            group_commands::create_group,
-            group_commands::switch_group,
-            group_commands::delete_group,
-            group_commands::update_group_name,
+            shelf_commands::get_shelves,
+            shelf_commands::get_active_shelf_id,
+            shelf_commands::create_shelf,
+            shelf_commands::switch_shelf,
+            shelf_commands::delete_shelf,
+            shelf_commands::update_shelf_name,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

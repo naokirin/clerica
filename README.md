@@ -17,7 +17,7 @@ Clericaは、複数のディレクトリにまたがる大量のファイルを�
 ## 技術スタック
 
 - **バックエンド**: Rust + Tauri
-- **フロントエンド**: React + TypeScript
+- **フロントエンド**: SvelteKit + TypeScript
 - **データベース**: SQLite (SQLx)
 - **ファイル監視**: notify-rs
 - **検索エンジン**: Fuse.js
@@ -83,9 +83,9 @@ clerica/
 │   ├── migrations/      # データベースマイグレーション
 │   ├── Cargo.toml       # Rust依存関係
 │   └── tauri.conf.json  # Tauri設定
-├── src/                 # React フロントエンド
-│   ├── App.tsx          # メインコンポーネント
-│   ├── main.tsx         # エントリーポイント
+├── src/                 # SvelteKit フロントエンド
+│   ├── routes/+page.svelte # メインページ
+│   ├── app.html         # エントリーポイント
 │   └── index.css        # スタイル
 ├── package.json         # フロントエンド依存関係
 ├── vite.config.ts       # Vite設定

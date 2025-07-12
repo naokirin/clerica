@@ -1,6 +1,6 @@
 use crate::database::{Database, DatabaseTrait, File, Tag};
 use crate::settings;
-use crate::GroupManager;
+use crate::ShelfManager;
 use chrono::Utc;
 use sqlx::{Row, SqlitePool};
 use std::collections::HashMap;
@@ -41,7 +41,7 @@ pub struct MetadataSearchFilter {
 
 #[tauri::command]
 pub async fn search_files(
-    pools: State<'_, GroupManager>,
+    pools: State<'_, ShelfManager>,
     query: String,
     tag_ids: Option<Vec<String>>,
     metadata_filters: Vec<MetadataSearchFilter>,
@@ -74,7 +74,7 @@ pub async fn search_files(
 
 #[tauri::command]
 pub async fn search_files_paginated(
-    pools: State<'_, GroupManager>,
+    pools: State<'_, ShelfManager>,
     query: String,
     tag_ids: Option<Vec<String>>,
     metadata_filters: Vec<MetadataSearchFilter>,
@@ -582,13 +582,13 @@ fn classify_file_category(file_name: &str, mime_type: Option<&str>) -> String {
 }
 
 #[tauri::command]
-pub async fn get_tags(pools: State<'_, GroupManager>) -> Result<Vec<Tag>, String> {
+pub async fn get_tags(pools: State<'_, ShelfManager>) -> Result<Vec<Tag>, String> {
     let db = Database;
     db.get_all_tags(&pools.get_active_data_pool().map_err(|e| e.to_string())?).await.map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-pub async fn get_top_tags(pools: State<'_, GroupManager>, limit: u32) -> Result<Vec<Tag>, String> {
+pub async fn get_top_tags(pools: State<'_, ShelfManager>, limit: u32) -> Result<Vec<Tag>, String> {
     let db = Database;
     db.get_top_tags(&pools.get_active_data_pool().map_err(|e| e.to_string())?, limit)
         .await
@@ -597,7 +597,7 @@ pub async fn get_top_tags(pools: State<'_, GroupManager>, limit: u32) -> Result<
 
 #[tauri::command]
 pub async fn search_tags_by_name(
-    pools: State<'_, GroupManager>,
+    pools: State<'_, ShelfManager>,
     query: String,
 ) -> Result<Vec<Tag>, String> {
     let db = Database;
@@ -608,7 +608,7 @@ pub async fn search_tags_by_name(
 
 #[tauri::command]
 pub async fn create_tag(
-    pools: State<'_, GroupManager>,
+    pools: State<'_, ShelfManager>,
     name: String,
     color: String,
 ) -> Result<Tag, String> {
@@ -619,7 +619,7 @@ pub async fn create_tag(
 }
 
 #[tauri::command]
-pub async fn delete_tag(pools: State<'_, GroupManager>, id: String) -> Result<(), String> {
+pub async fn delete_tag(pools: State<'_, ShelfManager>, id: String) -> Result<(), String> {
     sqlx::query("DELETE FROM tags WHERE id = ?")
         .bind(&id)
         .execute(&pools.get_active_data_pool().map_err(|e| e.to_string())?)

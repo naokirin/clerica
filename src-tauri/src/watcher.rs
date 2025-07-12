@@ -1,5 +1,5 @@
 use crate::database::{Database, DatabaseTrait, File};
-use crate::GroupManager;
+use crate::ShelfManager;
 use chrono::Utc;
 use notify::{Event, EventKind, RecursiveMode, Watcher};
 use sqlx::SqlitePool;
@@ -19,7 +19,7 @@ pub struct FileWatcher {
 
 impl FileWatcher {
     pub fn new(
-        pools: Arc<GroupManager>,
+        pools: Arc<ShelfManager>,
         app_handle: Option<AppHandle>,
     ) -> Result<Self, notify::Error> {
         let (tx, rx) = mpsc::channel();
@@ -124,7 +124,7 @@ impl FileWatcher {
 
 #[tauri::command]
 pub async fn start_watching(
-    pools: State<'_, GroupManager>,
+    pools: State<'_, ShelfManager>,
     watcher: State<'_, Arc<Mutex<FileWatcher>>>,
     directory_id: String,
     path: String,
@@ -145,7 +145,7 @@ pub async fn start_watching(
 
 #[tauri::command]
 pub async fn stop_watching(
-    _pools: State<'_, GroupManager>,
+    _pools: State<'_, ShelfManager>,
     watcher: State<'_, Arc<Mutex<FileWatcher>>>,
     directory_id: String,
 ) -> Result<(), String> {
@@ -157,7 +157,7 @@ pub async fn stop_watching(
 }
 
 pub async fn handle_file_event(
-    pools: &GroupManager,
+    pools: &ShelfManager,
     event: Event,
     app_handle: Option<AppHandle>,
 ) -> Result<(), String> {
@@ -179,7 +179,7 @@ pub async fn handle_file_event(
 }
 
 async fn handle_create_event(
-    pools: &GroupManager,
+    pools: &ShelfManager,
     paths: &[std::path::PathBuf],
     app_handle: &Option<AppHandle>,
 ) -> Result<(), String> {
@@ -216,7 +216,7 @@ async fn handle_create_event(
 }
 
 async fn handle_remove_event(
-    pools: &GroupManager,
+    pools: &ShelfManager,
     paths: &[std::path::PathBuf],
     app_handle: &Option<AppHandle>,
 ) -> Result<(), String> {
@@ -238,7 +238,7 @@ async fn handle_remove_event(
 }
 
 async fn handle_modify_event(
-    pools: &GroupManager,
+    pools: &ShelfManager,
     paths: &[std::path::PathBuf],
     app_handle: &Option<AppHandle>,
 ) -> Result<(), String> {
@@ -258,7 +258,7 @@ async fn handle_modify_event(
 }
 
 async fn handle_modify_with_metadata(
-    pools: &GroupManager,
+    pools: &ShelfManager,
     path: &Path,
     metadata: &fs::Metadata,
     app_handle: &Option<AppHandle>,
@@ -288,7 +288,7 @@ async fn handle_modify_with_metadata(
 }
 
 async fn handle_existing_file_update(
-    pools: &GroupManager,
+    pools: &ShelfManager,
     path_str: &str,
     metadata: &fs::Metadata,
     app_handle: &Option<AppHandle>,
@@ -307,7 +307,7 @@ async fn handle_existing_file_update(
 }
 
 async fn handle_non_existing_file(
-    pools: &GroupManager,
+    pools: &ShelfManager,
     path: &Path,
     path_str: &str,
     inode: i64,
@@ -334,7 +334,7 @@ async fn handle_non_existing_file(
 }
 
 async fn handle_file_rename(
-    pools: &GroupManager,
+    pools: &ShelfManager,
     path: &Path,
     path_str: &str,
     existing_file: &File,
@@ -362,7 +362,7 @@ async fn handle_file_rename(
 }
 
 async fn handle_new_file_from_move(
-    pools: &GroupManager,
+    pools: &ShelfManager,
     path: &Path,
     metadata: &fs::Metadata,
     app_handle: &Option<AppHandle>,
@@ -392,7 +392,7 @@ async fn handle_new_file_from_move(
 }
 
 async fn handle_file_update_fallback(
-    pools: &GroupManager,
+    pools: &ShelfManager,
     path_str: &str,
     metadata: &fs::Metadata,
     app_handle: &Option<AppHandle>,
@@ -414,7 +414,7 @@ async fn handle_file_update_fallback(
 }
 
 async fn handle_modify_without_metadata(
-    pools: &GroupManager,
+    pools: &ShelfManager,
     path: &Path,
     _error: std::io::Error,
     app_handle: &Option<AppHandle>,
@@ -529,7 +529,7 @@ mod tests {
     async fn test_file_watcher_creation() {
         let settings_pool = SqlitePool::connect(":memory:").await.unwrap();
         let data_pool = SqlitePool::connect(":memory:").await.unwrap();
-        let pools = std::sync::Arc::new(crate::GroupManager::new(settings_pool).await.unwrap());
+        let pools = std::sync::Arc::new(crate::ShelfManager::new(settings_pool).await.unwrap());
         let result = FileWatcher::new(pools, None);
         assert!(result.is_ok());
     }
@@ -538,7 +538,7 @@ mod tests {
     async fn test_file_watcher_watch_directory() {
         let settings_pool = SqlitePool::connect(":memory:").await.unwrap();
         let data_pool = SqlitePool::connect(":memory:").await.unwrap();
-        let pools = std::sync::Arc::new(crate::GroupManager::new(settings_pool).await.unwrap());
+        let pools = std::sync::Arc::new(crate::ShelfManager::new(settings_pool).await.unwrap());
         let mut watcher = FileWatcher::new(pools, None).unwrap();
 
         // 存在しないディレクトリをwatch
@@ -550,7 +550,7 @@ mod tests {
     async fn test_file_watcher_unwatch_directory() {
         let settings_pool = SqlitePool::connect(":memory:").await.unwrap();
         let data_pool = SqlitePool::connect(":memory:").await.unwrap();
-        let pools = std::sync::Arc::new(crate::GroupManager::new(settings_pool).await.unwrap());
+        let pools = std::sync::Arc::new(crate::ShelfManager::new(settings_pool).await.unwrap());
         let mut watcher = FileWatcher::new(pools, None).unwrap();
 
         // 存在しないディレクトリをunwatch
@@ -564,7 +564,7 @@ mod tests {
     async fn test_handle_file_event_create() {
         let settings_pool = SqlitePool::connect(":memory:").await.unwrap();
         let data_pool = SqlitePool::connect(":memory:").await.unwrap();
-        let pools = crate::GroupManager::new(settings_pool).await.unwrap();
+        let pools = crate::ShelfManager::new(settings_pool).await.unwrap();
 
         let event = Event {
             kind: EventKind::Create(CreateKind::File),
@@ -581,7 +581,7 @@ mod tests {
     async fn test_handle_file_event_remove() {
         let settings_pool = SqlitePool::connect(":memory:").await.unwrap();
         let data_pool = SqlitePool::connect(":memory:").await.unwrap();
-        let pools = crate::GroupManager::new(settings_pool).await.unwrap();
+        let pools = crate::ShelfManager::new(settings_pool).await.unwrap();
 
         let event = Event {
             kind: EventKind::Remove(notify::event::RemoveKind::File),
@@ -597,7 +597,7 @@ mod tests {
     async fn test_handle_file_event_modify() {
         let settings_pool = SqlitePool::connect(":memory:").await.unwrap();
         let data_pool = SqlitePool::connect(":memory:").await.unwrap();
-        let pools = crate::GroupManager::new(settings_pool).await.unwrap();
+        let pools = crate::ShelfManager::new(settings_pool).await.unwrap();
 
         let event = Event {
             kind: EventKind::Modify(notify::event::ModifyKind::Data(
@@ -615,7 +615,7 @@ mod tests {
     async fn test_handle_file_event_other() {
         let settings_pool = SqlitePool::connect(":memory:").await.unwrap();
         let data_pool = SqlitePool::connect(":memory:").await.unwrap();
-        let pools = crate::GroupManager::new(settings_pool).await.unwrap();
+        let pools = crate::ShelfManager::new(settings_pool).await.unwrap();
 
         let event = Event {
             kind: EventKind::Access(notify::event::AccessKind::Read),

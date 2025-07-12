@@ -2,7 +2,7 @@
   import { FolderPlus, Tag, RefreshCw, X } from "lucide-svelte";
   import type { Directory, Tag as TagType } from "../types";
   import { t } from "$lib/i18n";
-  import GroupManager from "./GroupManager.svelte";
+  import ShelfManager from "./ShelfManager.svelte";
   import type { AppViewModel } from "$lib/viewmodels/AppViewModel";
 
   interface Props {
@@ -33,9 +33,9 @@
 </script>
 
 <div class="sidebar" class:disabled>
-  <!-- グループ管理セクション -->
-  <GroupManager {appViewModel} />
-  
+  <!-- シェルフセクション -->
+  <ShelfManager {appViewModel} />
+
   <div class="sidebar-section">
     <div class="section-header">
       <h3>{$t("common.sidebar.directories")}</h3>
@@ -52,7 +52,9 @@
       >
         <div class="directory-content">
           <div class="directory-name">{$t("common.sidebar.allFiles")}</div>
-          <div class="directory-path">{$t("common.sidebar.allFilesDescription")}</div>
+          <div class="directory-path">
+            {$t("common.sidebar.allFilesDescription")}
+          </div>
         </div>
       </div>
 

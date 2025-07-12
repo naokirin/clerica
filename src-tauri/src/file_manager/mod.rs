@@ -1,7 +1,7 @@
 use crate::database::{Database, DatabaseTrait, Directory, File, Tag};
 use crate::watcher::FileWatcher;
 use crate::settings;
-use crate::group_manager::GroupManager;
+use crate::ShelfManager;
 use sqlx::SqlitePool;
 use tauri::State;
 use uuid::Uuid;
@@ -73,7 +73,7 @@ impl FileCategory {
 
 #[tauri::command]
 pub async fn add_directory(
-    pools: State<'_, GroupManager>,
+    pools: State<'_, ShelfManager>,
     watcher: State<'_, Arc<Mutex<FileWatcher>>>,
     path: String,
     name: String,
@@ -117,7 +117,7 @@ pub struct DirectoryRemovalResult {
 
 #[tauri::command]
 pub async fn remove_directory(
-    pools: State<'_, GroupManager>,
+    pools: State<'_, ShelfManager>,
     watcher: State<'_, Arc<Mutex<FileWatcher>>>,
     id: String,
 ) -> Result<DirectoryRemovalResult, String> {
@@ -177,7 +177,7 @@ pub async fn remove_directory(
 
 #[tauri::command]
 pub async fn get_directories(
-    pools: State<'_, GroupManager>,
+    pools: State<'_, ShelfManager>,
 ) -> Result<Vec<Directory>, String> {
     let db = Database;
     let data_pool = pools.get_active_data_pool().map_err(|e| e.to_string())?;
@@ -188,7 +188,7 @@ pub async fn get_directories(
 
 #[tauri::command]
 pub async fn get_files(
-    pools: State<'_, GroupManager>,
+    pools: State<'_, ShelfManager>,
     sort_field: Option<String>,
     sort_order: Option<String>,
 ) -> Result<Vec<File>, String> {
@@ -211,7 +211,7 @@ pub async fn get_files(
 
 #[tauri::command]
 pub async fn get_files_paginated(
-    pools: State<'_, GroupManager>,
+    pools: State<'_, ShelfManager>,
     sort_field: Option<String>,
     sort_order: Option<String>,
     limit: u32,
@@ -236,7 +236,7 @@ pub async fn get_files_paginated(
 
 #[tauri::command]
 pub async fn get_files_with_tags(
-    pools: State<'_, GroupManager>,
+    pools: State<'_, ShelfManager>,
     sort_field: Option<String>,
     sort_order: Option<String>,
 ) -> Result<Vec<FileWithTags>, String> {
@@ -269,7 +269,7 @@ pub async fn get_files_with_tags(
 
 #[tauri::command]
 pub async fn get_file_info(
-    _pools: State<'_, GroupManager>,
+    _pools: State<'_, ShelfManager>,
     _file_id: String,
 ) -> Result<File, String> {
     // 実装予定
@@ -278,7 +278,7 @@ pub async fn get_file_info(
 
 #[tauri::command]
 pub async fn update_file_tags(
-    pools: State<'_, GroupManager>,
+    pools: State<'_, ShelfManager>,
     file_id: String,
     tag_ids: Vec<String>,
 ) -> Result<(), String> {
@@ -313,7 +313,7 @@ pub async fn update_file_tags(
 
 #[tauri::command]
 pub async fn get_file_tags(
-    pools: State<'_, GroupManager>,
+    pools: State<'_, ShelfManager>,
     file_id: String,
 ) -> Result<Vec<Tag>, String> {
     let db = Database;
@@ -325,7 +325,7 @@ pub async fn get_file_tags(
 
 #[tauri::command]
 pub async fn delete_file(
-    pools: State<'_, GroupManager>,
+    pools: State<'_, ShelfManager>,
     file_path: String,
 ) -> Result<(), String> {
     // ファイルパスの存在確認
@@ -364,7 +364,7 @@ pub async fn delete_file(
 
 #[tauri::command]
 pub async fn move_file(
-    _pools: State<'_, GroupManager>,
+    _pools: State<'_, ShelfManager>,
     _file_id: String,
     _new_path: String,
 ) -> Result<(), String> {
@@ -457,7 +457,7 @@ fn infer_mime_type(path: &std::path::Path) -> Option<String> {
         .map(String::from)
 }
 
-pub async fn scan_directory(pools: &GroupManager, directory_id: &str, path: &str) -> Result<(), String> {
+pub async fn scan_directory(pools: &ShelfManager, directory_id: &str, path: &str) -> Result<(), String> {
     let walker = WalkDir::new(path)
         .follow_links(false)
         .into_iter()
@@ -521,7 +521,7 @@ pub async fn scan_directory(pools: &GroupManager, directory_id: &str, path: &str
 
 #[tauri::command]
 pub async fn get_files_by_directory(
-    pools: State<'_, GroupManager>,
+    pools: State<'_, ShelfManager>,
     directory_id: String,
     sort_field: Option<String>,
     sort_order: Option<String>,
@@ -545,7 +545,7 @@ pub async fn get_files_by_directory(
 
 #[tauri::command]
 pub async fn get_files_by_directory_paginated(
-    pools: State<'_, GroupManager>,
+    pools: State<'_, ShelfManager>,
     directory_id: String,
     sort_field: Option<String>,
     sort_order: Option<String>,
@@ -571,7 +571,7 @@ pub async fn get_files_by_directory_paginated(
 
 #[tauri::command]
 pub async fn count_files(
-    pools: State<'_, GroupManager>,
+    pools: State<'_, ShelfManager>,
 ) -> Result<u32, String> {
     let db = Database;
     let data_pool = pools.get_active_data_pool().map_err(|e| e.to_string())?;
@@ -582,7 +582,7 @@ pub async fn count_files(
 
 #[tauri::command]
 pub async fn count_files_by_directory(
-    pools: State<'_, GroupManager>,
+    pools: State<'_, ShelfManager>,
     directory_id: String,
 ) -> Result<u32, String> {
     let db = Database;
@@ -594,7 +594,7 @@ pub async fn count_files_by_directory(
 
 #[tauri::command]
 pub async fn count_files_by_category(
-    pools: State<'_, GroupManager>,
+    pools: State<'_, ShelfManager>,
     directory_id: String,
 ) -> Result<std::collections::HashMap<String, u32>, String> {
     use std::collections::HashMap;
@@ -639,7 +639,7 @@ pub async fn count_files_by_category(
 
 #[tauri::command]
 pub async fn get_files_paginated_with_category(
-    pools: State<'_, GroupManager>,
+    pools: State<'_, ShelfManager>,
     category: String,
     sort_field: Option<String>,
     sort_order: Option<String>,
@@ -655,7 +655,7 @@ pub async fn get_files_paginated_with_category(
 
 #[tauri::command]
 pub async fn get_files_by_directory_paginated_with_category(
-    pools: State<'_, GroupManager>,
+    pools: State<'_, ShelfManager>,
     directory_id: String,
     category: String,
     sort_field: Option<String>,
@@ -672,7 +672,7 @@ pub async fn get_files_by_directory_paginated_with_category(
 
 #[tauri::command]
 pub async fn count_files_with_category(
-    pools: State<'_, GroupManager>,
+    pools: State<'_, ShelfManager>,
     category: String,
 ) -> Result<u32, String> {
     let db = Database;
@@ -684,7 +684,7 @@ pub async fn count_files_with_category(
 
 #[tauri::command]
 pub async fn count_files_by_directory_with_category(
-    pools: State<'_, GroupManager>,
+    pools: State<'_, ShelfManager>,
     directory_id: String,
     category: String,
 ) -> Result<u32, String> {
@@ -744,7 +744,7 @@ fn build_category_where_clause(category: &str) -> String {
 
 #[tauri::command]
 pub async fn get_files_by_directory_with_tags(
-    pools: State<'_, GroupManager>,
+    pools: State<'_, ShelfManager>,
     directory_id: String,
     sort_field: Option<String>,
     sort_order: Option<String>,
@@ -778,7 +778,7 @@ pub async fn get_files_by_directory_with_tags(
 
 #[tauri::command]
 pub async fn rescan_directory(
-    pools: State<'_, GroupManager>,
+    pools: State<'_, ShelfManager>,
     directory_id: String,
 ) -> Result<(), String> {
     let db = Database;
@@ -806,7 +806,7 @@ pub async fn rescan_directory(
 
 #[tauri::command]
 pub async fn open_file(
-    pools: State<'_, GroupManager>,
+    pools: State<'_, ShelfManager>,
     file_path: String,
 ) -> Result<(), String> {
     // ファイルパスの存在確認
@@ -1122,7 +1122,7 @@ fn get_tag_name(tag: exif::Tag) -> String {
 
 /// ディレクトリツリー全体のファイル分析と自動タグ付けを実行する関数
 async fn analyze_and_auto_tag_directory(
-    pools: &GroupManager,
+    pools: &ShelfManager,
     _directory_id: &str,
     directory_path: &str,
     threshold: f64,
@@ -1156,7 +1156,7 @@ async fn analyze_and_auto_tag_directory(
 
 /// 単一ディレクトリのファイル分析と自動タグ付けを実行する関数
 async fn analyze_and_auto_tag_single_directory(
-    pools: &GroupManager,
+    pools: &ShelfManager,
     directory_path: &std::path::Path,
     threshold: f64,
 ) -> Result<(), String> {
