@@ -48,8 +48,22 @@
   margin-bottom: 2rem;
 }
 
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
 .sidebar-section h3 {
   margin: 0 0 1rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.section-header h3 {
+  margin: 0;
   font-size: 1rem;
   font-weight: 600;
   color: #374151;
@@ -59,8 +73,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  width: 100%;
-  padding: 0.5rem;
+  padding: 0.5rem 0.75rem;
   background-color: #3b82f6;
   color: white;
   border: none;
@@ -70,8 +83,14 @@
   transition: background-color 0.2s;
 }
 
-.add-button:hover {
+.add-button:hover:not(:disabled) {
   background-color: #2563eb;
+}
+
+.add-button:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .directory-list,

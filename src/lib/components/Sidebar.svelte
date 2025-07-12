@@ -37,11 +37,13 @@
   <GroupManager {appViewModel} />
   
   <div class="sidebar-section">
-    <h3>{$t("common.sidebar.directories")}</h3>
-    <button onclick={onAddDirectory} class="add-button" {disabled}>
-      <FolderPlus size={16} />
-      {$t("common.sidebar.addDirectory")}
-    </button>
+    <div class="section-header">
+      <h3>{$t("common.sidebar.directories")}</h3>
+      <button onclick={onAddDirectory} class="add-button" {disabled}>
+        <FolderPlus size={16} />
+        {$t("common.sidebar.addDirectory")}
+      </button>
+    </div>
     <div class="directory-list">
       <!-- すべてのファイルオプション -->
       <div

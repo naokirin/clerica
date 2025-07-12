@@ -15,7 +15,7 @@
     "allFiles": "All Files",
     "allFilesDescription": "Show files from all directories",
     "tags": "Tags",
-    "addDirectory": "Add Directory",
+    "addDirectory": "Add",
     "addTag": "Create Tag",
     "rescan": "Rescan",
     "remove": "Remove"

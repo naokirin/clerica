@@ -13,9 +13,9 @@
   "sidebar": {
     "directories": "ディレクトリ",
     "allFiles": "すべてのファイル",
-    "allFilesDescription": "全ディレクトリのファイルを表示",
+    "allFilesDescription": "全ファイルを表示",
     "tags": "タグ",
-    "addDirectory": "ディレクトリを追加",
+    "addDirectory": "追加",
     "addTag": "タグを作成",
     "rescan": "再スキャン",
     "remove": "削除"

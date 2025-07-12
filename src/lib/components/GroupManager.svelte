@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { groupsApi, type Group } from '$lib/api/groups';
-  import { onMount } from 'svelte';
-  import { Edit, Trash2 } from 'lucide-svelte';
-  import type { AppViewModel } from '$lib/viewmodels/AppViewModel';
+  import { groupsApi, type Group } from "$lib/api/groups";
+  import { onMount } from "svelte";
+  import { Edit, Trash2 } from "lucide-svelte";
+  import type { AppViewModel } from "$lib/viewmodels/AppViewModel";
 
   interface Props {
     appViewModel?: AppViewModel;
@@ -11,11 +11,11 @@
   let { appViewModel }: Props = $props();
 
   let groups = $state<Group[]>([]);
-  let activeGroupId = $state('');
+  let activeGroupId = $state("");
   let showCreateForm = $state(false);
-  let newGroupName = $state('');
+  let newGroupName = $state("");
   let editingGroupId = $state<string | null>(null);
-  let editingGroupName = $state('');
+  let editingGroupName = $state("");
   let loading = $state(false);
   let error = $state<string | null>(null);
 
@@ -24,41 +24,41 @@
       await loadGroups();
       await loadActiveGroup();
     } catch (e) {
-      console.error('初期化エラー:', e);
+      console.error("初期化エラー:", e);
       error = e instanceof Error ? e.message : String(e);
     }
   });
 
   async function loadGroups() {
     try {
-      console.log('グループ読み込み開始...');
+      console.log("グループ読み込み開始...");
       groups = await groupsApi.getGroups();
-      console.log('グループ読み込み完了:', groups);
+      console.log("グループ読み込み完了:", groups);
     } catch (error) {
-      console.error('グループの読み込みに失敗しました:', error);
+      console.error("グループの読み込みに失敗しました:", error);
       throw error;
     }
   }
 
   async function loadActiveGroup() {
     try {
-      console.log('アクティブグループ読み込み開始...');
+      console.log("アクティブグループ読み込み開始...");
       activeGroupId = await groupsApi.getActiveGroupId();
-      console.log('アクティブグループ読み込み完了:', activeGroupId);
+      console.log("アクティブグループ読み込み完了:", activeGroupId);
     } catch (error) {
-      console.error('アクティブグループの読み込みに失敗しました:', error);
+      console.error("アクティブグループの読み込みに失敗しました:", error);
       throw error;
     }
   }
 
   async function switchGroup(groupId: string) {
     if (loading || groupId === activeGroupId) return;
-    
+
     loading = true;
     try {
       await groupsApi.switchGroup(groupId);
       activeGroupId = groupId;
-      
+
       // AppViewModelを使ってデータを再読み込み
       if (appViewModel) {
         await appViewModel.switchGroup(groupId);
@@ -67,8 +67,8 @@
         window.location.reload();
       }
     } catch (error) {
-      console.error('グループの切り替えに失敗しました:', error);
-      alert('グループの切り替えに失敗しました');
+      console.error("グループの切り替えに失敗しました:", error);
+      alert("グループの切り替えに失敗しました");
     } finally {
       loading = false;
     }
@@ -80,11 +80,11 @@
     try {
       await groupsApi.createGroup({ name: newGroupName.trim() });
       await loadGroups();
-      newGroupName = '';
+      newGroupName = "";
       showCreateForm = false;
     } catch (error) {
-      console.error('グループの作成に失敗しました:', error);
-      alert('グループの作成に失敗しました');
+      console.error("グループの作成に失敗しました:", error);
+      alert("グループの作成に失敗しました");
     }
   }
 
@@ -99,24 +99,28 @@
     try {
       await groupsApi.updateGroupName({
         id: editingGroupId,
-        name: editingGroupName.trim()
+        name: editingGroupName.trim(),
       });
       await loadGroups();
       editingGroupId = null;
-      editingGroupName = '';
+      editingGroupName = "";
     } catch (error) {
-      console.error('グループ名の更新に失敗しました:', error);
-      alert('グループ名の更新に失敗しました');
+      console.error("グループ名の更新に失敗しました:", error);
+      alert("グループ名の更新に失敗しました");
     }
   }
 
   function cancelEdit() {
     editingGroupId = null;
-    editingGroupName = '';
+    editingGroupName = "";
   }
 
   async function deleteGroup(groupId: string) {
-    if (!confirm('このグループを削除しますか？グループ内のすべてのデータが削除されます。')) {
+    if (
+      !confirm(
+        "このグループを削除しますか？グループ内のすべてのデータが削除されます。",
+      )
+    ) {
       return;
     }
 
@@ -125,32 +129,36 @@
       await loadGroups();
       await loadActiveGroup();
     } catch (error) {
-      console.error('グループの削除に失敗しました:', error);
-      alert('グループの削除に失敗しました: ' + error);
+      console.error("グループの削除に失敗しました:", error);
+      alert("グループの削除に失敗しました: " + error);
     }
   }
 </script>
 
-<div class="group-manager">
-  
+<div class="sidebar-section">
   {#if error}
     <div class="error-message">
       エラー: {error}
-      <button on:click={() => {error = null; loadGroups(); loadActiveGroup();}}>再試行</button>
+      <button
+        on:click={() => {
+          error = null;
+          loadGroups();
+          loadActiveGroup();
+        }}>再試行</button
+      >
     </div>
   {/if}
-  
-  <div class="group-header">
+
+  <div class="section-header">
     <h3>グループ管理</h3>
-    <button 
-      class="btn-create"
-      on:click={() => showCreateForm = !showCreateForm}
+    <button
+      class="add-button"
+      on:click={() => (showCreateForm = !showCreateForm)}
       disabled={loading}
     >
       新規作成
     </button>
   </div>
-  
 
   {#if showCreateForm}
     <div class="create-form">
@@ -158,62 +166,79 @@
         type="text"
         placeholder="グループ名を入力"
         bind:value={newGroupName}
-        on:keydown={(e) => e.key === 'Enter' && createGroup()}
+        on:keydown={(e) => e.key === "Enter" && createGroup()}
       />
       <div class="form-actions">
         <button class="btn-save" on:click={createGroup}>作成</button>
-        <button class="btn-cancel" on:click={() => {showCreateForm = false; newGroupName = '';}}>
+        <button
+          class="btn-cancel"
+          on:click={() => {
+            showCreateForm = false;
+            newGroupName = "";
+          }}
+        >
           キャンセル
         </button>
       </div>
     </div>
   {/if}
 
-  <div class="groups-list">
+  <div class="group-list">
     {#each groups as group (group.id)}
-      <div class="group-item" class:active={group.id === activeGroupId}>
+      <div
+        class="group-item {group.id === activeGroupId ? 'selected' : ''}"
+        on:click={() => switchGroup(group.id)}
+      >
         {#if editingGroupId === group.id}
           <div class="edit-form">
             <input
               type="text"
               bind:value={editingGroupName}
-              on:keydown={(e) => e.key === 'Enter' && saveEdit()}
+              on:keydown={(e) => e.key === "Enter" && saveEdit()}
             />
             <div class="edit-actions">
               <button class="btn-save" on:click={saveEdit}>保存</button>
-              <button class="btn-cancel" on:click={cancelEdit}>キャンセル</button>
+              <button class="btn-cancel" on:click={cancelEdit}
+                >キャンセル</button
+              >
             </div>
           </div>
         {:else}
-          <div class="group-content" on:click={() => switchGroup(group.id)}>
-            <div class="group-info">
-              <div class="group-name">{group.name}</div>
-              <div class="group-status">
-                {#if group.id === activeGroupId}
-                  <span class="active-status">現在アクティブなグループ</span>
-                {:else}
-                  <span class="inactive-status">クリックして切り替え</span>
-                {/if}
-              </div>
+          <div class="group-content">
+            <div class="group-name">{group.name}</div>
+            <div
+              class="group-status {group.id === activeGroupId ? 'active' : ''}"
+            >
+              {#if group.id === activeGroupId}
+                アクティブ
+              {:else}
+                クリックして切り替え
+              {/if}
             </div>
-            <div class="group-actions">
-              <button 
-                class="icon-btn edit-btn" 
-                on:click={(e) => {e.stopPropagation(); startEdit(group);}}
-                disabled={loading}
-                title="グループ名を編集"
-              >
-                <Edit size={14} />
-              </button>
-              <button 
-                class="icon-btn delete-btn" 
-                on:click={(e) => {e.stopPropagation(); deleteGroup(group.id);}}
-                disabled={loading || groups.length <= 1}
-                title="グループを削除"
-              >
-                <Trash2 size={14} />
-              </button>
-            </div>
+          </div>
+          <div class="group-actions">
+            <button
+              class="edit-btn"
+              on:click={(e) => {
+                e.stopPropagation();
+                startEdit(group);
+              }}
+              disabled={loading}
+              title="グループ名を編集"
+            >
+              <Edit size={14} />
+            </button>
+            <button
+              class="delete-btn"
+              on:click={(e) => {
+                e.stopPropagation();
+                deleteGroup(group.id);
+              }}
+              disabled={loading || groups.length <= 1}
+              title="グループを削除"
+            >
+              <Trash2 size={14} />
+            </button>
           </div>
         {/if}
       </div>
@@ -226,227 +251,230 @@
 </div>
 
 <style>
-  .group-manager {
-    background: var(--bg-secondary, #f5f5f5);
-    border-radius: 8px;
-    padding: 16px;
-    margin-bottom: 16px;
-  }
-
-  .group-header {
+  .section-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 16px;
+    margin-bottom: 0.75rem;
   }
 
-  .group-header h3 {
+  .section-header h3 {
     margin: 0;
-    color: var(--text-primary);
+    font-size: 1rem;
+    font-weight: 600;
+    color: #374151;
   }
 
-  .btn-create, .btn-save, .btn-cancel, .btn-edit, .btn-delete {
-    padding: 6px 12px;
+  .add-button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background-color: #3b82f6;
+    color: white;
     border: none;
-    border-radius: 4px;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
     cursor: pointer;
-    font-size: 12px;
     transition: background-color 0.2s;
   }
 
-  .btn-create {
-    background: #007bff;
-    color: white;
-    border: 1px solid #007bff;
+  .add-button:hover:not(:disabled) {
+    background-color: #2563eb;
   }
 
-  .btn-create:hover:not(:disabled) {
-    background: #0056b3;
-    border-color: #0056b3;
-  }
-
-  .btn-create:disabled {
-    background: #6c757d;
-    border-color: #6c757d;
-    color: white;
+  .add-button:disabled {
+    background-color: #9ca3af;
+    cursor: not-allowed;
     opacity: 0.6;
   }
 
-  .btn-save {
-    background: #28a745;
-    color: white;
-    border: 1px solid #28a745;
-  }
-
-  .btn-save:hover:not(:disabled) {
-    background: #218838;
-    border-color: #218838;
-  }
-
+  .btn-save,
   .btn-cancel {
-    background: #6c757d;
-    color: white;
-    border: 1px solid #6c757d;
-  }
-
-  .btn-cancel:hover:not(:disabled) {
-    background: #5a6268;
-    border-color: #5a6268;
-  }
-
-
-  .create-form, .edit-form {
-    background: var(--bg-primary);
-    padding: 12px;
-    border-radius: 6px;
-    margin-bottom: 12px;
-  }
-
-  .create-form input, .edit-form input {
-    width: 100%;
-    padding: 8px;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    margin-bottom: 8px;
-    background: var(--bg-primary);
-    color: var(--text-primary);
-  }
-
-  .form-actions, .edit-actions {
-    display: flex;
-    gap: 8px;
-  }
-
-  .groups-list {
-    max-height: 300px;
-    overflow-y: auto;
-  }
-
-  .group-item {
-    border: 1px solid var(--border-color, #ddd);
-    border-radius: 6px;
-    margin-bottom: 8px;
-    transition: border-color 0.2s, box-shadow 0.2s;
-    background: var(--bg-primary, white);
-  }
-
-  .group-item.active {
-    border-color: #007bff;
-    background: rgba(0, 123, 255, 0.08);
-    box-shadow: 0 2px 4px rgba(0, 123, 255, 0.15);
-  }
-
-  .group-item.active .group-name {
-    color: #007bff;
-    font-weight: 600;
-  }
-
-  .group-item.active .group-content:hover {
-    background: rgba(0, 123, 255, 0.12);
-  }
-
-  .group-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px;
+    padding: 0.375rem 0.75rem;
+    border: none;
+    border-radius: 0.25rem;
     cursor: pointer;
+    font-size: 0.75rem;
     transition: background-color 0.2s;
   }
 
-  .group-content:hover {
-    background: rgba(0, 123, 255, 0.05);
+  .btn-save {
+    background: #10b981;
+    color: white;
   }
 
-  .group-info {
+  .btn-save:hover:not(:disabled) {
+    background: #059669;
+  }
+
+  .btn-cancel {
+    background: #6b7280;
+    color: white;
+  }
+
+  .btn-cancel:hover:not(:disabled) {
+    background: #4b5563;
+  }
+
+  .create-form,
+  .edit-form {
+    background: #f9fafb;
+    padding: 0.75rem;
+    border-radius: 0.25rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .create-form input,
+  .edit-form input {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.25rem;
+    margin-bottom: 0.5rem;
+    background: white;
+    color: #111827;
+  }
+
+  .form-actions,
+  .edit-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .group-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .group-item {
+    position: relative;
+    margin-bottom: 0.25rem;
+    background-color: #f9fafb;
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+    transition: background-color 0.2s;
+    cursor: pointer;
+    border: 1px solid transparent;
+  }
+
+  .group-item:hover {
+    background-color: #f3f4f6;
+  }
+
+  .group-item.selected {
+    background-color: #e0f2fe;
+    border-left: 3px solid #3b82f6;
+  }
+
+  .group-item.selected .group-content {
+    padding-left: 0.75rem;
+  }
+
+  .group-content {
+    padding: 0.5rem;
+    padding-right: 4rem;
     flex: 1;
     min-width: 0;
   }
 
   .group-name {
     font-weight: 500;
-    color: var(--text-primary, #333);
-    margin-bottom: 4px;
+    color: #111827;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
   .group-status {
-    font-size: 11px;
-    color: var(--text-muted, #666);
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-top: 0.25rem;
+    opacity: 0.8;
   }
 
-  .active-status {
-    color: #007bff;
+  .group-status.active {
+    color: #10b981;
     font-weight: 500;
   }
 
-  .inactive-status {
-    color: var(--text-muted, #666);
-  }
-
   .group-actions {
+    position: absolute;
+    top: 50%;
+    right: 0.5rem;
+    transform: translateY(-50%);
     display: flex;
-    gap: 4px;
-    margin-left: 8px;
+    gap: 0.25rem;
+    opacity: 0;
+    transition: opacity 0.2s;
   }
 
-  .icon-btn {
-    padding: 4px;
+  .group-item:hover .group-actions {
+    opacity: 1;
+  }
+
+  .edit-btn,
+  .delete-btn {
+    padding: 0.25rem;
     border: none;
-    border-radius: 4px;
+    border-radius: 0.25rem;
     cursor: pointer;
-    background: transparent;
-    color: var(--text-muted, #666);
-    transition: all 0.2s;
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: background-color 0.2s;
   }
 
-  .icon-btn:hover:not(:disabled) {
-    background: rgba(0, 0, 0, 0.1);
+  .edit-btn {
+    background-color: #10b981;
+    color: white;
   }
 
   .edit-btn:hover:not(:disabled) {
-    color: #17a2b8;
-    background: rgba(23, 162, 184, 0.1);
+    background-color: #059669;
+  }
+
+  .delete-btn {
+    background-color: #ef4444;
+    color: white;
   }
 
   .delete-btn:hover:not(:disabled) {
-    color: #dc3545;
-    background: rgba(220, 53, 69, 0.1);
+    background-color: #dc2626;
   }
 
-  .icon-btn:disabled {
+  .edit-btn:disabled,
+  .delete-btn:disabled {
     opacity: 0.4;
     cursor: not-allowed;
   }
 
   .loading {
     text-align: center;
-    color: var(--text-muted);
+    color: #6b7280;
     font-style: italic;
-    margin-top: 16px;
+    margin-top: 1rem;
   }
 
   .error-message {
-    background: #ffebee;
-    color: #c62828;
-    padding: 12px;
-    border-radius: 6px;
-    margin-bottom: 16px;
-    border: 1px solid #ef5350;
+    background: #fee2e2;
+    color: #dc2626;
+    padding: 0.75rem;
+    border-radius: 0.375rem;
+    margin-bottom: 1rem;
+    border: 1px solid #fecaca;
+    font-size: 0.875rem;
   }
 
   .error-message button {
-    margin-left: 8px;
-    padding: 4px 8px;
-    background: #c62828;
+    margin-left: 0.5rem;
+    padding: 0.25rem 0.5rem;
+    background: #dc2626;
     color: white;
     border: none;
-    border-radius: 4px;
+    border-radius: 0.25rem;
     cursor: pointer;
+    font-size: 0.75rem;
   }
 </style>
