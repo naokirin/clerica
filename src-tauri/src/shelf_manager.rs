@@ -65,7 +65,7 @@ impl ShelfManager {
         .execute(&self.settings_pool)
         .await?;
 
-        // デフォルトグループが存在しない場合は作成
+        // デフォルトシェルフが存在しない場合は作成
         let shelves = self.get_shelves().await?;
         if shelves.is_empty() {
             let default_shelf = Shelf {
@@ -75,8 +75,9 @@ impl ShelfManager {
             };
             self.create_shelf(&default_shelf).await?;
             self.set_active_shelf(&default_shelf.id).await?;
+            *self.active_shelf_id.lock().unwrap() = default_shelf.id;
         } else {
-            // アクティブグループを取得または最初のグループを設定
+            // アクティブシェルフを取得または最初のシェルフを設定
             let active_shelf_id = match self.get_active_shelf_id().await {
                 Ok(id) => id,
                 Err(_) => {
@@ -88,9 +89,11 @@ impl ShelfManager {
             *self.active_shelf_id.lock().unwrap() = active_shelf_id;
         }
 
-        // アクティブグループのデータベース接続を初期化
-        let active_id = self.active_shelf_id.lock().unwrap().clone();
-        self.get_or_create_data_pool(&active_id).await?;
+        // すべてのシェルフのデータベース接続を初期化
+        let shelves = self.get_shelves().await?;
+        for shelf in &shelves {
+            self.get_or_create_data_pool(&shelf.id).await?;
+        }
 
         Ok(())
     }
@@ -125,7 +128,7 @@ impl ShelfManager {
         // グループが1つしかない場合は削除を拒否
         let shelves = self.get_shelves().await?;
         if shelves.len() <= 1 {
-            return Err("最後のグループは削除できません".into());
+            return Err("最後のシェルフは削除できません".into());
         }
 
         // アクティブグループの場合は他のグループに切り替え

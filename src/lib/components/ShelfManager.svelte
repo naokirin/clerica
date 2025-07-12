@@ -45,6 +45,11 @@
       console.log("アクティブシェルフ読み込み開始...");
       activeShelfId = await shelvesApi.getActiveShelfId();
       console.log("アクティブシェルフ読み込み完了:", activeShelfId);
+      
+      // AppViewModelにアクティブシェルフIDを設定
+      if (appViewModel && activeShelfId) {
+        appViewModel.switchShelf(activeShelfId);
+      }
     } catch (error) {
       console.error("アクティブシェルフの読み込みに失敗しました:", error);
       throw error;

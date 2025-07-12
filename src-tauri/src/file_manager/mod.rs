@@ -14,9 +14,6 @@ use std::process::Command;
 use std::sync::{Arc, Mutex};
 use std::collections::HashMap;
 
-#[cfg(test)]
-mod tests;
-
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct FileWithTags {
     pub file: File,

@@ -46,14 +46,20 @@ async fn main() {
 
     // データベース初期化（設定のみ - データベースは各シェルフで管理）
     let db = database::Database;
-    if let Err(e) = db.init_database(
-        &shelf_manager.get_active_data_pool().unwrap(),
-        db_manager.get_settings_pool()
-    ).await {
-        eprintln!("データベース初期化エラー: {e}");
-        std::process::exit(1);
+    match shelf_manager.get_active_data_pool() {
+        Ok(active_pool) => {
+            if let Err(e) = db.init_database(&active_pool, db_manager.get_settings_pool()).await {
+                eprintln!("データベース初期化エラー: {e}");
+                std::process::exit(1);
+            }
+            println!("マイグレーションが完了しました。");
+        }
+        Err(e) => {
+            eprintln!("アクティブデータプールの取得に失敗しました: {e}");
+            eprintln!("データベースが正常に初期化されていない可能性があります。");
+            std::process::exit(1);
+        }
     }
-    println!("マイグレーションが完了しました。");
 
     // EXIF設定の初期化
     if let Err(e) = exif_config::initialize_exif_config() {
