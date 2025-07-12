@@ -3,7 +3,7 @@ use uuid::Uuid;
 use chrono::Utc;
 
 use crate::database::{Database, DatabaseTrait, CustomMetadataKey, CustomMetadataValue};
-use crate::database_manager::DatabaseManager;
+use crate::group_manager::GroupManager;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct CreateCustomMetadataKeyRequest {
@@ -37,7 +37,7 @@ pub struct SetCustomMetadataValueRequest {
 /// カスタムメタデータキーを作成
 #[tauri::command]
 pub async fn create_custom_metadata_key(
-    db_manager: State<'_, DatabaseManager>,
+    db_manager: State<'_, GroupManager>,
     request: CreateCustomMetadataKeyRequest,
 ) -> Result<CustomMetadataKey, String> {
     // データ型の妥当性チェック
@@ -77,7 +77,7 @@ pub async fn create_custom_metadata_key(
 /// 全てのカスタムメタデータキーを取得
 #[tauri::command]
 pub async fn get_custom_metadata_keys(
-    db_manager: State<'_, DatabaseManager>,
+    db_manager: State<'_, GroupManager>,
 ) -> Result<Vec<CustomMetadataKey>, String> {
     let db = Database;
     match db.get_all_custom_metadata_keys(db_manager.get_settings_pool()).await {
@@ -89,7 +89,7 @@ pub async fn get_custom_metadata_keys(
 /// カスタムメタデータキーを更新
 #[tauri::command]
 pub async fn update_custom_metadata_key(
-    db_manager: State<'_, DatabaseManager>,
+    db_manager: State<'_, GroupManager>,
     request: UpdateCustomMetadataKeyRequest,
 ) -> Result<CustomMetadataKey, String> {
     // データ型の妥当性チェック
@@ -137,11 +137,11 @@ pub async fn update_custom_metadata_key(
 /// カスタムメタデータキーを削除
 #[tauri::command]
 pub async fn delete_custom_metadata_key(
-    db_manager: State<'_, DatabaseManager>,
+    db_manager: State<'_, GroupManager>,
     key_id: String,
 ) -> Result<(), String> {
     let db = Database;
-    match db.delete_custom_metadata_key(db_manager.get_settings_pool(), db_manager.get_data_pool(), &key_id).await {
+    match db.delete_custom_metadata_key(db_manager.get_settings_pool(), &db_manager.get_active_data_pool().map_err(|e| e.to_string())?, &key_id).await {
         Ok(_) => Ok(()),
         Err(e) => Err(format!("カスタムメタデータキーの削除に失敗しました: {e}")),
     }
@@ -150,7 +150,7 @@ pub async fn delete_custom_metadata_key(
 /// 名前でカスタムメタデータキーを取得
 #[tauri::command]
 pub async fn get_custom_metadata_key_by_name(
-    db_manager: State<'_, DatabaseManager>,
+    db_manager: State<'_, GroupManager>,
     name: String,
 ) -> Result<Option<CustomMetadataKey>, String> {
     let db = Database;
@@ -163,11 +163,11 @@ pub async fn get_custom_metadata_key_by_name(
 /// カスタムメタデータ値を設定
 #[tauri::command]
 pub async fn set_custom_metadata_value(
-    db_manager: State<'_, DatabaseManager>,
+    db_manager: State<'_, GroupManager>,
     request: SetCustomMetadataValueRequest,
 ) -> Result<CustomMetadataValue, String> {
     let db = Database;
-    match db.set_custom_metadata_value(db_manager.get_data_pool(), db_manager.get_settings_pool(), &request.file_id, &request.key_id, request.value).await {
+    match db.set_custom_metadata_value(&db_manager.get_active_data_pool().map_err(|e| e.to_string())?, db_manager.get_settings_pool(), &request.file_id, &request.key_id, request.value).await {
         Ok(value) => Ok(value),
         Err(e) => Err(format!("カスタムメタデータ値の設定に失敗しました: {e}")),
     }
@@ -176,11 +176,11 @@ pub async fn set_custom_metadata_value(
 /// ファイルのカスタムメタデータ値を全て取得
 #[tauri::command]
 pub async fn get_custom_metadata_values_by_file(
-    db_manager: State<'_, DatabaseManager>,
+    db_manager: State<'_, GroupManager>,
     file_id: String,
 ) -> Result<Vec<CustomMetadataValue>, String> {
     let db = Database;
-    match db.get_custom_metadata_values_by_file(db_manager.get_data_pool(), &file_id).await {
+    match db.get_custom_metadata_values_by_file(&db_manager.get_active_data_pool().map_err(|e| e.to_string())?, &file_id).await {
         Ok(values) => Ok(values),
         Err(e) => Err(format!("カスタムメタデータ値の取得に失敗しました: {e}")),
     }
@@ -189,12 +189,12 @@ pub async fn get_custom_metadata_values_by_file(
 /// 特定のカスタムメタデータ値を取得
 #[tauri::command]
 pub async fn get_custom_metadata_value(
-    db_manager: State<'_, DatabaseManager>,
+    db_manager: State<'_, GroupManager>,
     file_id: String,
     key_id: String,
 ) -> Result<Option<CustomMetadataValue>, String> {
     let db = Database;
-    match db.get_custom_metadata_value(db_manager.get_data_pool(), &file_id, &key_id).await {
+    match db.get_custom_metadata_value(&db_manager.get_active_data_pool().map_err(|e| e.to_string())?, &file_id, &key_id).await {
         Ok(value) => Ok(value),
         Err(e) => Err(format!("カスタムメタデータ値の取得に失敗しました: {e}")),
     }
@@ -203,12 +203,12 @@ pub async fn get_custom_metadata_value(
 /// カスタムメタデータ値を削除
 #[tauri::command]
 pub async fn delete_custom_metadata_value(
-    db_manager: State<'_, DatabaseManager>,
+    db_manager: State<'_, GroupManager>,
     file_id: String,
     key_id: String,
 ) -> Result<(), String> {
     let db = Database;
-    match db.delete_custom_metadata_value(db_manager.get_data_pool(), &file_id, &key_id).await {
+    match db.delete_custom_metadata_value(&db_manager.get_active_data_pool().map_err(|e| e.to_string())?, &file_id, &key_id).await {
         Ok(_) => Ok(()),
         Err(e) => Err(format!("カスタムメタデータ値の削除に失敗しました: {e}")),
     }
