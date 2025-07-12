@@ -1,5 +1,5 @@
 use crate::database::{Database, DatabaseTrait, File};
-use crate::DatabaseManager;
+use crate::GroupManager;
 use chrono::Utc;
 use notify::{Event, EventKind, RecursiveMode, Watcher};
 use sqlx::SqlitePool;
@@ -19,7 +19,7 @@ pub struct FileWatcher {
 
 impl FileWatcher {
     pub fn new(
-        pools: Arc<DatabaseManager>,
+        pools: Arc<GroupManager>,
         app_handle: Option<AppHandle>,
     ) -> Result<Self, notify::Error> {
         let (tx, rx) = mpsc::channel();
@@ -124,7 +124,7 @@ impl FileWatcher {
 
 #[tauri::command]
 pub async fn start_watching(
-    pools: State<'_, DatabaseManager>,
+    pools: State<'_, GroupManager>,
     watcher: State<'_, Arc<Mutex<FileWatcher>>>,
     directory_id: String,
     path: String,
@@ -145,7 +145,7 @@ pub async fn start_watching(
 
 #[tauri::command]
 pub async fn stop_watching(
-    _pools: State<'_, DatabaseManager>,
+    _pools: State<'_, GroupManager>,
     watcher: State<'_, Arc<Mutex<FileWatcher>>>,
     directory_id: String,
 ) -> Result<(), String> {
@@ -157,7 +157,7 @@ pub async fn stop_watching(
 }
 
 pub async fn handle_file_event(
-    pools: &DatabaseManager,
+    pools: &GroupManager,
     event: Event,
     app_handle: Option<AppHandle>,
 ) -> Result<(), String> {
@@ -179,7 +179,7 @@ pub async fn handle_file_event(
 }
 
 async fn handle_create_event(
-    pools: &DatabaseManager,
+    pools: &GroupManager,
     paths: &[std::path::PathBuf],
     app_handle: &Option<AppHandle>,
 ) -> Result<(), String> {
@@ -189,11 +189,12 @@ async fn handle_create_event(
         
         match fs::metadata(path) {
             Ok(metadata) => {
-                match find_directory_id_for_path(pools.get_data_pool(), path).await {
+                let data_pool = pools.get_active_data_pool().map_err(|e| e.to_string())?;
+                match find_directory_id_for_path(&data_pool, path).await {
                     Ok(directory_id) => {
                         let file = create_file_from_metadata(path, &metadata, &directory_id);
                         
-                        match db.add_file(pools.get_data_pool(), &file).await {
+                        match db.add_file(&data_pool, &file).await {
                             Ok(()) => {
                                 notify_ui(app_handle, "file_created", &file.path);
                             }
@@ -215,7 +216,7 @@ async fn handle_create_event(
 }
 
 async fn handle_remove_event(
-    pools: &DatabaseManager,
+    pools: &GroupManager,
     paths: &[std::path::PathBuf],
     app_handle: &Option<AppHandle>,
 ) -> Result<(), String> {
@@ -224,7 +225,8 @@ async fn handle_remove_event(
     for path in paths {
         let path_str = path.to_string_lossy().to_string();
         
-        match db.remove_file_by_path(pools.get_data_pool(), &path_str).await {
+        let data_pool = pools.get_active_data_pool().map_err(|e| e.to_string())?;
+        match db.remove_file_by_path(&data_pool, &path_str).await {
             Ok(()) => {
                 notify_ui(app_handle, "file_deleted", &path_str);
             }
@@ -236,7 +238,7 @@ async fn handle_remove_event(
 }
 
 async fn handle_modify_event(
-    pools: &DatabaseManager,
+    pools: &GroupManager,
     paths: &[std::path::PathBuf],
     app_handle: &Option<AppHandle>,
 ) -> Result<(), String> {
@@ -256,7 +258,7 @@ async fn handle_modify_event(
 }
 
 async fn handle_modify_with_metadata(
-    pools: &DatabaseManager,
+    pools: &GroupManager,
     path: &Path,
     metadata: &fs::Metadata,
     app_handle: &Option<AppHandle>,
@@ -268,8 +270,9 @@ async fn handle_modify_with_metadata(
     let inode = metadata.ino() as i64;
     let device_id = Some(metadata.dev() as i64);
 
+    let data_pool = pools.get_active_data_pool().map_err(|e| e.to_string())?;
     // パスによる存在確認
-    match db.file_exists_by_path(pools.get_data_pool(), &path_str).await {
+    match db.file_exists_by_path(&data_pool, &path_str).await {
         Ok(exists) => {
             if exists {
                 handle_existing_file_update(pools, &path_str, metadata, app_handle).await
@@ -285,14 +288,15 @@ async fn handle_modify_with_metadata(
 }
 
 async fn handle_existing_file_update(
-    pools: &DatabaseManager,
+    pools: &GroupManager,
     path_str: &str,
     metadata: &fs::Metadata,
     app_handle: &Option<AppHandle>,
 ) -> Result<(), String> {
     let db = Database;
+    let data_pool = pools.get_active_data_pool().map_err(|e| e.to_string())?;
     
-    match db.update_file_metadata(pools.get_data_pool(), path_str, metadata).await {
+    match db.update_file_metadata(&data_pool, path_str, metadata).await {
         Ok(()) => {
             notify_ui(app_handle, "file_modified", path_str);
         }
@@ -303,7 +307,7 @@ async fn handle_existing_file_update(
 }
 
 async fn handle_non_existing_file(
-    pools: &DatabaseManager,
+    pools: &GroupManager,
     path: &Path,
     path_str: &str,
     inode: i64,
@@ -313,8 +317,9 @@ async fn handle_non_existing_file(
 ) -> Result<(), String> {
     let db = Database;
 
+    let data_pool = pools.get_active_data_pool().map_err(|e| e.to_string())?;
     // inode番号で検索（ファイル名変更の可能性）
-    match db.find_file_by_inode(pools.get_data_pool(), inode, device_id).await {
+    match db.find_file_by_inode(&data_pool, inode, device_id).await {
         Ok(Some(existing_file)) => {
             handle_file_rename(pools, path, path_str, &existing_file, app_handle).await
         }
@@ -329,7 +334,7 @@ async fn handle_non_existing_file(
 }
 
 async fn handle_file_rename(
-    pools: &DatabaseManager,
+    pools: &GroupManager,
     path: &Path,
     path_str: &str,
     existing_file: &File,
@@ -343,7 +348,8 @@ async fn handle_file_rename(
         .unwrap_or("unknown")
         .to_string();
 
-    match db.update_file_path(pools.get_data_pool(), &existing_file.id, path_str, &new_name).await {
+    let data_pool = pools.get_active_data_pool().map_err(|e| e.to_string())?;
+    match db.update_file_path(&data_pool, &existing_file.id, path_str, &new_name).await {
         Ok(()) => {
             notify_ui(app_handle, "file_renamed", path_str);
         }
@@ -356,18 +362,19 @@ async fn handle_file_rename(
 }
 
 async fn handle_new_file_from_move(
-    pools: &DatabaseManager,
+    pools: &GroupManager,
     path: &Path,
     metadata: &fs::Metadata,
     app_handle: &Option<AppHandle>,
 ) -> Result<(), String> {
     let db = Database;
 
-    match find_directory_id_for_path(pools.get_data_pool(), path).await {
+    let data_pool = pools.get_active_data_pool().map_err(|e| e.to_string())?;
+    match find_directory_id_for_path(&data_pool, path).await {
         Ok(directory_id) => {
             let file = create_file_from_metadata(path, metadata, &directory_id);
             
-            match db.add_file(pools.get_data_pool(), &file).await {
+            match db.add_file(&data_pool, &file).await {
                 Ok(()) => {
                     notify_ui(app_handle, "file_created", &file.path);
                 }
@@ -385,15 +392,16 @@ async fn handle_new_file_from_move(
 }
 
 async fn handle_file_update_fallback(
-    pools: &DatabaseManager,
+    pools: &GroupManager,
     path_str: &str,
     metadata: &fs::Metadata,
     app_handle: &Option<AppHandle>,
 ) -> Result<(), String> {
     let db = Database;
     
+    let data_pool = pools.get_active_data_pool().map_err(|e| e.to_string())?;
     // エラーの場合は更新を試行
-    match db.update_file_metadata(pools.get_data_pool(), path_str, metadata).await {
+    match db.update_file_metadata(&data_pool, path_str, metadata).await {
         Ok(()) => {
             notify_ui(app_handle, "file_modified", path_str);
         }
@@ -406,7 +414,7 @@ async fn handle_file_update_fallback(
 }
 
 async fn handle_modify_without_metadata(
-    pools: &DatabaseManager,
+    pools: &GroupManager,
     path: &Path,
     _error: std::io::Error,
     app_handle: &Option<AppHandle>,
@@ -415,8 +423,9 @@ async fn handle_modify_without_metadata(
     let path_str = path.to_string_lossy().to_string();
     
 
+    let data_pool = pools.get_active_data_pool().map_err(|e| e.to_string())?;
     // データベースから該当ファイルを削除
-    match db.remove_file_by_path(pools.get_data_pool(), &path_str).await {
+    match db.remove_file_by_path(&data_pool, &path_str).await {
         Ok(()) => {
             notify_ui(app_handle, "file_deleted", &path_str);
         }
@@ -520,10 +529,7 @@ mod tests {
     async fn test_file_watcher_creation() {
         let settings_pool = SqlitePool::connect(":memory:").await.unwrap();
         let data_pool = SqlitePool::connect(":memory:").await.unwrap();
-        let pools = std::sync::Arc::new(crate::DatabaseManager {
-            settings_pool,
-            data_pool,
-        });
+        let pools = std::sync::Arc::new(crate::GroupManager::new(settings_pool).await.unwrap());
         let result = FileWatcher::new(pools, None);
         assert!(result.is_ok());
     }
@@ -532,10 +538,7 @@ mod tests {
     async fn test_file_watcher_watch_directory() {
         let settings_pool = SqlitePool::connect(":memory:").await.unwrap();
         let data_pool = SqlitePool::connect(":memory:").await.unwrap();
-        let pools = std::sync::Arc::new(crate::DatabaseManager {
-            settings_pool,
-            data_pool,
-        });
+        let pools = std::sync::Arc::new(crate::GroupManager::new(settings_pool).await.unwrap());
         let mut watcher = FileWatcher::new(pools, None).unwrap();
 
         // 存在しないディレクトリをwatch
@@ -547,10 +550,7 @@ mod tests {
     async fn test_file_watcher_unwatch_directory() {
         let settings_pool = SqlitePool::connect(":memory:").await.unwrap();
         let data_pool = SqlitePool::connect(":memory:").await.unwrap();
-        let pools = std::sync::Arc::new(crate::DatabaseManager {
-            settings_pool,
-            data_pool,
-        });
+        let pools = std::sync::Arc::new(crate::GroupManager::new(settings_pool).await.unwrap());
         let mut watcher = FileWatcher::new(pools, None).unwrap();
 
         // 存在しないディレクトリをunwatch
@@ -564,10 +564,7 @@ mod tests {
     async fn test_handle_file_event_create() {
         let settings_pool = SqlitePool::connect(":memory:").await.unwrap();
         let data_pool = SqlitePool::connect(":memory:").await.unwrap();
-        let pools = crate::DatabaseManager {
-            settings_pool,
-            data_pool,
-        };
+        let pools = crate::GroupManager::new(settings_pool).await.unwrap();
 
         let event = Event {
             kind: EventKind::Create(CreateKind::File),
@@ -584,10 +581,7 @@ mod tests {
     async fn test_handle_file_event_remove() {
         let settings_pool = SqlitePool::connect(":memory:").await.unwrap();
         let data_pool = SqlitePool::connect(":memory:").await.unwrap();
-        let pools = crate::DatabaseManager {
-            settings_pool,
-            data_pool,
-        };
+        let pools = crate::GroupManager::new(settings_pool).await.unwrap();
 
         let event = Event {
             kind: EventKind::Remove(notify::event::RemoveKind::File),
@@ -603,10 +597,7 @@ mod tests {
     async fn test_handle_file_event_modify() {
         let settings_pool = SqlitePool::connect(":memory:").await.unwrap();
         let data_pool = SqlitePool::connect(":memory:").await.unwrap();
-        let pools = crate::DatabaseManager {
-            settings_pool,
-            data_pool,
-        };
+        let pools = crate::GroupManager::new(settings_pool).await.unwrap();
 
         let event = Event {
             kind: EventKind::Modify(notify::event::ModifyKind::Data(
@@ -624,10 +615,7 @@ mod tests {
     async fn test_handle_file_event_other() {
         let settings_pool = SqlitePool::connect(":memory:").await.unwrap();
         let data_pool = SqlitePool::connect(":memory:").await.unwrap();
-        let pools = crate::DatabaseManager {
-            settings_pool,
-            data_pool,
-        };
+        let pools = crate::GroupManager::new(settings_pool).await.unwrap();
 
         let event = Event {
             kind: EventKind::Access(notify::event::AccessKind::Read),

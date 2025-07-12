@@ -1,6 +1,6 @@
 use crate::database::{Database, DatabaseTrait, File, Tag};
 use crate::settings;
-use crate::DatabaseManager;
+use crate::GroupManager;
 use chrono::Utc;
 use sqlx::{Row, SqlitePool};
 use std::collections::HashMap;
@@ -41,7 +41,7 @@ pub struct MetadataSearchFilter {
 
 #[tauri::command]
 pub async fn search_files(
-    pools: State<'_, DatabaseManager>,
+    pools: State<'_, GroupManager>,
     query: String,
     tag_ids: Option<Vec<String>>,
     metadata_filters: Vec<MetadataSearchFilter>,
@@ -74,7 +74,7 @@ pub async fn search_files(
 
 #[tauri::command]
 pub async fn search_files_paginated(
-    pools: State<'_, DatabaseManager>,
+    pools: State<'_, GroupManager>,
     query: String,
     tag_ids: Option<Vec<String>>,
     metadata_filters: Vec<MetadataSearchFilter>,
@@ -338,7 +338,7 @@ pub async fn search_files_paginated(
     }
 
     let total_count: i64 = count_query
-        .fetch_one(pools.get_data_pool())
+        .fetch_one(&pools.get_active_data_pool().map_err(|e| e.to_string())?)
         .await
         .map_err(|e| e.to_string())?
         .get("total_count");
@@ -360,7 +360,7 @@ pub async fn search_files_paginated(
     println!("============================");
 
     let rows = query_builder
-        .fetch_all(pools.get_data_pool())
+        .fetch_all(&pools.get_active_data_pool().map_err(|e| e.to_string())?)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -430,10 +430,10 @@ pub async fn search_files_paginated(
     }
     total_sql.push_str(" GROUP BY f.id");
     let total_category_counts =
-        calculate_category_counts(pools.get_data_pool(), &total_sql, &pre_category_params).await?;
+        calculate_category_counts(&pools.get_active_data_pool().map_err(|e| e.to_string())?, &total_sql, &pre_category_params).await?;
 
     // カテゴリフィルタ適用後の件数を計算
-    let category_counts = calculate_category_counts(pools.get_data_pool(), &sql, &params).await?;
+    let category_counts = calculate_category_counts(&pools.get_active_data_pool().map_err(|e| e.to_string())?, &sql, &params).await?;
 
     Ok(PaginatedSearchResult {
         results,
@@ -582,47 +582,47 @@ fn classify_file_category(file_name: &str, mime_type: Option<&str>) -> String {
 }
 
 #[tauri::command]
-pub async fn get_tags(pools: State<'_, DatabaseManager>) -> Result<Vec<Tag>, String> {
+pub async fn get_tags(pools: State<'_, GroupManager>) -> Result<Vec<Tag>, String> {
     let db = Database;
-    db.get_all_tags(pools.get_data_pool()).await.map_err(|e| e.to_string())
+    db.get_all_tags(&pools.get_active_data_pool().map_err(|e| e.to_string())?).await.map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-pub async fn get_top_tags(pools: State<'_, DatabaseManager>, limit: u32) -> Result<Vec<Tag>, String> {
+pub async fn get_top_tags(pools: State<'_, GroupManager>, limit: u32) -> Result<Vec<Tag>, String> {
     let db = Database;
-    db.get_top_tags(pools.get_data_pool(), limit)
+    db.get_top_tags(&pools.get_active_data_pool().map_err(|e| e.to_string())?, limit)
         .await
         .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 pub async fn search_tags_by_name(
-    pools: State<'_, DatabaseManager>,
+    pools: State<'_, GroupManager>,
     query: String,
 ) -> Result<Vec<Tag>, String> {
     let db = Database;
-    db.search_tags_by_name(pools.get_data_pool(), &query)
+    db.search_tags_by_name(&pools.get_active_data_pool().map_err(|e| e.to_string())?, &query)
         .await
         .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 pub async fn create_tag(
-    pools: State<'_, DatabaseManager>,
+    pools: State<'_, GroupManager>,
     name: String,
     color: String,
 ) -> Result<Tag, String> {
     let db = Database;
-    db.create_tag(pools.get_data_pool(), &name, &color)
+    db.create_tag(&pools.get_active_data_pool().map_err(|e| e.to_string())?, &name, &color)
         .await
         .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-pub async fn delete_tag(pools: State<'_, DatabaseManager>, id: String) -> Result<(), String> {
+pub async fn delete_tag(pools: State<'_, GroupManager>, id: String) -> Result<(), String> {
     sqlx::query("DELETE FROM tags WHERE id = ?")
         .bind(&id)
-        .execute(pools.get_data_pool())
+        .execute(&pools.get_active_data_pool().map_err(|e| e.to_string())?)
         .await
         .map_err(|e| e.to_string())?;
 

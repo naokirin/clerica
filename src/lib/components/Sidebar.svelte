@@ -3,6 +3,7 @@
   import type { Directory, Tag as TagType } from "../types";
   import { t } from "$lib/i18n";
   import GroupManager from "./GroupManager.svelte";
+  import type { AppViewModel } from "$lib/viewmodels/AppViewModel";
 
   interface Props {
     directories: Directory[];
@@ -14,6 +15,7 @@
     onRemoveDirectory: (id: string, name: string) => void;
     onCreateTag: () => void;
     disabled?: boolean;
+    appViewModel?: AppViewModel;
   }
 
   let {
@@ -26,12 +28,13 @@
     onRemoveDirectory,
     onCreateTag,
     disabled = false,
+    appViewModel,
   }: Props = $props();
 </script>
 
 <div class="sidebar" class:disabled>
   <!-- グループ管理セクション -->
-  <GroupManager />
+  <GroupManager {appViewModel} />
   
   <div class="sidebar-section">
     <h3>{$t("common.sidebar.directories")}</h3>

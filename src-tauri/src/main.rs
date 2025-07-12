@@ -67,7 +67,7 @@ async fn main() {
         .setup(move |app| {
             // ファイル監視の初期化（setup内でAppHandleが取得可能）
             let app_handle = app.handle().clone();
-            let file_watcher = match FileWatcher::new(Arc::new(db_manager.clone()), Some(app_handle)) {
+            let file_watcher = match FileWatcher::new(Arc::new(group_manager.clone()), Some(app_handle)) {
                 Ok(watcher) => Arc::new(Mutex::new(watcher)),
                 Err(e) => {
                     eprintln!("ファイル監視の初期化エラー: {e}");

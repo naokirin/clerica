@@ -290,6 +290,7 @@
       onRemoveDirectory={removeDirectory}
       onCreateTag={createTag}
       disabled={$isLoading}
+      {appViewModel}
     />
 
     <div class="main-content">

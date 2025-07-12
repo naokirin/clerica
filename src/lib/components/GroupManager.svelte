@@ -2,15 +2,22 @@
   import { groupsApi, type Group } from '$lib/api/groups';
   import { onMount } from 'svelte';
   import { Edit, Trash2 } from 'lucide-svelte';
+  import type { AppViewModel } from '$lib/viewmodels/AppViewModel';
 
-  let groups: Group[] = [];
-  let activeGroupId: string = '';
-  let showCreateForm = false;
-  let newGroupName = '';
-  let editingGroupId: string | null = null;
-  let editingGroupName = '';
-  let loading = false;
-  let error: string | null = null;
+  interface Props {
+    appViewModel?: AppViewModel;
+  }
+
+  let { appViewModel }: Props = $props();
+
+  let groups = $state<Group[]>([]);
+  let activeGroupId = $state('');
+  let showCreateForm = $state(false);
+  let newGroupName = $state('');
+  let editingGroupId = $state<string | null>(null);
+  let editingGroupName = $state('');
+  let loading = $state(false);
+  let error = $state<string | null>(null);
 
   onMount(async () => {
     try {
@@ -52,8 +59,13 @@
       await groupsApi.switchGroup(groupId);
       activeGroupId = groupId;
       
-      // ページをリロードしてデータを更新
-      window.location.reload();
+      // AppViewModelを使ってデータを再読み込み
+      if (appViewModel) {
+        await appViewModel.switchGroup(groupId);
+      } else {
+        // AppViewModelが利用できない場合はページリロード
+        window.location.reload();
+      }
     } catch (error) {
       console.error('グループの切り替えに失敗しました:', error);
       alert('グループの切り替えに失敗しました');

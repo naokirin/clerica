@@ -24,6 +24,7 @@ export class AppViewModel extends BaseViewModel {
   });
   private _loadingProgress: Writable<number> = writable(0);
   private _isAppLoading: Writable<boolean> = writable(true);
+  private _currentGroupId: Writable<string> = writable("");
   
   // サブスクリプション管理
   private _unsubscribers: Unsubscriber[] = [];
@@ -32,6 +33,7 @@ export class AppViewModel extends BaseViewModel {
   public readonly loadingSteps = this._loadingSteps;
   public readonly loadingProgress = this._loadingProgress;
   public readonly isAppLoading = this._isAppLoading;
+  public readonly currentGroupId = this._currentGroupId;
 
   constructor() {
     super();
@@ -55,6 +57,44 @@ export class AppViewModel extends BaseViewModel {
 
   public setActiveTab(tab: ActiveTab): void {
     this._activeTab.set(tab);
+  }
+
+  public async switchGroup(groupId: string): Promise<void> {
+    if (this._currentGroupId && groupId === this.getCurrentGroupId()) {
+      return; // 同じグループなら何もしない
+    }
+
+    this._currentGroupId.set(groupId);
+    // グループ変更時にすべてのデータを再読み込み
+    await this.reloadAllData();
+  }
+
+  public getCurrentGroupId(): string {
+    let currentGroupId = "";
+    this._currentGroupId.subscribe(id => currentGroupId = id)();
+    return currentGroupId;
+  }
+
+  public async reloadAllData(): Promise<void> {
+    this._isAppLoading.set(true);
+    this.setLoading(true);
+
+    try {
+      // すべてのViewModelでデータをクリアしてから再読み込み
+      await Promise.all([
+        this.directoryViewModel.loadDirectories(),
+        this.tagViewModel.loadTags(),
+        this.tagViewModel.loadCustomMetadataKeys()
+      ]);
+
+      // ファイルデータも再読み込み
+      await this.fileViewModel.loadFiles();
+    } catch (error) {
+      console.error('データの再読み込みに失敗しました:', error);
+    } finally {
+      this.setLoading(false);
+      this._isAppLoading.set(false);
+    }
   }
 
   public async initializeApp(): Promise<void> {
@@ -96,15 +136,6 @@ export class AppViewModel extends BaseViewModel {
     }
   }
 
-  // データ再読み込み
-  public async reloadAllData(): Promise<void> {
-    await Promise.all([
-      this.directoryViewModel.loadDirectories(),
-      this.fileViewModel.loadFiles(),
-      this.tagViewModel.loadTags(),
-      this.tagViewModel.loadCustomMetadataKeys()
-    ]);
-  }
 
   // ディレクトリ追加用のヘルパーメソッド（タグ更新を含む）
   public async addNewDirectory(path: string, name: string): Promise<boolean> {
