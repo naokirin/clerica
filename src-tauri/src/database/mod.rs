@@ -74,7 +74,7 @@ use mockall::predicate::*;
 
 #[cfg_attr(test, mockall::automock)]
 pub trait DatabaseTrait {
-    async fn init_database(&self, pool: &SqlitePool) -> Result<(), sqlx::Error>;
+    async fn init_database(&self, data_pool: &SqlitePool, settings_pool: &SqlitePool) -> Result<(), sqlx::Error>;
     async fn add_directory(
         &self,
         pool: &SqlitePool,
@@ -175,53 +175,55 @@ pub trait DatabaseTrait {
         pool: &SqlitePool,
         file_id: &str,
     ) -> Result<Vec<Tag>, sqlx::Error>;
-    // カスタムメタデータキー管理
+    // カスタムメタデータキー管理（設定用データベース）
     async fn create_custom_metadata_key(
         &self,
-        pool: &SqlitePool,
+        settings_pool: &SqlitePool,
         key: &CustomMetadataKey,
     ) -> Result<CustomMetadataKey, sqlx::Error>;
     async fn get_all_custom_metadata_keys(
         &self,
-        pool: &SqlitePool,
+        settings_pool: &SqlitePool,
     ) -> Result<Vec<CustomMetadataKey>, sqlx::Error>;
     async fn update_custom_metadata_key(
         &self,
-        pool: &SqlitePool,
+        settings_pool: &SqlitePool,
         key: &CustomMetadataKey,
     ) -> Result<CustomMetadataKey, sqlx::Error>;
     async fn delete_custom_metadata_key(
         &self,
-        pool: &SqlitePool,
+        settings_pool: &SqlitePool,
+        data_pool: &SqlitePool,
         key_id: &str,
     ) -> Result<(), sqlx::Error>;
     async fn get_custom_metadata_key_by_name(
         &self,
-        pool: &SqlitePool,
+        settings_pool: &SqlitePool,
         name: &str,
     ) -> Result<Option<CustomMetadataKey>, sqlx::Error>;
-    // カスタムメタデータ値管理
+    // カスタムメタデータ値管理（データ用データベース、設定用データベースの参照が必要）
     async fn set_custom_metadata_value(
         &self,
-        pool: &SqlitePool,
+        data_pool: &SqlitePool,
+        settings_pool: &SqlitePool,
         file_id: &str,
         key_id: &str,
         value: Option<String>,
     ) -> Result<CustomMetadataValue, sqlx::Error>;
     async fn get_custom_metadata_values_by_file(
         &self,
-        pool: &SqlitePool,
+        data_pool: &SqlitePool,
         file_id: &str,
     ) -> Result<Vec<CustomMetadataValue>, sqlx::Error>;
     async fn get_custom_metadata_value(
         &self,
-        pool: &SqlitePool,
+        data_pool: &SqlitePool,
         file_id: &str,
         key_id: &str,
     ) -> Result<Option<CustomMetadataValue>, sqlx::Error>;
     async fn delete_custom_metadata_value(
         &self,
-        pool: &SqlitePool,
+        data_pool: &SqlitePool,
         file_id: &str,
         key_id: &str,
     ) -> Result<(), sqlx::Error>;
@@ -253,7 +255,7 @@ pub trait DatabaseTrait {
 pub struct Database;
 
 impl DatabaseTrait for Database {
-    async fn init_database(&self, _pool: &SqlitePool) -> Result<(), sqlx::Error> {
+    async fn init_database(&self, _data_pool: &SqlitePool, _settings_pool: &SqlitePool) -> Result<(), sqlx::Error> {
         // マイグレーションは自動的に実行されるため、ここでは初期データの挿入のみ
         Ok(())
     }
@@ -899,7 +901,7 @@ impl DatabaseTrait for Database {
 
     async fn create_custom_metadata_key(
         &self,
-        pool: &SqlitePool,
+        settings_pool: &SqlitePool,
         key: &CustomMetadataKey,
     ) -> Result<CustomMetadataKey, sqlx::Error> {
         let id = Uuid::new_v4().to_string();
@@ -918,7 +920,7 @@ impl DatabaseTrait for Database {
         .bind(&key.validation_pattern)
         .bind(now)
         .bind(now)
-        .execute(pool)
+        .execute(settings_pool)
         .await?;
 
         Ok(CustomMetadataKey {
@@ -937,10 +939,10 @@ impl DatabaseTrait for Database {
 
     async fn get_all_custom_metadata_keys(
         &self,
-        pool: &SqlitePool,
+        settings_pool: &SqlitePool,
     ) -> Result<Vec<CustomMetadataKey>, sqlx::Error> {
         let rows = sqlx::query("SELECT * FROM custom_metadata_keys ORDER BY name")
-            .fetch_all(pool)
+            .fetch_all(settings_pool)
             .await?;
 
         let mut keys = Vec::new();
@@ -964,7 +966,7 @@ impl DatabaseTrait for Database {
 
     async fn update_custom_metadata_key(
         &self,
-        pool: &SqlitePool,
+        settings_pool: &SqlitePool,
         key: &CustomMetadataKey,
     ) -> Result<CustomMetadataKey, sqlx::Error> {
         let now = Utc::now();
@@ -980,7 +982,7 @@ impl DatabaseTrait for Database {
         .bind(&key.validation_pattern)
         .bind(now)
         .bind(&key.id)
-        .execute(pool)
+        .execute(settings_pool)
         .await?;
 
         Ok(CustomMetadataKey {
@@ -999,12 +1001,20 @@ impl DatabaseTrait for Database {
 
     async fn delete_custom_metadata_key(
         &self,
-        pool: &SqlitePool,
+        settings_pool: &SqlitePool,
+        data_pool: &SqlitePool,
         key_id: &str,
     ) -> Result<(), sqlx::Error> {
+        // まず、このキーを参照しているカスタムメタデータ値を削除
+        sqlx::query("DELETE FROM custom_metadata_values WHERE key_id = ?")
+            .bind(key_id)
+            .execute(data_pool)
+            .await?;
+
+        // その後、キー定義を削除
         sqlx::query("DELETE FROM custom_metadata_keys WHERE id = ?")
             .bind(key_id)
-            .execute(pool)
+            .execute(settings_pool)
             .await?;
 
         Ok(())
@@ -1012,12 +1022,12 @@ impl DatabaseTrait for Database {
 
     async fn get_custom_metadata_key_by_name(
         &self,
-        pool: &SqlitePool,
+        settings_pool: &SqlitePool,
         name: &str,
     ) -> Result<Option<CustomMetadataKey>, sqlx::Error> {
         let row = sqlx::query("SELECT * FROM custom_metadata_keys WHERE name = ?")
             .bind(name)
-            .fetch_optional(pool)
+            .fetch_optional(settings_pool)
             .await?;
 
         match row {
@@ -1039,11 +1049,21 @@ impl DatabaseTrait for Database {
 
     async fn set_custom_metadata_value(
         &self,
-        pool: &SqlitePool,
+        data_pool: &SqlitePool,
+        settings_pool: &SqlitePool,
         file_id: &str,
         key_id: &str,
         value: Option<String>,
     ) -> Result<CustomMetadataValue, sqlx::Error> {
+        // キーが存在することを確認
+        let key_exists = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM custom_metadata_keys WHERE id = ?")
+            .bind(key_id)
+            .fetch_one(settings_pool)
+            .await?;
+        
+        if key_exists == 0 {
+            return Err(sqlx::Error::RowNotFound);
+        }
         let id = Uuid::new_v4().to_string();
         let now = Utc::now();
 
@@ -1056,7 +1076,7 @@ impl DatabaseTrait for Database {
         .bind(value.as_deref())
         .bind(now)
         .bind(now)
-        .execute(pool)
+        .execute(data_pool)
         .await?;
 
         Ok(CustomMetadataValue {
@@ -1071,12 +1091,12 @@ impl DatabaseTrait for Database {
 
     async fn get_custom_metadata_values_by_file(
         &self,
-        pool: &SqlitePool,
+        data_pool: &SqlitePool,
         file_id: &str,
     ) -> Result<Vec<CustomMetadataValue>, sqlx::Error> {
         let rows = sqlx::query("SELECT * FROM custom_metadata_values WHERE file_id = ?")
             .bind(file_id)
-            .fetch_all(pool)
+            .fetch_all(data_pool)
             .await?;
 
         let mut values = Vec::new();
@@ -1096,7 +1116,7 @@ impl DatabaseTrait for Database {
 
     async fn get_custom_metadata_value(
         &self,
-        pool: &SqlitePool,
+        data_pool: &SqlitePool,
         file_id: &str,
         key_id: &str,
     ) -> Result<Option<CustomMetadataValue>, sqlx::Error> {
@@ -1104,7 +1124,7 @@ impl DatabaseTrait for Database {
             sqlx::query("SELECT * FROM custom_metadata_values WHERE file_id = ? AND key_id = ?")
                 .bind(file_id)
                 .bind(key_id)
-                .fetch_optional(pool)
+                .fetch_optional(data_pool)
                 .await?;
 
         match row {
@@ -1122,14 +1142,14 @@ impl DatabaseTrait for Database {
 
     async fn delete_custom_metadata_value(
         &self,
-        pool: &SqlitePool,
+        data_pool: &SqlitePool,
         file_id: &str,
         key_id: &str,
     ) -> Result<(), sqlx::Error> {
         sqlx::query("DELETE FROM custom_metadata_values WHERE file_id = ? AND key_id = ?")
             .bind(file_id)
             .bind(key_id)
-            .execute(pool)
+            .execute(data_pool)
             .await?;
 
         Ok(())
@@ -1921,7 +1941,7 @@ mod tests {
         let pool = setup_test_db().await;
         let db = Database;
 
-        let result = db.init_database(&pool).await;
+        let result = db.init_database(&pool, &pool).await;
         assert!(result.is_ok());
     }
 

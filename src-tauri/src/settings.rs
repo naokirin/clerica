@@ -1,8 +1,8 @@
+use crate::DatabaseManager;
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 use std::error::Error;
 use std::path::Path;
-use crate::DbPools;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Setting {
@@ -33,12 +33,10 @@ impl Default for AppSettings {
 }
 
 pub async fn get_setting(pool: &SqlitePool, key: &str) -> Result<Option<String>, Box<dyn Error>> {
-    let result = sqlx::query_scalar::<_, String>(
-        "SELECT value FROM settings WHERE key = ?"
-    )
-    .bind(key)
-    .fetch_optional(pool)
-    .await?;
+    let result = sqlx::query_scalar::<_, String>("SELECT value FROM settings WHERE key = ?")
+        .bind(key)
+        .fetch_optional(pool)
+        .await?;
 
     Ok(result)
 }
@@ -46,7 +44,7 @@ pub async fn get_setting(pool: &SqlitePool, key: &str) -> Result<Option<String>,
 pub async fn set_setting(pool: &SqlitePool, key: &str, value: &str) -> Result<(), Box<dyn Error>> {
     sqlx::query(
         "INSERT INTO settings (key, value) VALUES (?, ?) 
-         ON CONFLICT(key) DO UPDATE SET value = ?, updated_at = CURRENT_TIMESTAMP"
+         ON CONFLICT(key) DO UPDATE SET value = ?, updated_at = CURRENT_TIMESTAMP",
     )
     .bind(key)
     .bind(value)
@@ -58,16 +56,20 @@ pub async fn set_setting(pool: &SqlitePool, key: &str, value: &str) -> Result<()
 }
 
 pub async fn get_all_settings(pool: &SqlitePool) -> Result<AppSettings, Box<dyn Error>> {
-    let show_hidden_files = get_setting(pool, "show_hidden_files").await?
+    let show_hidden_files = get_setting(pool, "show_hidden_files")
+        .await?
         .unwrap_or_else(|| "false".to_string());
-    
-    let files_per_page = get_setting(pool, "files_per_page").await?
+
+    let files_per_page = get_setting(pool, "files_per_page")
+        .await?
         .unwrap_or_else(|| "20".to_string());
-    
-    let auto_tag_directories = get_setting(pool, "auto_tag_directories").await?
+
+    let auto_tag_directories = get_setting(pool, "auto_tag_directories")
+        .await?
         .unwrap_or_else(|| "true".to_string());
-    
-    let auto_tag_threshold = get_setting(pool, "auto_tag_threshold").await?
+
+    let auto_tag_threshold = get_setting(pool, "auto_tag_threshold")
+        .await?
         .unwrap_or_else(|| "0.7".to_string());
 
     Ok(AppSettings {
@@ -78,72 +80,96 @@ pub async fn get_all_settings(pool: &SqlitePool) -> Result<AppSettings, Box<dyn 
     })
 }
 
-pub async fn update_setting_bool(pool: &SqlitePool, key: &str, value: bool) -> Result<(), Box<dyn Error>> {
+pub async fn update_setting_bool(
+    pool: &SqlitePool,
+    key: &str,
+    value: bool,
+) -> Result<(), Box<dyn Error>> {
     let value_str = if value { "true" } else { "false" };
     set_setting(pool, key, value_str).await
 }
 
-pub async fn update_setting_int(pool: &SqlitePool, key: &str, value: i32) -> Result<(), Box<dyn Error>> {
+pub async fn update_setting_int(
+    pool: &SqlitePool,
+    key: &str,
+    value: i32,
+) -> Result<(), Box<dyn Error>> {
     set_setting(pool, key, &value.to_string()).await
 }
 
-pub async fn update_setting_float(pool: &SqlitePool, key: &str, value: f64) -> Result<(), Box<dyn Error>> {
+pub async fn update_setting_float(
+    pool: &SqlitePool,
+    key: &str,
+    value: f64,
+) -> Result<(), Box<dyn Error>> {
     set_setting(pool, key, &value.to_string()).await
 }
 
-pub async fn update_setting_string(pool: &SqlitePool, key: &str, value: &str) -> Result<(), Box<dyn Error>> {
+pub async fn update_setting_string(
+    pool: &SqlitePool,
+    key: &str,
+    value: &str,
+) -> Result<(), Box<dyn Error>> {
     set_setting(pool, key, value).await
 }
 
 #[tauri::command]
-pub async fn get_settings(pools: tauri::State<'_, DbPools>) -> Result<AppSettings, String> {
-    get_all_settings(&pools.read).await
+pub async fn get_settings(pools: tauri::State<'_, DatabaseManager>) -> Result<AppSettings, String> {
+    get_all_settings(pools.get_settings_pool())
+        .await
         .map_err(|e| format!("Failed to get settings: {}", e))
 }
 
 #[tauri::command]
 pub async fn update_setting_bool_cmd(
-    pools: tauri::State<'_, DbPools>,
+    pools: tauri::State<'_, DatabaseManager>,
     key: String,
     value: bool,
 ) -> Result<(), String> {
-    update_setting_bool(&pools.write, &key, value).await
+    update_setting_bool(pools.get_settings_pool(), &key, value)
+        .await
         .map_err(|e| format!("Failed to update setting: {}", e))
 }
 
 #[tauri::command]
 pub async fn update_setting_int_cmd(
-    pools: tauri::State<'_, DbPools>,
+    pools: tauri::State<'_, DatabaseManager>,
     key: String,
     value: i32,
 ) -> Result<(), String> {
-    update_setting_int(&pools.write, &key, value).await
+    update_setting_int(pools.get_settings_pool(), &key, value)
+        .await
         .map_err(|e| format!("Failed to update setting: {}", e))
 }
 
 #[tauri::command]
 pub async fn update_setting_float_cmd(
-    pools: tauri::State<'_, DbPools>,
+    pools: tauri::State<'_, DatabaseManager>,
     key: String,
     value: f64,
 ) -> Result<(), String> {
-    update_setting_float(&pools.write, &key, value).await
+    update_setting_float(pools.get_settings_pool(), &key, value)
+        .await
         .map_err(|e| format!("Failed to update setting: {}", e))
 }
 
 #[tauri::command]
 pub async fn update_setting_string_cmd(
-    pools: tauri::State<'_, DbPools>,
+    pools: tauri::State<'_, DatabaseManager>,
     key: String,
     value: String,
 ) -> Result<(), String> {
-    update_setting_string(&pools.write, &key, &value).await
+    update_setting_string(pools.get_settings_pool(), &key, &value)
+        .await
         .map_err(|e| format!("Failed to update setting: {}", e))
 }
 
 #[tauri::command]
-pub async fn get_language_setting(pools: tauri::State<'_, DbPools>) -> Result<String, String> {
-    get_setting(&pools.read, "language").await
+pub async fn get_language_setting(
+    pools: tauri::State<'_, DatabaseManager>,
+) -> Result<String, String> {
+    get_setting(pools.get_settings_pool(), "language")
+        .await
         .map(|lang| lang.unwrap_or_else(|| "ja".to_string()))
         .map_err(|e| format!("Failed to get language setting: {}", e))
 }

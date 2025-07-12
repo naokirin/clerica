@@ -530,11 +530,11 @@ mod tests {
 
     #[tokio::test]
     async fn test_file_watcher_watch_directory() {
-        let settings_pool = SqlitePool::connect(":memory:").await.unwrap();
-        let data_pool = SqlitePool::connect(":memory:").await.unwrap();
+        let read_pool = SqlitePool::connect(":memory:").await.unwrap();
+        let write_pool = SqlitePool::connect(":memory:").await.unwrap();
         let pools = std::sync::Arc::new(crate::DatabaseManager {
-            settings_pool,
-            data_pool,
+            read: read_pool,
+            write: write_pool,
         });
         let mut watcher = FileWatcher::new(pools, None).unwrap();
 
@@ -545,11 +545,11 @@ mod tests {
 
     #[tokio::test]
     async fn test_file_watcher_unwatch_directory() {
-        let settings_pool = SqlitePool::connect(":memory:").await.unwrap();
-        let data_pool = SqlitePool::connect(":memory:").await.unwrap();
+        let read_pool = SqlitePool::connect(":memory:").await.unwrap();
+        let write_pool = SqlitePool::connect(":memory:").await.unwrap();
         let pools = std::sync::Arc::new(crate::DatabaseManager {
-            settings_pool,
-            data_pool,
+            read: read_pool,
+            write: write_pool,
         });
         let mut watcher = FileWatcher::new(pools, None).unwrap();
 
@@ -562,11 +562,11 @@ mod tests {
 
     #[tokio::test]
     async fn test_handle_file_event_create() {
-        let settings_pool = SqlitePool::connect(":memory:").await.unwrap();
-        let data_pool = SqlitePool::connect(":memory:").await.unwrap();
+        let read_pool = SqlitePool::connect(":memory:").await.unwrap();
+        let write_pool = SqlitePool::connect(":memory:").await.unwrap();
         let pools = crate::DatabaseManager {
-            settings_pool,
-            data_pool,
+            read: read_pool,
+            write: write_pool,
         };
 
         let event = Event {
@@ -582,11 +582,11 @@ mod tests {
 
     #[tokio::test]
     async fn test_handle_file_event_remove() {
-        let settings_pool = SqlitePool::connect(":memory:").await.unwrap();
-        let data_pool = SqlitePool::connect(":memory:").await.unwrap();
+        let read_pool = SqlitePool::connect(":memory:").await.unwrap();
+        let write_pool = SqlitePool::connect(":memory:").await.unwrap();
         let pools = crate::DatabaseManager {
-            settings_pool,
-            data_pool,
+            read: read_pool,
+            write: write_pool,
         };
 
         let event = Event {
@@ -601,11 +601,11 @@ mod tests {
 
     #[tokio::test]
     async fn test_handle_file_event_modify() {
-        let settings_pool = SqlitePool::connect(":memory:").await.unwrap();
-        let data_pool = SqlitePool::connect(":memory:").await.unwrap();
+        let read_pool = SqlitePool::connect(":memory:").await.unwrap();
+        let write_pool = SqlitePool::connect(":memory:").await.unwrap();
         let pools = crate::DatabaseManager {
-            settings_pool,
-            data_pool,
+            read: read_pool,
+            write: write_pool,
         };
 
         let event = Event {
@@ -622,11 +622,11 @@ mod tests {
 
     #[tokio::test]
     async fn test_handle_file_event_other() {
-        let settings_pool = SqlitePool::connect(":memory:").await.unwrap();
-        let data_pool = SqlitePool::connect(":memory:").await.unwrap();
+        let read_pool = SqlitePool::connect(":memory:").await.unwrap();
+        let write_pool = SqlitePool::connect(":memory:").await.unwrap();
         let pools = crate::DatabaseManager {
-            settings_pool,
-            data_pool,
+            read: read_pool,
+            write: write_pool,
         };
 
         let event = Event {

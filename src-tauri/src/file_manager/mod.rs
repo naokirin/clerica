@@ -1,7 +1,7 @@
 use crate::database::{Database, DatabaseTrait, Directory, File, Tag};
 use crate::watcher::FileWatcher;
 use crate::settings;
-use crate::DbPools;
+use crate::DatabaseManager;
 use sqlx::SqlitePool;
 use tauri::State;
 use uuid::Uuid;
@@ -73,13 +73,13 @@ impl FileCategory {
 
 #[tauri::command]
 pub async fn add_directory(
-    pools: State<'_, DbPools>,
+    pools: State<'_, DatabaseManager>,
     watcher: State<'_, Arc<Mutex<FileWatcher>>>,
     path: String,
     name: String,
 ) -> Result<Directory, String> {
     let db = Database;
-    let directory = db.add_directory(&pools.write, &path, &name)
+    let directory = db.add_directory(pools.get_data_pool(), &path, &name)
         .await
         .map_err(|e| e.to_string())?;
     
@@ -89,7 +89,7 @@ pub async fn add_directory(
     }
     
     // 設定を確認して自動タグ付けが有効な場合のみ実行
-    let settings = settings::get_all_settings(&pools.read).await.unwrap_or_default();
+    let settings = settings::get_all_settings(pools.get_settings_pool()).await.unwrap_or_default();
     if settings.auto_tag_directories {
         if let Err(e) = analyze_and_auto_tag_directory(&pools, &directory.id, &path, settings.auto_tag_threshold).await {
             eprintln!("ファイルカテゴリ分析エラー: {e}");
@@ -116,7 +116,7 @@ pub struct DirectoryRemovalResult {
 
 #[tauri::command]
 pub async fn remove_directory(
-    pools: State<'_, DbPools>,
+    pools: State<'_, DatabaseManager>,
     watcher: State<'_, Arc<Mutex<FileWatcher>>>,
     id: String,
 ) -> Result<DirectoryRemovalResult, String> {
@@ -131,7 +131,7 @@ pub async fn remove_directory(
     }
     
     // トランザクション開始
-    let mut tx = pools.write.begin().await.map_err(|e| e.to_string())?;
+    let mut tx = pools.get_data_pool().begin().await.map_err(|e| e.to_string())?;
     
     // ディレクトリを削除（ON DELETE CASCADEにより関連ファイルも自動削除）
     sqlx::query("DELETE FROM directories WHERE id = ?")
@@ -175,27 +175,27 @@ pub async fn remove_directory(
 
 #[tauri::command]
 pub async fn get_directories(
-    pools: State<'_, DbPools>,
+    pools: State<'_, DatabaseManager>,
 ) -> Result<Vec<Directory>, String> {
     let db = Database;
-    db.get_directories(&pools.read)
+    db.get_directories(pools.get_data_pool())
         .await
         .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 pub async fn get_files(
-    pools: State<'_, DbPools>,
+    pools: State<'_, DatabaseManager>,
     sort_field: Option<String>,
     sort_order: Option<String>,
 ) -> Result<Vec<File>, String> {
     let db = Database;
-    let mut files = db.get_all_files_sorted(&pools.read, sort_field, sort_order)
+    let mut files = db.get_all_files_sorted(pools.get_data_pool(), sort_field, sort_order)
         .await
         .map_err(|e| e.to_string())?;
     
     // 設定を取得して隠しファイルを除外するかどうかを決定
-    let settings = settings::get_all_settings(&pools.read).await
+    let settings = settings::get_all_settings(pools.get_settings_pool()).await
         .map_err(|e| e.to_string())?;
     
     if !settings.show_hidden_files {
@@ -207,19 +207,19 @@ pub async fn get_files(
 
 #[tauri::command]
 pub async fn get_files_paginated(
-    pools: State<'_, DbPools>,
+    pools: State<'_, DatabaseManager>,
     sort_field: Option<String>,
     sort_order: Option<String>,
     limit: u32,
     offset: u32,
 ) -> Result<Vec<File>, String> {
     let db = Database;
-    let mut files = db.get_all_files_paginated(&pools.read, sort_field, sort_order, limit, offset)
+    let mut files = db.get_all_files_paginated(pools.get_data_pool(), sort_field, sort_order, limit, offset)
         .await
         .map_err(|e| e.to_string())?;
     
     // 設定を取得して隠しファイルを除外するかどうかを決定
-    let settings = settings::get_all_settings(&pools.read).await
+    let settings = settings::get_all_settings(pools.get_settings_pool()).await
         .map_err(|e| e.to_string())?;
     
     if !settings.show_hidden_files {
@@ -231,17 +231,17 @@ pub async fn get_files_paginated(
 
 #[tauri::command]
 pub async fn get_files_with_tags(
-    pools: State<'_, DbPools>,
+    pools: State<'_, DatabaseManager>,
     sort_field: Option<String>,
     sort_order: Option<String>,
 ) -> Result<Vec<FileWithTags>, String> {
     let db = Database;
-    let mut files = db.get_all_files_sorted(&pools.read, sort_field, sort_order)
+    let mut files = db.get_all_files_sorted(pools.get_data_pool(), sort_field, sort_order)
         .await
         .map_err(|e| e.to_string())?;
     
     // 設定を取得して隠しファイルを除外するかどうかを決定
-    let settings = settings::get_all_settings(&pools.read).await
+    let settings = settings::get_all_settings(pools.get_settings_pool()).await
         .map_err(|e| e.to_string())?;
     
     if !settings.show_hidden_files {
@@ -251,7 +251,7 @@ pub async fn get_files_with_tags(
     // 各ファイルのタグ情報を取得
     let mut results = Vec::new();
     for file in files {
-        let tags = db.get_file_tags(&pools.read, &file.id)
+        let tags = db.get_file_tags(pools.get_data_pool(), &file.id)
             .await
             .map_err(|e| e.to_string())?;
         
@@ -263,7 +263,7 @@ pub async fn get_files_with_tags(
 
 #[tauri::command]
 pub async fn get_file_info(
-    _pools: State<'_, DbPools>,
+    _pools: State<'_, DatabaseManager>,
     _file_id: String,
 ) -> Result<File, String> {
     // 実装予定
@@ -272,31 +272,31 @@ pub async fn get_file_info(
 
 #[tauri::command]
 pub async fn update_file_tags(
-    pools: State<'_, DbPools>,
+    pools: State<'_, DatabaseManager>,
     file_id: String,
     tag_ids: Vec<String>,
 ) -> Result<(), String> {
     let db = Database;
     // 既存のタグを削除
-    let current_tags = db.get_file_tags(&pools.read, &file_id)
+    let current_tags = db.get_file_tags(pools.get_data_pool(), &file_id)
         .await
         .map_err(|e| e.to_string())?;
     
     for tag in current_tags {
-        db.remove_file_tag(&pools.write, &file_id, &tag.id)
+        db.remove_file_tag(pools.get_data_pool(), &file_id, &tag.id)
             .await
             .map_err(|e| e.to_string())?;
     }
     
     // 新しいタグを追加
     for tag_id in tag_ids {
-        db.add_file_tag(&pools.write, &file_id, &tag_id)
+        db.add_file_tag(pools.get_data_pool(), &file_id, &tag_id)
             .await
             .map_err(|e| e.to_string())?;
     }
     
     // 未参照タグを削除
-    db.delete_orphaned_tags(&pools.write)
+    db.delete_orphaned_tags(pools.get_data_pool())
         .await
         .map_err(|e| e.to_string())?;
     
@@ -305,18 +305,18 @@ pub async fn update_file_tags(
 
 #[tauri::command]
 pub async fn get_file_tags(
-    pools: State<'_, DbPools>,
+    pools: State<'_, DatabaseManager>,
     file_id: String,
 ) -> Result<Vec<Tag>, String> {
     let db = Database;
-    db.get_file_tags(&pools.read, &file_id)
+    db.get_file_tags(pools.get_data_pool(), &file_id)
         .await
         .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 pub async fn delete_file(
-    pools: State<'_, DbPools>,
+    pools: State<'_, DatabaseManager>,
     file_path: String,
 ) -> Result<(), String> {
     // ファイルパスの存在確認
@@ -338,7 +338,7 @@ pub async fn delete_file(
                 // データベースからファイル情報を削除
                 sqlx::query("DELETE FROM files WHERE path = ?")
                     .bind(&file_path)
-                    .execute(&pools.write)
+                    .execute(pools.get_data_pool())
                     .await
                     .map_err(|e| format!("データベース更新エラー: {e}"))?;
                 
@@ -354,7 +354,7 @@ pub async fn delete_file(
 
 #[tauri::command]
 pub async fn move_file(
-    _pools: State<'_, DbPools>,
+    _pools: State<'_, DatabaseManager>,
     _file_id: String,
     _new_path: String,
 ) -> Result<(), String> {
@@ -447,7 +447,7 @@ fn infer_mime_type(path: &std::path::Path) -> Option<String> {
         .map(String::from)
 }
 
-pub async fn scan_directory(pools: &DbPools, directory_id: &str, path: &str) -> Result<(), String> {
+pub async fn scan_directory(pools: &DatabaseManager, directory_id: &str, path: &str) -> Result<(), String> {
     let walker = WalkDir::new(path)
         .follow_links(false)
         .into_iter()
@@ -499,7 +499,7 @@ pub async fn scan_directory(pools: &DbPools, directory_id: &str, path: &str) -> 
             };
             
             let db = Database;
-            db.add_file(&pools.write, &file)
+            db.add_file(pools.get_data_pool(), &file)
                 .await
                 .map_err(|e| e.to_string())?;
         }
@@ -510,18 +510,18 @@ pub async fn scan_directory(pools: &DbPools, directory_id: &str, path: &str) -> 
 
 #[tauri::command]
 pub async fn get_files_by_directory(
-    pools: State<'_, DbPools>,
+    pools: State<'_, DatabaseManager>,
     directory_id: String,
     sort_field: Option<String>,
     sort_order: Option<String>,
 ) -> Result<Vec<File>, String> {
     let db = Database;
-    let mut files = db.get_files_by_directory_sorted(&pools.read, &directory_id, sort_field, sort_order)
+    let mut files = db.get_files_by_directory_sorted(pools.get_data_pool(), &directory_id, sort_field, sort_order)
         .await
         .map_err(|e| e.to_string())?;
     
     // 設定を取得して隠しファイルを除外するかどうかを決定
-    let settings = settings::get_all_settings(&pools.read).await
+    let settings = settings::get_all_settings(pools.get_settings_pool()).await
         .map_err(|e| e.to_string())?;
     
     if !settings.show_hidden_files {
@@ -533,7 +533,7 @@ pub async fn get_files_by_directory(
 
 #[tauri::command]
 pub async fn get_files_by_directory_paginated(
-    pools: State<'_, DbPools>,
+    pools: State<'_, DatabaseManager>,
     directory_id: String,
     sort_field: Option<String>,
     sort_order: Option<String>,
@@ -541,12 +541,12 @@ pub async fn get_files_by_directory_paginated(
     offset: u32,
 ) -> Result<Vec<File>, String> {
     let db = Database;
-    let mut files = db.get_files_by_directory_paginated(&pools.read, &directory_id, sort_field, sort_order, limit, offset)
+    let mut files = db.get_files_by_directory_paginated(pools.get_data_pool(), &directory_id, sort_field, sort_order, limit, offset)
         .await
         .map_err(|e| e.to_string())?;
     
     // 設定を取得して隠しファイルを除外するかどうかを決定
-    let settings = settings::get_all_settings(&pools.read).await
+    let settings = settings::get_all_settings(pools.get_settings_pool()).await
         .map_err(|e| e.to_string())?;
     
     if !settings.show_hidden_files {
@@ -558,28 +558,28 @@ pub async fn get_files_by_directory_paginated(
 
 #[tauri::command]
 pub async fn count_files(
-    pools: State<'_, DbPools>,
+    pools: State<'_, DatabaseManager>,
 ) -> Result<u32, String> {
     let db = Database;
-    db.count_all_files(&pools.read)
+    db.count_all_files(pools.get_data_pool())
         .await
         .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 pub async fn count_files_by_directory(
-    pools: State<'_, DbPools>,
+    pools: State<'_, DatabaseManager>,
     directory_id: String,
 ) -> Result<u32, String> {
     let db = Database;
-    db.count_files_by_directory(&pools.read, &directory_id)
+    db.count_files_by_directory(pools.get_data_pool(), &directory_id)
         .await
         .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 pub async fn count_files_by_category(
-    pools: State<'_, DbPools>,
+    pools: State<'_, DatabaseManager>,
     directory_id: String,
 ) -> Result<std::collections::HashMap<String, u32>, String> {
     use std::collections::HashMap;
@@ -592,13 +592,13 @@ pub async fn count_files_by_category(
 
     let files: Vec<String> = if directory_id == "all" {
         sqlx::query_scalar(&query)
-            .fetch_all(&pools.read)
+            .fetch_all(pools.get_data_pool())
             .await
             .map_err(|e| e.to_string())?
     } else {
         sqlx::query_scalar(&query)
             .bind(&directory_id)
-            .fetch_all(&pools.read)
+            .fetch_all(pools.get_data_pool())
             .await
             .map_err(|e| e.to_string())?
     };
@@ -623,7 +623,7 @@ pub async fn count_files_by_category(
 
 #[tauri::command]
 pub async fn get_files_paginated_with_category(
-    pools: State<'_, DbPools>,
+    pools: State<'_, DatabaseManager>,
     category: String,
     sort_field: Option<String>,
     sort_order: Option<String>,
@@ -631,14 +631,14 @@ pub async fn get_files_paginated_with_category(
     offset: u32,
 ) -> Result<Vec<File>, String> {
     let db = Database;
-    db.get_files_paginated_with_category(&pools.read, &category, sort_field, sort_order, limit, offset)
+    db.get_files_paginated_with_category(pools.get_data_pool(), &category, sort_field, sort_order, limit, offset)
         .await
         .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 pub async fn get_files_by_directory_paginated_with_category(
-    pools: State<'_, DbPools>,
+    pools: State<'_, DatabaseManager>,
     directory_id: String,
     category: String,
     sort_field: Option<String>,
@@ -647,30 +647,30 @@ pub async fn get_files_by_directory_paginated_with_category(
     offset: u32,
 ) -> Result<Vec<File>, String> {
     let db = Database;
-    db.get_files_by_directory_paginated_with_category(&pools.read, &directory_id, &category, sort_field, sort_order, limit, offset)
+    db.get_files_by_directory_paginated_with_category(pools.get_data_pool(), &directory_id, &category, sort_field, sort_order, limit, offset)
         .await
         .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 pub async fn count_files_with_category(
-    pools: State<'_, DbPools>,
+    pools: State<'_, DatabaseManager>,
     category: String,
 ) -> Result<u32, String> {
     let db = Database;
-    db.count_files_with_category(&pools.read, &category)
+    db.count_files_with_category(pools.get_data_pool(), &category)
         .await
         .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 pub async fn count_files_by_directory_with_category(
-    pools: State<'_, DbPools>,
+    pools: State<'_, DatabaseManager>,
     directory_id: String,
     category: String,
 ) -> Result<u32, String> {
     let db = Database;
-    db.count_files_by_directory_with_category(&pools.read, &directory_id, &category)
+    db.count_files_by_directory_with_category(pools.get_data_pool(), &directory_id, &category)
         .await
         .map_err(|e| e.to_string())
 }
@@ -724,18 +724,18 @@ fn build_category_where_clause(category: &str) -> String {
 
 #[tauri::command]
 pub async fn get_files_by_directory_with_tags(
-    pools: State<'_, DbPools>,
+    pools: State<'_, DatabaseManager>,
     directory_id: String,
     sort_field: Option<String>,
     sort_order: Option<String>,
 ) -> Result<Vec<FileWithTags>, String> {
     let db = Database;
-    let mut files = db.get_files_by_directory_sorted(&pools.read, &directory_id, sort_field, sort_order)
+    let mut files = db.get_files_by_directory_sorted(pools.get_data_pool(), &directory_id, sort_field, sort_order)
         .await
         .map_err(|e| e.to_string())?;
     
     // 設定を取得して隠しファイルを除外するかどうかを決定
-    let settings = settings::get_all_settings(&pools.read).await
+    let settings = settings::get_all_settings(pools.get_settings_pool()).await
         .map_err(|e| e.to_string())?;
     
     if !settings.show_hidden_files {
@@ -745,7 +745,7 @@ pub async fn get_files_by_directory_with_tags(
     // 各ファイルのタグ情報を取得
     let mut results = Vec::new();
     for file in files {
-        let tags = db.get_file_tags(&pools.read, &file.id)
+        let tags = db.get_file_tags(pools.get_data_pool(), &file.id)
             .await
             .map_err(|e| e.to_string())?;
         
@@ -757,13 +757,13 @@ pub async fn get_files_by_directory_with_tags(
 
 #[tauri::command]
 pub async fn rescan_directory(
-    pools: State<'_, DbPools>,
+    pools: State<'_, DatabaseManager>,
     directory_id: String,
 ) -> Result<(), String> {
     let db = Database;
     
     // ディレクトリ情報を取得
-    let directories = db.get_directories(&pools.read)
+    let directories = db.get_directories(pools.get_data_pool())
         .await
         .map_err(|e| e.to_string())?;
     
@@ -774,7 +774,7 @@ pub async fn rescan_directory(
     // 既存のファイル情報を削除
     sqlx::query("DELETE FROM files WHERE directory_id = ?")
         .bind(&directory_id)
-        .execute(&pools.write)
+        .execute(pools.get_data_pool())
         .await
         .map_err(|e| e.to_string())?;
     
@@ -784,7 +784,7 @@ pub async fn rescan_directory(
 
 #[tauri::command]
 pub async fn open_file(
-    pools: State<'_, DbPools>,
+    pools: State<'_, DatabaseManager>,
     file_path: String,
 ) -> Result<(), String> {
     // ファイルパスの存在確認
@@ -801,7 +801,7 @@ pub async fn open_file(
         Ok(output) => {
             if output.status.success() {
                 // ファイルのアクセス日時を更新
-                update_file_last_accessed(&pools.write, &file_path).await?;
+                update_file_last_accessed(pools.get_data_pool(), &file_path).await?;
                 Ok(())
             } else {
                 let error_message = String::from_utf8_lossy(&output.stderr);
@@ -1099,7 +1099,7 @@ fn get_tag_name(tag: exif::Tag) -> String {
 
 /// ディレクトリツリー全体のファイル分析と自動タグ付けを実行する関数
 async fn analyze_and_auto_tag_directory(
-    pools: &DbPools,
+    pools: &DatabaseManager,
     _directory_id: &str,
     directory_path: &str,
     threshold: f64,
@@ -1133,7 +1133,7 @@ async fn analyze_and_auto_tag_directory(
 
 /// 単一ディレクトリのファイル分析と自動タグ付けを実行する関数
 async fn analyze_and_auto_tag_single_directory(
-    pools: &DbPools,
+    pools: &DatabaseManager,
     directory_path: &std::path::Path,
     threshold: f64,
 ) -> Result<(), String> {
@@ -1182,19 +1182,19 @@ async fn analyze_and_auto_tag_single_directory(
     // Gitディレクトリが存在する場合はgitタグを追加
     if has_git_directory {
         let db = Database;
-        let git_tag = match db.get_tag_by_name(&pools.read, "git").await {
+        let git_tag = match db.get_tag_by_name(pools.get_data_pool(), "git").await {
             Ok(existing_tag) => existing_tag,
             Err(_) => {
                 // gitタグが存在しない場合は新規作成
-                let new_tag = db.create_tag(&pools.write, "git", "#F05032") // Git オレンジ色
+                let new_tag = db.create_tag(pools.get_data_pool(), "git", "#F05032") // Git オレンジ色
                     .await.map_err(|e| e.to_string())?;
                 new_tag
             }
         };
         
         // ディレクトリにgitタグを付与
-        if let Ok(directory_file_id) = get_or_create_directory_file_entry(&pools.write, directory_path).await {
-            if let Err(e) = db.add_file_tag(&pools.write, &directory_file_id, &git_tag.id).await {
+        if let Ok(directory_file_id) = get_or_create_directory_file_entry(pools.get_data_pool(), directory_path).await {
+            if let Err(e) = db.add_file_tag(pools.get_data_pool(), &directory_file_id, &git_tag.id).await {
                 // 既に存在する場合のエラーは無視
                 if !e.to_string().contains("UNIQUE constraint failed") {
                     eprintln!("Gitタグ追加エラー (directory_file_id: {}, tag_id: {}): {}", directory_file_id, git_tag.id, e);
@@ -1215,19 +1215,19 @@ async fn analyze_and_auto_tag_single_directory(
         if total_files > 0 && (count as f64 / total_files as f64) >= threshold {
             // 自動タグを作成・取得
             let db = Database;
-            let tag = match db.get_tag_by_name(&pools.read, &category_name).await {
+            let tag = match db.get_tag_by_name(pools.get_data_pool(), &category_name).await {
                 Ok(existing_tag) => existing_tag,
                 Err(_) => {
                     // タグが存在しない場合は新規作成
-                    let new_tag = db.create_tag(&pools.write, &category_name, &get_default_color_for_category(&category_name))
+                    let new_tag = db.create_tag(pools.get_data_pool(), &category_name, &get_default_color_for_category(&category_name))
                         .await.map_err(|e| e.to_string())?;
                     new_tag
                 }
             };
             
             // ディレクトリにタグを付与（ディレクトリをfilesテーブルのエントリとして扱う）
-            if let Ok(directory_file_id) = get_or_create_directory_file_entry(&pools.write, directory_path).await {
-                if let Err(e) = db.add_file_tag(&pools.write, &directory_file_id, &tag.id).await {
+            if let Ok(directory_file_id) = get_or_create_directory_file_entry(pools.get_data_pool(), directory_path).await {
+                if let Err(e) = db.add_file_tag(pools.get_data_pool(), &directory_file_id, &tag.id).await {
                     // 既に存在する場合のエラーは無視
                     if !e.to_string().contains("UNIQUE constraint failed") {
                         eprintln!("ディレクトリタグ追加エラー (directory_file_id: {}, tag_id: {}): {}", directory_file_id, tag.id, e);
