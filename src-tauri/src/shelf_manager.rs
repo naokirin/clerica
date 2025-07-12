@@ -40,30 +40,8 @@ impl ShelfManager {
     }
 
     async fn initialize_shelves(&self) -> Result<(), Box<dyn std::error::Error>> {
-        // shelvesテーブルが存在しない場合は作成
-        sqlx::query(
-            r#"
-            CREATE TABLE IF NOT EXISTS shelves (
-                id TEXT PRIMARY KEY,
-                name TEXT NOT NULL,
-                created_at TEXT NOT NULL
-            )
-            "#,
-        )
-        .execute(&self.settings_pool)
-        .await?;
-
-        // active_shelf設定テーブルを作成
-        sqlx::query(
-            r#"
-            CREATE TABLE IF NOT EXISTS active_shelf (
-                id INTEGER PRIMARY KEY CHECK (id = 1),
-                shelf_id TEXT NOT NULL
-            )
-            "#,
-        )
-        .execute(&self.settings_pool)
-        .await?;
+        // 設定データベースのマイグレーション実行は既にDatabaseManagerで完了済み
+        // ここではシェルフの初期データ作成のみ行う
 
         // デフォルトシェルフが存在しない場合は作成
         let shelves = self.get_shelves().await?;
