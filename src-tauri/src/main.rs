@@ -3,6 +3,7 @@
 
 use database::DatabaseTrait;
 use database_manager::DatabaseManager;
+use group_manager::GroupManager;
 use std::sync::{Arc, Mutex};
 use tauri::Manager;
 use watcher::FileWatcher;
@@ -13,6 +14,8 @@ mod database_manager;
 mod exif_config;
 mod exif_constants;
 mod file_manager;
+mod group_commands;
+mod group_manager;
 mod search;
 mod settings;
 mod thumbnail;
@@ -29,9 +32,21 @@ async fn main() {
         }
     };
 
-    // データベース初期化
+    // グループマネージャを初期化
+    let group_manager = match GroupManager::new(db_manager.get_settings_pool().clone()).await {
+        Ok(manager) => manager,
+        Err(e) => {
+            eprintln!("グループマネージャの初期化に失敗しました: {}", e);
+            std::process::exit(1);
+        }
+    };
+
+    // データベース初期化（設定のみ - データベースは各グループで管理）
     let db = database::Database;
-    if let Err(e) = db.init_database(db_manager.get_data_pool(), db_manager.get_settings_pool()).await {
+    if let Err(e) = db.init_database(
+        &group_manager.get_active_data_pool().unwrap(),
+        db_manager.get_settings_pool()
+    ).await {
         eprintln!("データベース初期化エラー: {e}");
         std::process::exit(1);
     }
@@ -48,6 +63,7 @@ async fn main() {
         .plugin(tauri_plugin_sql::Builder::default().build())
         .plugin(tauri_plugin_dialog::init())
         .manage(db_manager.clone())
+        .manage(group_manager.clone())
         .setup(move |app| {
             // ファイル監視の初期化（setup内でAppHandleが取得可能）
             let app_handle = app.handle().clone();
@@ -61,24 +77,31 @@ async fn main() {
 
             // 既存のディレクトリの監視を開始
             let watcher_clone = Arc::clone(&file_watcher);
-            let db_manager_clone = db_manager.clone();
+            let group_manager_clone = group_manager.clone();
             tauri::async_runtime::spawn(async move {
                 let db = database::Database;
-                match db.get_directories(db_manager_clone.get_data_pool()).await {
-                    Ok(directories) => {
-                        let mut watcher_guard = watcher_clone.lock().unwrap();
-                        for directory in directories {
-                            if let Err(e) =
-                                watcher_guard.watch_directory(&directory.id, &directory.path)
-                            {
-                                eprintln!("ディレクトリ監視開始エラー: {} ({})", e, directory.path);
-                            } else {
-                                println!("ディレクトリの監視を開始しました: {}", directory.path);
+                match group_manager_clone.get_active_data_pool() {
+                    Ok(active_pool) => {
+                        match db.get_directories(&active_pool).await {
+                            Ok(directories) => {
+                                let mut watcher_guard = watcher_clone.lock().unwrap();
+                                for directory in directories {
+                                    if let Err(e) =
+                                        watcher_guard.watch_directory(&directory.id, &directory.path)
+                                    {
+                                        eprintln!("ディレクトリ監視開始エラー: {} ({})", e, directory.path);
+                                    } else {
+                                        println!("ディレクトリの監視を開始しました: {}", directory.path);
+                                    }
+                                }
+                            }
+                            Err(e) => {
+                                eprintln!("既存ディレクトリの取得エラー: {e}");
                             }
                         }
                     }
                     Err(e) => {
-                        eprintln!("既存ディレクトリの取得エラー: {e}");
+                        eprintln!("アクティブデータプールの取得エラー: {e}");
                     }
                 }
             });
@@ -141,6 +164,12 @@ async fn main() {
             settings::update_setting_float_cmd,
             settings::update_setting_string_cmd,
             settings::get_language_setting,
+            group_commands::get_groups,
+            group_commands::get_active_group_id,
+            group_commands::create_group,
+            group_commands::switch_group,
+            group_commands::delete_group,
+            group_commands::update_group_name,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

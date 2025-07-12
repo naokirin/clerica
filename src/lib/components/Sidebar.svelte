@@ -2,6 +2,7 @@
   import { FolderPlus, Tag, RefreshCw, X } from "lucide-svelte";
   import type { Directory, Tag as TagType } from "../types";
   import { t } from "$lib/i18n";
+  import GroupManager from "./GroupManager.svelte";
 
   interface Props {
     directories: Directory[];
@@ -29,6 +30,9 @@
 </script>
 
 <div class="sidebar" class:disabled>
+  <!-- グループ管理セクション -->
+  <GroupManager />
+  
   <div class="sidebar-section">
     <h3>{$t("common.sidebar.directories")}</h3>
     <button onclick={onAddDirectory} class="add-button" {disabled}>
