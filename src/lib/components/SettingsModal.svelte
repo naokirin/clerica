@@ -16,6 +16,7 @@
   let detailViewDefault = false;
   let filesPerPage = 20;
   let showHiddenFiles = false;
+  let showDirectories = true;
   let useFuzzySearch = true;
   let highlightSearchResults = true;
   let language = 'en';
@@ -29,6 +30,7 @@
         getLanguageSetting()
       ]);
       showHiddenFiles = settings.show_hidden_files;
+      showDirectories = settings.show_directories;
       filesPerPage = settings.files_per_page;
       language = lang;
     } catch (error) {
@@ -49,6 +51,7 @@
         getLanguageSetting()
       ]);
       showHiddenFiles = settings.show_hidden_files;
+      showDirectories = settings.show_directories;
       filesPerPage = settings.files_per_page;
       language = lang;
     } catch (error) {
@@ -71,6 +74,7 @@
     isLoading = true;
     try {
       await updateSettingBool('show_hidden_files', showHiddenFiles);
+      await updateSettingBool('show_directories', showDirectories);
       await updateSettingInt('files_per_page', filesPerPage);
       await updateSettingString('language', language);
       
@@ -82,6 +86,7 @@
         detailViewDefault,
         filesPerPage,
         showHiddenFiles,
+        showDirectories,
         useFuzzySearch,
         highlightSearchResults,
         language,
@@ -159,6 +164,16 @@
                 bind:checked={showHiddenFiles}
               />
               {$t("common.settings.showHiddenFiles")}
+            </label>
+          </div>
+          <div class="setting-item">
+            <label class="setting-label">
+              <input
+                type="checkbox"
+                class="setting-checkbox"
+                bind:checked={showDirectories}
+              />
+              ディレクトリを表示
             </label>
           </div>
         </div>

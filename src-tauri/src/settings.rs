@@ -16,6 +16,7 @@ pub struct Setting {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppSettings {
     pub show_hidden_files: bool,
+    pub show_directories: bool,
     pub files_per_page: i32,
     pub auto_tag_directories: bool,
     pub auto_tag_threshold: f64,
@@ -25,6 +26,7 @@ impl Default for AppSettings {
     fn default() -> Self {
         Self {
             show_hidden_files: false,
+            show_directories: true,
             files_per_page: 20,
             auto_tag_directories: true,
             auto_tag_threshold: 0.5,
@@ -60,6 +62,10 @@ pub async fn get_all_settings(pool: &SqlitePool) -> Result<AppSettings, Box<dyn 
         .await?
         .unwrap_or_else(|| "false".to_string());
 
+    let show_directories = get_setting(pool, "show_directories")
+        .await?
+        .unwrap_or_else(|| "true".to_string());
+
     let files_per_page = get_setting(pool, "files_per_page")
         .await?
         .unwrap_or_else(|| "20".to_string());
@@ -74,6 +80,7 @@ pub async fn get_all_settings(pool: &SqlitePool) -> Result<AppSettings, Box<dyn 
 
     Ok(AppSettings {
         show_hidden_files: show_hidden_files == "true",
+        show_directories: show_directories == "true",
         files_per_page: files_per_page.parse().unwrap_or(20),
         auto_tag_directories: auto_tag_directories == "true",
         auto_tag_threshold: auto_tag_threshold.parse().unwrap_or(0.7),

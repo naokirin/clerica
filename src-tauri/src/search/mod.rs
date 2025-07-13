@@ -268,6 +268,19 @@ pub async fn search_files_paginated(
         }
     }
 
+    // 設定を取得してフィルタリング条件を追加
+    let settings = settings::get_all_settings(pools.get_settings_pool())
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if !settings.show_hidden_files {
+        conditions.push("f.name NOT LIKE '.%'".to_string());
+    }
+    
+    if !settings.show_directories {
+        conditions.push("f.is_directory = FALSE".to_string());
+    }
+
     if !conditions.is_empty() {
         sql.push_str(" WHERE ");
         sql.push_str(&conditions.join(" AND "));
@@ -413,14 +426,7 @@ pub async fn search_files_paginated(
         results.push(SearchResult { file, tags, score });
     }
 
-    // 設定を取得して隠しファイルを除外するかどうかを決定
-    let settings = settings::get_all_settings(pools.get_settings_pool())
-        .await
-        .map_err(|e| e.to_string())?;
-
-    if !settings.show_hidden_files {
-        results.retain(|result| !settings::is_hidden_file(&result.file.path));
-    }
+    // フィルタリングはSQLクエリレベルで処理されるため、ここでは不要
 
     // カテゴリフィルタ適用前の総件数を計算
     let mut total_sql = pre_category_sql;

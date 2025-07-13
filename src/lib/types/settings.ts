@@ -7,6 +7,7 @@ export interface Settings {
   defaultSortKey: string;
   defaultSortOrder: 'asc' | 'desc';
   showHiddenFiles: boolean;
+  showDirectories: boolean;
   autoSave: boolean;
   language: string;
 }
@@ -16,6 +17,7 @@ export interface SettingsUpdateRequest {
   defaultSortKey?: string;
   defaultSortOrder?: 'asc' | 'desc';
   showHiddenFiles?: boolean;
+  showDirectories?: boolean;
   autoSave?: boolean;
   language?: string;
 }
