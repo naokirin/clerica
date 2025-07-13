@@ -373,6 +373,7 @@
             onGoToLastPage={async () => await fileViewModel.goToLastPage()}
             onSortChange={async (options) =>
               await fileViewModel.setSortOptions(options)}
+            on:open-rename-modal={(event) => openRenameModal(event.detail)}
           />
         {/if}
 

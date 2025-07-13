@@ -15,6 +15,7 @@
   import DeleteConfirmDialog from "./DeleteConfirmDialog.svelte";
   import BatchRenameModal from "./BatchRenameModal.svelte";
   import { deleteFiles, type DeleteResult } from "../api/files";
+  import { createEventDispatcher } from "svelte";
 
   interface Props {
     files: File[];
@@ -57,6 +58,9 @@
     onGoToLastPage,
     onSortChange,
   }: Props = $props();
+  
+  // イベントディスパッチャー
+  const dispatch = createEventDispatcher();
   
   // 選択中のファイル数
   let selectedCount = $derived($selectedFileIds.size);
@@ -134,12 +138,12 @@
     if (!hasSelection) return;
     
     if (selectedCount === 1) {
-      // 単一ファイルの場合は既存のファイル詳細モーダルを使用
+      // 単一ファイルの場合は直接リネームモーダルを開く
       const selectedId = Array.from($selectedFileIds)[0];
       const selectedFile = filesWithTags.find(f => f.file.id === selectedId)?.file;
       if (selectedFile) {
         selectedFileIds.update(() => new Set());
-        onSelectFile(selectedFile);
+        dispatch('open-rename-modal', selectedFile);
       }
     } else {
       // 複数ファイルの場合はバッチリネームモーダルを使用
