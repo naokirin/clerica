@@ -1,6 +1,14 @@
 <script lang="ts">
   import type { File } from "../types";
-  import { batchRenameFiles, type BatchRenameOperation, type BatchRenameResult } from "../api/files";
+  import { 
+    batchRenameFiles, 
+    type BatchRenameOperation, 
+    type BatchRenameResult,
+    previewAdvancedBatchRename,
+    executeAdvancedBatchRename,
+    type AdvancedBatchRenameOperation,
+    type AdvancedBatchRenamePreview
+  } from "../api/files";
 
   interface Props {
     isOpen: boolean;
@@ -12,16 +20,21 @@
   let { isOpen, files, onClose, onFilesRenamed }: Props = $props();
 
   // リネーム操作の種類
-  type RenameOperation = "replace" | "prefix" | "suffix" | "sequence" | "case";
+  type RenameOperation = "advanced" | "replace" | "prefix" | "suffix" | "sequence" | "case";
 
   // 状態管理
-  let operation: RenameOperation = $state("replace");
+  let operation: RenameOperation = $state("advanced");
   let isProcessing = $state(false);
   
-  // 置換操作用
+  // 高度なリネーム用（正規表現 + テンプレート）
+  let findPattern = $state("");
+  let replacePattern = $state("");
+  let useRegex = $state(false);
+  let useTemplate = $state(false);
+  
+  // 置換操作用（従来の単純置換）
   let findText = $state("");
   let replaceText = $state("");
-  let useRegex = $state(false);
   
   // プレフィックス・サフィックス用
   let addText = $state("");
@@ -43,12 +56,63 @@
     error: string | null;
   }
 
+  // 高度なリネームのプレビュー状態
+  let advancedPreviewList = $state<AdvancedBatchRenamePreview[]>([]);
+  let isPreviewLoading = $state(false);
+  let previewError = $state<string | null>(null);
+
+  // 高度なリネームのプレビューを更新
+  async function updateAdvancedPreview() {
+    if (operation !== "advanced" || !findPattern || !replacePattern) {
+      advancedPreviewList = [];
+      return;
+    }
+
+    isPreviewLoading = true;
+    previewError = null;
+
+    try {
+      const operations: AdvancedBatchRenameOperation[] = files.map(file => ({
+        file_id: file.id.toString(),
+        find_pattern: findPattern,
+        replace_pattern: replacePattern,
+        use_regex: useRegex,
+        use_template: useTemplate
+      }));
+
+      advancedPreviewList = await previewAdvancedBatchRename(operations);
+    } catch (error: any) {
+      console.error("プレビューエラー:", error);
+      previewError = error.message || "プレビューの生成に失敗しました";
+      advancedPreviewList = [];
+    } finally {
+      isPreviewLoading = false;
+    }
+  }
+
+  // パターンの変更を監視してプレビューを更新
+  $effect(() => {
+    if (operation === "advanced") {
+      updateAdvancedPreview();
+    }
+  });
+
   // プレビュー計算（リアクティブ）
   let previewList = $derived.by(() => {
+    // 高度なリネームの場合は専用のプレビューを使用
+    if (operation === "advanced") {
+      return advancedPreviewList.map(preview => ({
+        file: files.find(f => f.id.toString() === preview.file_id)!,
+        oldName: preview.old_name,
+        newName: preview.new_name,
+        error: preview.error || null
+      }));
+    }
+
     const results: PreviewItem[] = [];
     const nameCount = new Map<string, number>();
 
-    // 各ファイルのリネーム結果を計算
+    // 各ファイルのリネーム結果を計算（従来のモード）
     files.forEach((file, index) => {
       const oldName = file.name;
       let newName = oldName;
@@ -56,18 +120,10 @@
 
       try {
         switch (operation) {
+            
           case "replace":
             if (findText) {
-              if (useRegex) {
-                try {
-                  const regex = new RegExp(findText, "g");
-                  newName = oldName.replace(regex, replaceText);
-                } catch (e) {
-                  error = "正規表現が無効です";
-                }
-              } else {
-                newName = oldName.replaceAll(findText, replaceText);
-              }
+              newName = oldName.replaceAll(findText, replaceText);
             }
             break;
             
@@ -165,14 +221,32 @@
 
     isProcessing = true;
     try {
-      const operations: BatchRenameOperation[] = previewList
-        .filter(item => item.oldName !== item.newName && !item.error)
-        .map(item => ({
-          old_path: item.file.path,
-          new_name: item.newName
-        }));
+      let result: BatchRenameResult;
 
-      const result: BatchRenameResult = await batchRenameFiles(operations);
+      if (operation === "advanced") {
+        // 高度なリネーム
+        const operations: AdvancedBatchRenameOperation[] = previewList
+          .filter(item => item.oldName !== item.newName && !item.error)
+          .map(item => ({
+            file_id: item.file.id.toString(),
+            find_pattern: findPattern,
+            replace_pattern: replacePattern,
+            use_regex: useRegex,
+            use_template: useTemplate
+          }));
+
+        result = await executeAdvancedBatchRename(operations);
+      } else {
+        // 従来のバッチリネーム
+        const operations: BatchRenameOperation[] = previewList
+          .filter(item => item.oldName !== item.newName && !item.error)
+          .map(item => ({
+            old_path: item.file.path,
+            new_name: item.newName
+          }));
+
+        result = await batchRenameFiles(operations);
+      }
       
       // 結果の通知
       if (result.successful_files.length > 0) {
@@ -200,6 +274,10 @@
 
   // リセット処理
   const resetSettings = () => {
+    findPattern = "";
+    replacePattern = "";
+    useRegex = false;
+    useTemplate = false;
     findText = "";
     replaceText = "";
     addText = "";
@@ -208,7 +286,8 @@
     sequencePadding = 3;
     sequencePosition = "suffix";
     caseType = "lower";
-    useRegex = false;
+    advancedPreviewList = [];
+    previewError = null;
   };
 
   // モーダルが開かれたときにリセット
@@ -241,6 +320,7 @@
         <div class="operation-section">
           <label class="operation-label">リネーム方法:</label>
           <select bind:value={operation} class="operation-select">
+            <option value="advanced">高度なリネーム（正規表現・テンプレート）</option>
             <option value="replace">文字列の置換</option>
             <option value="prefix">プレフィックスの追加</option>
             <option value="suffix">サフィックスの追加</option>
@@ -251,7 +331,62 @@
 
         <!-- 操作オプション -->
         <div class="options-section">
-          {#if operation === "replace"}
+          {#if operation === "advanced"}
+            <div class="advanced-options">
+              <div class="option-group">
+                <label>
+                  <input type="checkbox" bind:checked={useRegex} />
+                  正規表現を使用
+                </label>
+              </div>
+              <div class="option-group">
+                <label>
+                  <input type="checkbox" bind:checked={useTemplate} />
+                  テンプレート機能を使用（{`{{ file.name }}, {{ file.ext }}, {{ n }}`} など）
+                </label>
+              </div>
+              <div class="option-group">
+                <label>検索パターン:</label>
+                <input 
+                  type="text" 
+                  bind:value={findPattern} 
+                  placeholder={useRegex ? "正規表現パターン (例: ^(.+)\\.(\\w+)$)" : "検索文字列"}
+                />
+              </div>
+              <div class="option-group">
+                <label>置換パターン:</label>
+                <input 
+                  type="text" 
+                  bind:value={replacePattern} 
+                  placeholder={useTemplate 
+                    ? `テンプレート (例: {{ file.name }}_{{ n:padding=3 }}.{{ file.ext }})`
+                    : useRegex 
+                      ? "置換文字列 (後方参照: $1, $2)"
+                      : "置換文字列"
+                  }
+                />
+              </div>
+              <!-- ヘルプセクション -->
+              <details class="help-section">
+                <summary>利用可能な変数・機能</summary>
+                <div class="help-content">
+                  <h5>テンプレート変数:</h5>
+                  <ul>
+                    <li><code>{`{{ file.name }}`}</code> - ファイル名（拡張子なし）</li>
+                    <li><code>{`{{ file.ext }}`}</code> - 拡張子</li>
+                    <li><code>{`{{ file.size }}`}</code> - ファイルサイズ</li>
+                    <li><code>{`{{ file.created_at | date(format="%Y-%m-%d") }}`}</code> - 作成日時</li>
+                    <li><code>{`{{ n }}`}</code> - 連番（1から開始）</li>
+                    <li><code>{`{{ n:padding=3 }}`}</code> - ゼロパディング付き連番</li>
+                  </ul>
+                  <h5>正規表現後方参照:</h5>
+                  <ul>
+                    <li><code>$1, $2, ...</code> - キャプチャグループの参照</li>
+                  </ul>
+                </div>
+              </details>
+            </div>
+          {:else if operation === "replace"}
             <div class="option-group">
               <label>
                 <input type="checkbox" bind:checked={useRegex} />
@@ -315,9 +450,15 @@
           <div class="preview-header">
             <h4>プレビュー</h4>
             <div class="preview-summary">
-              {changedCount}件が変更されます
-              {#if hasErrors}
-                <span class="error-count">（{previewList.filter(item => item.error).length}件のエラー）</span>
+              {#if isPreviewLoading}
+                <span class="loading-text">プレビューを生成中...</span>
+              {:else if previewError}
+                <span class="error-text">エラー: {previewError}</span>
+              {:else}
+                {changedCount}件が変更されます
+                {#if hasErrors}
+                  <span class="error-count">（{previewList.filter(item => item.error).length}件のエラー）</span>
+                {/if}
               {/if}
             </div>
           </div>
@@ -613,5 +754,65 @@
   .cancel-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+  }
+
+  /* 高度なリネーム用のスタイル */
+  .advanced-options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .help-section {
+    margin-top: 16px;
+    padding: 12px;
+    background: #f0f8ff;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+  }
+
+  .help-section summary {
+    cursor: pointer;
+    font-weight: 500;
+    color: #2196f3;
+  }
+
+  .help-content {
+    margin-top: 8px;
+    font-size: 0.85rem;
+    color: #555;
+  }
+
+  .help-content h5 {
+    margin: 8px 0 4px 0;
+    font-size: 0.9rem;
+    color: #333;
+  }
+
+  .help-content ul {
+    margin: 4px 0 8px 16px;
+    padding: 0;
+  }
+
+  .help-content li {
+    margin: 2px 0;
+  }
+
+  .help-content code {
+    background: #f5f5f5;
+    padding: 1px 4px;
+    border-radius: 2px;
+    font-family: monospace;
+    font-size: 0.8rem;
+  }
+
+  .loading-text {
+    color: #666;
+    font-style: italic;
+  }
+
+  .error-text {
+    color: #f44336;
+    font-weight: 500;
   }
 </style>

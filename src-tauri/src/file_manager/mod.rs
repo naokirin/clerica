@@ -1792,3 +1792,232 @@ pub async fn execute_rename(
     
     Ok(new_name)
 }
+
+// ===== 高度なバッチリネーム機能 =====
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+pub struct AdvancedBatchRenameOperation {
+    pub file_id: String,
+    pub find_pattern: String,
+    pub replace_pattern: String,
+    pub use_regex: bool,
+    pub use_template: bool,
+}
+
+#[derive(Debug, serde::Serialize)]
+pub struct AdvancedBatchRenamePreview {
+    pub file_id: String,
+    pub old_name: String,
+    pub new_name: String,
+    pub error: Option<String>,
+}
+
+#[tauri::command]
+pub async fn preview_advanced_batch_rename(
+    pools: State<'_, ShelfManager>,
+    operations: Vec<AdvancedBatchRenameOperation>,
+) -> Result<Vec<AdvancedBatchRenamePreview>, String> {
+    let mut results = Vec::new();
+    
+    for (index, op) in operations.iter().enumerate() {
+        let (file, tags, metadata) = match get_file_with_context(&pools, &op.file_id).await {
+            Ok(context) => context,
+            Err(e) => {
+                results.push(AdvancedBatchRenamePreview {
+                    file_id: op.file_id.clone(),
+                    old_name: format!("File ID: {}", op.file_id),
+                    new_name: "".to_string(),
+                    error: Some(format!("Failed to get file: {}", e)),
+                });
+                continue;
+            }
+        };
+        
+        let new_name = match generate_advanced_rename(&file, &tags, &metadata, op, index).await {
+            Ok(name) => name,
+            Err(e) => {
+                results.push(AdvancedBatchRenamePreview {
+                    file_id: op.file_id.clone(),
+                    old_name: file.name.clone(),
+                    new_name: "".to_string(),
+                    error: Some(e.to_string()),
+                });
+                continue;
+            }
+        };
+        
+        results.push(AdvancedBatchRenamePreview {
+            file_id: op.file_id.clone(),
+            old_name: file.name.clone(),
+            new_name,
+            error: None,
+        });
+    }
+    
+    Ok(results)
+}
+
+#[tauri::command]
+pub async fn execute_advanced_batch_rename(
+    pools: State<'_, ShelfManager>,
+    operations: Vec<AdvancedBatchRenameOperation>,
+) -> Result<BatchRenameResult, String> {
+    let data_pool = pools.get_active_data_pool().map_err(|e| e.to_string())?;
+    
+    let mut successful_files = Vec::new();
+    let mut failed_files = Vec::new();
+    
+    // トランザクションを開始
+    let mut tx = data_pool.begin()
+        .await
+        .map_err(|e| format!("トランザクション開始エラー: {e}"))?;
+    
+    for (index, op) in operations.iter().enumerate() {
+        let (file, tags, metadata) = match get_file_with_context(&pools, &op.file_id).await {
+            Ok(context) => context,
+            Err(e) => {
+                failed_files.push((format!("File ID: {}", op.file_id), format!("ファイル取得エラー: {e}")));
+                continue;
+            }
+        };
+        
+        let old_path = file.path.clone();
+        
+        // 新しいファイル名を生成
+        let new_name = match generate_advanced_rename(&file, &tags, &metadata, op, index).await {
+            Ok(name) => name,
+            Err(e) => {
+                failed_files.push((old_path, format!("ファイル名生成エラー: {e}")));
+                continue;
+            }
+        };
+        
+        // ファイル名が変更される場合のみ処理
+        if new_name != file.name {
+            // 新しいファイルパスを構築
+            let old_path_obj = std::path::Path::new(&file.path);
+            let parent_dir = match old_path_obj.parent() {
+                Some(dir) => dir,
+                None => {
+                    failed_files.push((old_path, "親ディレクトリが取得できません".to_string()));
+                    continue;
+                }
+            };
+            let new_path = parent_dir.join(&new_name);
+            
+            // ファイルの存在確認
+            if !old_path_obj.exists() {
+                failed_files.push((old_path, "ファイルが存在しません".to_string()));
+                continue;
+            }
+            
+            // 新しいパスが既に存在する場合はエラー
+            if new_path.exists() {
+                failed_files.push((old_path, format!("ファイルが既に存在します: {}", new_path.display())));
+                continue;
+            }
+            
+            // ファイルのリネーム実行
+            match std::fs::rename(&old_path_obj, &new_path) {
+                Ok(_) => {
+                    // データベースの更新
+                    let new_path_str = new_path.to_string_lossy().to_string();
+                    let now = Utc::now();
+                    
+                    match sqlx::query("UPDATE files SET path = ?, name = ?, updated_at_db = ? WHERE id = ?")
+                        .bind(&new_path_str)
+                        .bind(&new_name)
+                        .bind(now)
+                        .bind(&op.file_id)
+                        .execute(&mut *tx)
+                        .await
+                    {
+                        Ok(_) => {
+                            successful_files.push(new_path_str);
+                        }
+                        Err(e) => {
+                            // ファイルは移動したがDBの更新に失敗した場合、ファイルを元に戻す
+                            let _ = std::fs::rename(&new_path, &old_path_obj);
+                            failed_files.push((old_path, format!("データベース更新エラー: {e}")));
+                        }
+                    }
+                }
+                Err(e) => {
+                    failed_files.push((old_path, format!("ファイルリネームエラー: {e}")));
+                }
+            }
+        }
+    }
+    
+    // トランザクションをコミット
+    tx.commit()
+        .await
+        .map_err(|e| format!("トランザクションコミットエラー: {e}"))?;
+    
+    Ok(BatchRenameResult {
+        successful_files,
+        failed_files,
+    })
+}
+
+async fn generate_advanced_rename(
+    file: &File,
+    tags: &[Tag],
+    metadata: &serde_json::Value,
+    op: &AdvancedBatchRenameOperation,
+    index: usize,
+) -> RenameResult<String> {
+    let original_name = &file.name;
+    
+    if op.use_regex && op.use_template {
+        // 正規表現 + テンプレート
+        let regex = build_safe_regex(&op.find_pattern)?;
+        let _captures = regex.captures(original_name)
+            .ok_or(RenameError::RegexNoMatch)?;
+        
+        // タグ名のリストを作成
+        let tag_names: Vec<String> = tags.iter().map(|t| t.name.clone()).collect();
+        
+        // Teraテンプレートコンテキストを作成
+        let mut context = create_template_context(file, &tag_names, metadata);
+        // 連番を追加（1から開始）
+        context.insert("n", &(index + 1));
+        
+        // Teraテンプレートをレンダリング
+        let intermediate_string = Tera::one_off(&op.replace_pattern, &context, false)
+            .map_err(|e| RenameError::TemplateError(format!("Template error: {}", e)))?;
+        
+        // 正規表現の後方参照を置換
+        let final_name = regex.replace_all(original_name, intermediate_string.as_str()).to_string();
+        Ok(final_name)
+    } else if op.use_regex {
+        // 正規表現のみ
+        let regex = build_safe_regex(&op.find_pattern)?;
+        let final_name = regex.replace_all(original_name, op.replace_pattern.as_str()).to_string();
+        Ok(final_name)
+    } else if op.use_template {
+        // テンプレートのみ
+        if original_name.contains(&op.find_pattern) {
+            // タグ名のリストを作成
+            let tag_names: Vec<String> = tags.iter().map(|t| t.name.clone()).collect();
+            
+            // Teraテンプレートコンテキストを作成
+            let mut context = create_template_context(file, &tag_names, metadata);
+            // 連番を追加（1から開始）
+            context.insert("n", &(index + 1));
+            
+            // Teraテンプレートをレンダリング
+            let rendered_replacement = Tera::one_off(&op.replace_pattern, &context, false)
+                .map_err(|e| RenameError::TemplateError(format!("Template error: {}", e)))?;
+            
+            let final_name = original_name.replace(&op.find_pattern, &rendered_replacement);
+            Ok(final_name)
+        } else {
+            Ok(original_name.clone())
+        }
+    } else {
+        // 単純な文字列置換
+        let final_name = original_name.replace(&op.find_pattern, &op.replace_pattern);
+        Ok(final_name)
+    }
+}

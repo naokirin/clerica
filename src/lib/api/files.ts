@@ -208,3 +208,31 @@ export async function executeSimpleRename(
     formatTemplate: `${newName}$2` 
   });
 }
+
+// バッチリネーム用の高度なプレビュー・実行機能
+export interface AdvancedBatchRenameOperation {
+  file_id: string;
+  find_pattern: string;
+  replace_pattern: string;
+  use_regex: boolean;
+  use_template: boolean;
+}
+
+export interface AdvancedBatchRenamePreview {
+  file_id: string;
+  old_name: string;
+  new_name: string;
+  error?: string;
+}
+
+export async function previewAdvancedBatchRename(
+  operations: AdvancedBatchRenameOperation[]
+): Promise<AdvancedBatchRenamePreview[]> {
+  return await invoke("preview_advanced_batch_rename", { operations });
+}
+
+export async function executeAdvancedBatchRename(
+  operations: AdvancedBatchRenameOperation[]
+): Promise<BatchRenameResult> {
+  return await invoke("execute_advanced_batch_rename", { operations });
+}

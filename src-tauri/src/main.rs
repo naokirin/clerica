@@ -147,6 +147,8 @@ async fn main() {
             file_manager::reveal_in_finder,
             file_manager::preview_rename,
             file_manager::execute_rename,
+            file_manager::preview_advanced_batch_rename,
+            file_manager::execute_advanced_batch_rename,
             search::search_files,
             search::search_files_paginated,
             search::get_tags,
