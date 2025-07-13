@@ -21,6 +21,9 @@ exif = { package = "kamadak-exif", version = "0.5" }
 lofty = "0.21"
 tauri = { version = "2", features = ["protocol-asset"] }
 md5 = "0.7"
+regex = "1.0"
+thiserror = "1.0"
+tera = "1.19"
 zip = "2.2"
 # sevenz-rust = "0.6"  # 7zサポートは一時的に無効化
 unrar = "0.5"

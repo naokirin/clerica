@@ -2,7 +2,7 @@ use crate::database::{Database, DatabaseTrait, Directory, File, Tag};
 use crate::watcher::FileWatcher;
 use crate::settings;
 use crate::ShelfManager;
-use sqlx::SqlitePool;
+use sqlx::{SqlitePool, Row};
 use tauri::State;
 use uuid::Uuid;
 use chrono::{DateTime, Utc};
@@ -13,6 +13,10 @@ use std::os::unix::fs::PermissionsExt;
 use std::process::Command;
 use std::sync::{Arc, Mutex};
 use std::collections::HashMap;
+use regex::{Regex, RegexBuilder};
+use tera::{Context, Tera};
+use thiserror::Error;
+use serde::Serialize;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct FileWithTags {
@@ -1388,4 +1392,228 @@ fn get_default_color_for_category(category: &str) -> String {
         "Other" => "#95A5A6".to_string(),     // グレー系
         _ => "#95A5A6".to_string(),           // デフォルト
     }
+}
+
+// ===== リネーム機能 =====
+
+#[derive(Debug, Error, Serialize)]
+pub enum RenameError {
+    #[error("Database error: {0}")]
+    Database(String),
+
+    #[error("Invalid regular expression: {0}")]
+    InvalidRegex(String),
+
+    #[error("The pattern did not match the filename.")]
+    RegexNoMatch,
+
+    #[error("Template rendering failed: {0}")]
+    TemplateError(String),
+
+    #[error("File operation failed: {0}")]
+    IoError(String),
+
+    #[error("File not found: {0}")]
+    FileNotFound(String),
+}
+
+type RenameResult<T> = Result<T, RenameError>;
+
+// 使用されていない構造体を削除（Teraコンテキストに置き換え済み）
+
+// Teraテンプレートコンテキストを作成するヘルパー関数
+fn create_template_context(file: &File, tags: &[String], metadata: &serde_json::Value) -> Context {
+    let mut context = Context::new();
+    
+    // ファイル情報
+    context.insert("file", &file);
+    context.insert("filename", &file.name);
+    context.insert("name_without_ext", &file.name.rsplit('.').nth(1).map(|s| s.to_string()).unwrap_or_else(|| file.name.clone()));
+    context.insert("extension", &file.name.split('.').last().unwrap_or(""));
+    context.insert("path", &file.path);
+    context.insert("directory", &file.directory_id);
+    
+    // タグ情報
+    context.insert("tags", tags);
+    context.insert("tags_joined", &tags.join(", "));
+    context.insert("tags_underscore", &tags.join("_"));
+    context.insert("tags_dash", &tags.join("-"));
+    
+    // メタデータ
+    context.insert("metadata", metadata);
+    
+    // 日時情報
+    if let Some(created) = &file.created_at {
+        context.insert("created_year", &created.format("%Y").to_string());
+        context.insert("created_month", &created.format("%m").to_string());
+        context.insert("created_day", &created.format("%d").to_string());
+    }
+    
+    if let Some(modified) = &file.modified_at {
+        context.insert("modified_year", &modified.format("%Y").to_string());
+        context.insert("modified_month", &modified.format("%m").to_string());
+        context.insert("modified_day", &modified.format("%d").to_string());
+    }
+    
+    context
+}
+
+fn build_safe_regex(pattern: &str) -> RenameResult<Regex> {
+    if pattern.len() > 256 {
+        return Err(RenameError::InvalidRegex("Pattern too long (max 256 characters)".to_string()));
+    }
+    
+    RegexBuilder::new(pattern)
+        .size_limit(1_000_000)
+        .dfa_size_limit(1_000_000)
+        .build()
+        .map_err(|e| RenameError::InvalidRegex(e.to_string()))
+}
+
+async fn get_file_with_context(
+    pools: &ShelfManager,
+    file_id: &str,
+) -> RenameResult<(File, Vec<Tag>, serde_json::Value)> {
+    let db = Database;
+    let data_pool = pools.get_active_data_pool()
+        .map_err(|e| RenameError::Database(e.to_string()))?;
+
+    // ファイル情報を取得
+    let row = sqlx::query(
+        "SELECT id, path, name, directory_id, size, file_type, created_at, modified_at, 
+         birth_time, inode, is_directory, created_at_db, updated_at_db, file_size, 
+         mime_type, permissions, owner_uid, group_gid, hard_links, device_id, 
+         last_accessed, metadata FROM files WHERE id = ?"
+    )
+    .bind(file_id)
+    .fetch_one(&data_pool)
+    .await
+    .map_err(|e| RenameError::Database(e.to_string()))?;
+
+    let file = File {
+        id: row.get("id"),
+        path: row.get("path"),
+        name: row.get("name"),
+        directory_id: row.get("directory_id"),
+        size: row.get("size"),
+        file_type: row.get("file_type"),
+        created_at: row.get("created_at"),
+        modified_at: row.get("modified_at"),
+        birth_time: row.get("birth_time"),
+        inode: row.get("inode"),
+        is_directory: row.get("is_directory"),
+        created_at_db: row.get("created_at_db"),
+        updated_at_db: row.get("updated_at_db"),
+        file_size: row.get("file_size"),
+        mime_type: row.get("mime_type"),
+        permissions: row.get("permissions"),
+        owner_uid: row.get("owner_uid"),
+        group_gid: row.get("group_gid"),
+        hard_links: row.get("hard_links"),
+        device_id: row.get("device_id"),
+        last_accessed: row.get("last_accessed"),
+        metadata: row.get("metadata"),
+    };
+
+    // タグ情報を取得
+    let tags = db.get_file_tags(&data_pool, file_id)
+        .await
+        .map_err(|e| RenameError::Database(e.to_string()))?;
+
+    // メタデータをパース
+    let metadata: serde_json::Value = if let Some(metadata_str) = &file.metadata {
+        serde_json::from_str(metadata_str)
+            .unwrap_or(serde_json::json!({}))
+    } else {
+        serde_json::json!({})
+    };
+
+    Ok((file, tags, metadata))
+}
+
+#[tauri::command]
+pub async fn preview_rename(
+    pools: State<'_, ShelfManager>,
+    file_id: String,
+    regex_pattern: String,
+    format_template: String,
+) -> RenameResult<String> {
+    // ファイル情報を取得
+    let (file, tags, metadata) = get_file_with_context(&pools, &file_id).await?;
+    
+    // 正規表現をコンパイル
+    let regex = build_safe_regex(&regex_pattern)?;
+    
+    // ファイル名に対してマッチング
+    let _captures = regex.captures(&file.name)
+        .ok_or(RenameError::RegexNoMatch)?;
+    
+    // タグ名のリストを作成
+    let tag_names: Vec<String> = tags.iter().map(|t| t.name.clone()).collect();
+    
+    // Teraテンプレートコンテキストを作成
+    let context = create_template_context(&file, &tag_names, &metadata);
+    
+    // Teraテンプレートをレンダリング
+    let intermediate_string = Tera::one_off(&format_template, &context, false)
+        .map_err(|e| RenameError::TemplateError(format!("Template error: {}", e)))?;
+
+    println!("Intermediate string: {}", intermediate_string);
+    
+    // 正規表現の後方参照を置換
+    let final_name = regex.replace_all(&file.name, intermediate_string.as_str()).to_string();
+    
+    Ok(final_name)
+}
+
+#[tauri::command]
+pub async fn execute_rename(
+    pools: State<'_, ShelfManager>,
+    file_id: String,
+    regex_pattern: String,
+    format_template: String,
+) -> RenameResult<String> {
+    // プレビューと同じロジックで新しいファイル名を生成
+    let new_name = preview_rename(pools.clone(), file_id.clone(), regex_pattern, format_template).await?;
+    
+    // ファイル情報を取得
+    let (file, _, _) = get_file_with_context(&pools, &file_id).await?;
+    
+    // 新しいファイルパスを構築
+    let old_path = std::path::Path::new(&file.path);
+    let parent_dir = old_path.parent()
+        .ok_or_else(|| RenameError::IoError("Cannot determine parent directory".to_string()))?;
+    let new_path = parent_dir.join(&new_name);
+    
+    // ファイルの存在確認
+    if !old_path.exists() {
+        return Err(RenameError::FileNotFound(file.path.clone()));
+    }
+    
+    // 新しいパスが既に存在する場合はエラー
+    if new_path.exists() {
+        return Err(RenameError::IoError(format!("File already exists: {}", new_path.display())));
+    }
+    
+    // ファイルのリネーム実行
+    std::fs::rename(&old_path, &new_path)
+        .map_err(|e| RenameError::IoError(e.to_string()))?;
+    
+    // データベースの更新
+    let data_pool = pools.get_active_data_pool()
+        .map_err(|e| RenameError::Database(e.to_string()))?;
+    
+    let new_path_str = new_path.to_string_lossy().to_string();
+    let now = Utc::now();
+    
+    sqlx::query("UPDATE files SET path = ?, name = ?, updated_at_db = ? WHERE id = ?")
+        .bind(&new_path_str)
+        .bind(&new_name)
+        .bind(now)
+        .bind(&file_id)
+        .execute(&data_pool)
+        .await
+        .map_err(|e| RenameError::Database(e.to_string()))?;
+    
+    Ok(new_name)
 }

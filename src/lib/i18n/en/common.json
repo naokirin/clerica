@@ -93,7 +93,10 @@
     "yes": "Yes",
     "no": "No",
     "selectValue": "Select...",
-    "update": "Update"
+    "update": "Update",
+    "rename": "Rename",
+    "renaming": "Renaming...",
+    "executeRename": "Execute Rename"
   },
   "search": {
     "title": "File Search",
@@ -269,7 +272,22 @@
     "stereo": "Stereo",
     "channels_count": "{{count}}ch",
     "loading": "Loading...",
-    "errorMessage": "Error: {{message}}"
+    "errorMessage": "Error: {{message}}",
+    "rename": "Rename",
+    "regexPattern": "Regular Expression Pattern",
+    "formatTemplate": "Format Template",
+    "preview": "Preview",
+    "previewPlaceholder": "Enter pattern and template to see preview",
+    "renameHelp": "Help",
+    "availableVariables": "Available Variables",
+    "fullFilename": "Full filename",
+    "filenameWithoutExtension": "Filename without extension",
+    "fileExtension": "File extension",
+    "tagsJoined": "Tags joined with specified separator",
+    "regexBackreferences": "Regular Expression Back-references",
+    "regexBackreferencesDesc": "Captured groups from the regex pattern",
+    "renameSuccess": "File renamed to '{{name}}' successfully",
+    "renameError": "Failed to rename file"
   },
   "loading": {
     "ready": "Ready!",

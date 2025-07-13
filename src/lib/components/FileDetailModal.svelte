@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { X, Trash2, Loader2, ExternalLink, Folder } from "lucide-svelte";
+  import { X, Trash2, Loader2, ExternalLink, Folder, Edit3 } from "lucide-svelte";
   import type { File, CustomMetadataKey, Tag } from "../types";
   import { formatFileSize, formatDate } from "../utils";
   import CustomMetadataEditor from "./CustomMetadataEditor.svelte";
@@ -20,6 +20,7 @@
     onDeleteFile: (filePath: string, fileName: string) => void;
     onClose: () => void;
     onTagsUpdated?: () => void;
+    onFileRenamed?: () => void;
   }
 
   let {
@@ -31,6 +32,7 @@
     onDeleteFile,
     onClose,
     onTagsUpdated,
+    onFileRenamed,
   }: Props = $props();
 
   // タグの状態管理
@@ -39,6 +41,15 @@
   let isSavingTags = $state(false);
   let isLoadingTags = $state(false);
   let showSavedIndicator = $state(false);
+
+  // リネーム機能の状態管理
+  let showRenameSection = $state(false);
+  let regexPattern = $state("");
+  let formatTemplate = $state("");
+  let previewResult = $state("");
+  let isPreviewLoading = $state(false);
+  let isRenaming = $state(false);
+  let renameError = $state("");
 
   // EXIFメタデータの値を解釈する関数
   async function interpretExifValue(key: string, value: any): Promise<string> {
@@ -394,6 +405,81 @@
     }
   }
 
+  // プレビュー更新関数
+  async function updatePreview() {
+    if (!file || !regexPattern || !formatTemplate) {
+      previewResult = "";
+      return;
+    }
+
+    isPreviewLoading = true;
+    renameError = "";
+    
+    try {
+      const result = await filesApi.previewRename(file.id, regexPattern, formatTemplate);
+      previewResult = result;
+    } catch (error: any) {
+      console.error("プレビューエラー:", error);
+      renameError = error.message || "プレビューの生成に失敗しました";
+      previewResult = "";
+    } finally {
+      isPreviewLoading = false;
+    }
+  }
+
+  // リネーム実行関数
+  async function executeRename() {
+    if (!file || !regexPattern || !formatTemplate) return;
+
+    isRenaming = true;
+    renameError = "";
+
+    try {
+      const newName = await filesApi.executeRename(file.id, regexPattern, formatTemplate);
+      console.log("リネーム成功:", newName);
+      
+      // リネームセクションを閉じる
+      showRenameSection = false;
+      resetRenameForm();
+      
+      // 親コンポーネントに通知
+      if (onFileRenamed) {
+        onFileRenamed();
+      }
+      
+      errorStore.showError($t("common.fileDetail.renameSuccess", { name: newName }));
+    } catch (error: any) {
+      console.error("リネームエラー:", error);
+      renameError = error.message || $t("common.fileDetail.renameError");
+    } finally {
+      isRenaming = false;
+    }
+  }
+
+  // リネームフォームをリセット
+  function resetRenameForm() {
+    regexPattern = "";
+    formatTemplate = "";
+    previewResult = "";
+    renameError = "";
+  }
+
+  // リネームセクションの表示切り替え
+  function toggleRenameSection() {
+    showRenameSection = !showRenameSection;
+    if (!showRenameSection) {
+      resetRenameForm();
+    }
+  }
+
+  // 入力変更時にプレビューを更新
+  $effect(() => {
+    if (showRenameSection && regexPattern && formatTemplate) {
+      const timer = setTimeout(updatePreview, 300); // デバウンス
+      return () => clearTimeout(timer);
+    }
+  });
+
   // ファイルが変更されたときにタグを読み込む
   $effect(() => {
     if (file) {
@@ -479,6 +565,99 @@
             </div>
           </div>
         </div>
+
+        <!-- リネーム機能 -->
+        {#if !file.is_directory}
+          <div class="file-detail-section">
+            <div class="rename-section-header">
+              <h4>{$t("common.fileDetail.rename")}</h4>
+              <button
+                class="rename-toggle-button"
+                onclick={toggleRenameSection}
+                disabled={isDeleting || isRenaming}
+              >
+                <Edit3 size={16} />
+                {showRenameSection ? $t("common.buttons.cancel") : $t("common.buttons.rename")}
+              </button>
+            </div>
+
+            {#if showRenameSection}
+              <div class="rename-form">
+                <div class="rename-input-group">
+                  <label for="regex-pattern">{$t("common.fileDetail.regexPattern")}:</label>
+                  <input
+                    id="regex-pattern"
+                    type="text"
+                    bind:value={regexPattern}
+                    placeholder="例: ^(.+)\.(.+)$"
+                    disabled={isRenaming}
+                  />
+                </div>
+
+                <div class="rename-input-group">
+                  <label for="format-template">{$t("common.fileDetail.formatTemplate")}:</label>
+                  <input
+                    id="format-template"
+                    type="text"
+                    bind:value={formatTemplate}
+                    placeholder="例: {`{{ file.name_stem }}_{{ tags | join(\"_\") }}.$2`}"
+                    disabled={isRenaming}
+                  />
+                </div>
+
+                <div class="rename-preview">
+                  <div class="preview-header">
+                    <span>{$t("common.fileDetail.preview")}:</span>
+                    {#if isPreviewLoading}
+                      <Loader2 size={14} class="animate-spin" />
+                    {/if}
+                  </div>
+                  <div class="preview-result">
+                    {#if renameError}
+                      <span class="error-text">{renameError}</span>
+                    {:else if previewResult}
+                      <span class="preview-text">{file.name} → {previewResult}</span>
+                    {:else}
+                      <span class="placeholder-text">{$t("common.fileDetail.previewPlaceholder")}</span>
+                    {/if}
+                  </div>
+                </div>
+
+                <div class="rename-help">
+                  <details>
+                    <summary>{$t("common.fileDetail.renameHelp")}</summary>
+                    <div class="help-content">
+                      <h5>{$t("common.fileDetail.availableVariables")}:</h5>
+                      <ul>
+                        <li><code>{`{{ file.name }}`}</code> - {$t("common.fileDetail.fullFilename")}</li>
+                        <li><code>{`{{ file.name_stem }}`}</code> - {$t("common.fileDetail.filenameWithoutExtension")}</li>
+                        <li><code>{`{{ file.extension }}`}</code> - {$t("common.fileDetail.fileExtension")}</li>
+                        <li><code>{`{{ tags | join("_") }}`}</code> - {$t("common.fileDetail.tagsJoined")}</li>
+                      </ul>
+                      <h5>{$t("common.fileDetail.regexBackreferences")}:</h5>
+                      <p>$1, $2, $3... - {$t("common.fileDetail.regexBackreferencesDesc")}</p>
+                    </div>
+                  </details>
+                </div>
+
+                <div class="rename-actions">
+                  <button
+                    class="rename-execute-button"
+                    onclick={executeRename}
+                    disabled={!previewResult || isRenaming || renameError}
+                  >
+                    {#if isRenaming}
+                      <Loader2 size={16} class="animate-spin" />
+                      {$t("common.buttons.renaming")}
+                    {:else}
+                      {$t("common.buttons.executeRename")}
+                    {/if}
+                  </button>
+                </div>
+              </div>
+            {/if}
+          </div>
+        {/if}
 
         <div class="file-detail-section">
           <h4>{$t("common.fileDetail.dateInfo")}</h4>
@@ -815,3 +994,191 @@
     </div>
   </div>
 {/if}
+
+<style>
+  /* リネーム機能のスタイル */
+  .rename-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+
+  .rename-toggle-button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background-color: #007acc;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    transition: background-color 0.2s;
+  }
+
+  .rename-toggle-button:hover:not(:disabled) {
+    background-color: #005a9e;
+  }
+
+  .rename-toggle-button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+  }
+
+  .rename-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem;
+    background-color: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+  }
+
+  .rename-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .rename-input-group label {
+    font-weight: 500;
+    color: #495057;
+    font-size: 0.875rem;
+  }
+
+  .rename-input-group input {
+    padding: 0.75rem;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  }
+
+  .rename-input-group input:focus {
+    outline: none;
+    border-color: #007acc;
+    box-shadow: 0 0 0 2px rgba(0, 122, 204, 0.2);
+  }
+
+  .rename-input-group input:disabled {
+    background-color: #e9ecef;
+    cursor: not-allowed;
+  }
+
+  .rename-preview {
+    padding: 1rem;
+    background-color: white;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+  }
+
+  .preview-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #495057;
+    font-size: 0.875rem;
+  }
+
+  .preview-result {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.875rem;
+    min-height: 1.5rem;
+  }
+
+  .preview-text {
+    color: #28a745;
+  }
+
+  .error-text {
+    color: #dc3545;
+  }
+
+  .placeholder-text {
+    color: #6c757d;
+    font-style: italic;
+  }
+
+  .rename-help {
+    margin-top: 0.5rem;
+  }
+
+  .rename-help details summary {
+    cursor: pointer;
+    font-size: 0.875rem;
+    color: #007acc;
+    margin-bottom: 0.5rem;
+  }
+
+  .help-content {
+    background-color: white;
+    padding: 1rem;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    font-size: 0.875rem;
+  }
+
+  .help-content h5 {
+    margin: 0 0 0.5rem 0;
+    color: #495057;
+    font-size: 0.875rem;
+  }
+
+  .help-content ul {
+    margin: 0 0 1rem 0;
+    padding-left: 1.5rem;
+  }
+
+  .help-content li {
+    margin-bottom: 0.25rem;
+  }
+
+  .help-content code {
+    background-color: #f8f9fa;
+    padding: 0.125rem 0.25rem;
+    border-radius: 3px;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.8rem;
+    color: #e83e8c;
+  }
+
+  .help-content p {
+    margin: 0;
+    color: #6c757d;
+  }
+
+  .rename-actions {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 1rem;
+    border-top: 1px solid #dee2e6;
+  }
+
+  .rename-execute-button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.2s;
+  }
+
+  .rename-execute-button:hover:not(:disabled) {
+    background-color: #218838;
+  }
+
+  .rename-execute-button:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+  }
+</style>

@@ -143,6 +143,8 @@ async fn main() {
             file_manager::rescan_directory,
             file_manager::open_file,
             file_manager::reveal_in_finder,
+            file_manager::preview_rename,
+            file_manager::execute_rename,
             search::search_files,
             search::search_files_paginated,
             search::get_tags,

@@ -143,3 +143,19 @@ export async function countFilesWithCategory(category: FileCategory): Promise<nu
 export async function countFilesByDirectoryWithCategory(directoryId: string, category: FileCategory): Promise<number> {
   return await invoke("count_files_by_directory_with_category", { directoryId, category });
 }
+
+export async function previewRename(
+  fileId: string,
+  regexPattern: string,
+  formatTemplate: string
+): Promise<string> {
+  return await invoke("preview_rename", { fileId, regexPattern, formatTemplate });
+}
+
+export async function executeRename(
+  fileId: string,
+  regexPattern: string,
+  formatTemplate: string
+): Promise<string> {
+  return await invoke("execute_rename", { fileId, regexPattern, formatTemplate });
+}

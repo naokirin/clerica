@@ -93,7 +93,10 @@
     "yes": "はい",
     "no": "いいえ",
     "selectValue": "選択してください",
-    "update": "更新"
+    "update": "更新",
+    "rename": "名前を変更",
+    "renaming": "変更中...",
+    "executeRename": "名前変更を実行"
   },
   "search": {
     "title": "ファイル検索",
@@ -259,7 +262,6 @@
     "bitrate": "ビットレート",
     "sampleRate": "サンプルレート",
     "channels": "チャンネル数",
-    "title": "タイトル",
     "artist": "アーティスト",
     "album": "アルバム",
     "year": "年",
@@ -269,7 +271,22 @@
     "stereo": "ステレオ",
     "channels_count": "{{count}}ch",
     "loading": "読み込み中...",
-    "errorMessage": "エラー: {{message}}"
+    "errorMessage": "エラー: {{message}}",
+    "rename": "ファイル名の変更",
+    "regexPattern": "正規表現パターン",
+    "formatTemplate": "フォーマットテンプレート",
+    "preview": "プレビュー",
+    "previewPlaceholder": "パターンとテンプレートを入力してプレビューを確認",
+    "renameHelp": "ヘルプ",
+    "availableVariables": "利用可能な変数",
+    "fullFilename": "完全なファイル名",
+    "filenameWithoutExtension": "拡張子なしのファイル名",
+    "fileExtension": "ファイル拡張子",
+    "tagsJoined": "指定された区切り文字で連結されたタグ",
+    "regexBackreferences": "正規表現の後方参照",
+    "regexBackreferencesDesc": "正規表現パターンでキャプチャされたグループ",
+    "renameSuccess": "ファイル名を '{{name}}' に変更しました",
+    "renameError": "ファイル名の変更に失敗しました"
   },
   "loading": {
     "ready": "準備が完了しました！",
