@@ -124,7 +124,7 @@ pub async fn update_setting_string(
 pub async fn get_settings(pools: tauri::State<'_, ShelfManager>) -> Result<AppSettings, String> {
     get_all_settings(pools.get_settings_pool())
         .await
-        .map_err(|e| format!("Failed to get settings: {}", e))
+        .map_err(|e| format!("Failed to get settings: {e}"))
 }
 
 #[tauri::command]
@@ -135,7 +135,7 @@ pub async fn update_setting_bool_cmd(
 ) -> Result<(), String> {
     update_setting_bool(pools.get_settings_pool(), &key, value)
         .await
-        .map_err(|e| format!("Failed to update setting: {}", e))
+        .map_err(|e| format!("Failed to update setting: {e}"))
 }
 
 #[tauri::command]
@@ -146,7 +146,7 @@ pub async fn update_setting_int_cmd(
 ) -> Result<(), String> {
     update_setting_int(pools.get_settings_pool(), &key, value)
         .await
-        .map_err(|e| format!("Failed to update setting: {}", e))
+        .map_err(|e| format!("Failed to update setting: {e}"))
 }
 
 #[tauri::command]
@@ -157,7 +157,7 @@ pub async fn update_setting_float_cmd(
 ) -> Result<(), String> {
     update_setting_float(pools.get_settings_pool(), &key, value)
         .await
-        .map_err(|e| format!("Failed to update setting: {}", e))
+        .map_err(|e| format!("Failed to update setting: {e}"))
 }
 
 #[tauri::command]
@@ -168,7 +168,7 @@ pub async fn update_setting_string_cmd(
 ) -> Result<(), String> {
     update_setting_string(pools.get_settings_pool(), &key, &value)
         .await
-        .map_err(|e| format!("Failed to update setting: {}", e))
+        .map_err(|e| format!("Failed to update setting: {e}"))
 }
 
 #[tauri::command]
@@ -178,7 +178,7 @@ pub async fn get_language_setting(
     get_setting(pools.get_settings_pool(), "language")
         .await
         .map(|lang| lang.unwrap_or_else(|| "ja".to_string()))
-        .map_err(|e| format!("Failed to get language setting: {}", e))
+        .map_err(|e| format!("Failed to get language setting: {e}"))
 }
 
 pub fn is_hidden_file(path: &str) -> bool {

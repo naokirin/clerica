@@ -35,7 +35,7 @@ impl FileWatcher {
         let settings_pool = pools.get_settings_pool().clone();
         tokio::spawn(async move {
             if let Err(e) = exclusion_manager_clone.refresh_patterns(&settings_pool).await {
-                eprintln!("除外パターンの初期化エラー: {}", e);
+                eprintln!("除外パターンの初期化エラー: {e}");
             } else {
                 println!("除外パターンマネージャーが初期化されました（パターン数: {}）", 
                     exclusion_manager_clone.pattern_count());
@@ -211,7 +211,7 @@ async fn handle_create_event(
         
         // 除外パターンチェック
         if exclusion_manager.should_exclude(&path_str) {
-            println!("ファイルが除外パターンにマッチしたためスキップしました: {}", path_str);
+            println!("ファイルが除外パターンにマッチしたためスキップしました: {path_str}");
             continue;
         }
         
@@ -566,10 +566,38 @@ mod tests {
     use sqlx::SqlitePool;
     use std::path::PathBuf;
 
+    async fn create_test_settings_pool() -> SqlitePool {
+        let pool = SqlitePool::connect(":memory:").await.unwrap();
+        
+        // 必要なテーブルを作成
+        sqlx::query(
+            "CREATE TABLE IF NOT EXISTS shelves (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            )"
+        )
+        .execute(&pool)
+        .await
+        .unwrap();
+
+        sqlx::query(
+            "CREATE TABLE IF NOT EXISTS active_shelf (
+                id INTEGER PRIMARY KEY CHECK (id = 1),
+                shelf_id TEXT NOT NULL
+            )"
+        )
+        .execute(&pool)
+        .await
+        .unwrap();
+
+        pool
+    }
+
     #[tokio::test]
     async fn test_file_watcher_creation() {
-        let settings_pool = SqlitePool::connect(":memory:").await.unwrap();
-        let data_pool = SqlitePool::connect(":memory:").await.unwrap();
+        let settings_pool = create_test_settings_pool().await;
+        let _data_pool = SqlitePool::connect(":memory:").await.unwrap();
         let pools = std::sync::Arc::new(crate::ShelfManager::new(settings_pool).await.unwrap());
         let result = FileWatcher::new(pools, None);
         assert!(result.is_ok());
@@ -577,8 +605,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_file_watcher_watch_directory() {
-        let settings_pool = SqlitePool::connect(":memory:").await.unwrap();
-        let data_pool = SqlitePool::connect(":memory:").await.unwrap();
+        let settings_pool = create_test_settings_pool().await;
+        let _data_pool = SqlitePool::connect(":memory:").await.unwrap();
         let pools = std::sync::Arc::new(crate::ShelfManager::new(settings_pool).await.unwrap());
         let mut watcher = FileWatcher::new(pools, None).unwrap();
 
@@ -589,8 +617,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_file_watcher_unwatch_directory() {
-        let settings_pool = SqlitePool::connect(":memory:").await.unwrap();
-        let data_pool = SqlitePool::connect(":memory:").await.unwrap();
+        let settings_pool = create_test_settings_pool().await;
+        let _data_pool = SqlitePool::connect(":memory:").await.unwrap();
         let pools = std::sync::Arc::new(crate::ShelfManager::new(settings_pool).await.unwrap());
         let mut watcher = FileWatcher::new(pools, None).unwrap();
 
@@ -603,8 +631,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_handle_file_event_create() {
-        let settings_pool = SqlitePool::connect(":memory:").await.unwrap();
-        let data_pool = SqlitePool::connect(":memory:").await.unwrap();
+        let settings_pool = create_test_settings_pool().await;
+        let _data_pool = SqlitePool::connect(":memory:").await.unwrap();
         let pools = crate::ShelfManager::new(settings_pool).await.unwrap();
 
         let event = Event {
@@ -621,8 +649,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_handle_file_event_remove() {
-        let settings_pool = SqlitePool::connect(":memory:").await.unwrap();
-        let data_pool = SqlitePool::connect(":memory:").await.unwrap();
+        let settings_pool = create_test_settings_pool().await;
+        let _data_pool = SqlitePool::connect(":memory:").await.unwrap();
         let pools = crate::ShelfManager::new(settings_pool).await.unwrap();
 
         let event = Event {
@@ -638,8 +666,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_handle_file_event_modify() {
-        let settings_pool = SqlitePool::connect(":memory:").await.unwrap();
-        let data_pool = SqlitePool::connect(":memory:").await.unwrap();
+        let settings_pool = create_test_settings_pool().await;
+        let _data_pool = SqlitePool::connect(":memory:").await.unwrap();
         let pools = crate::ShelfManager::new(settings_pool).await.unwrap();
 
         let event = Event {
@@ -657,8 +685,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_handle_file_event_other() {
-        let settings_pool = SqlitePool::connect(":memory:").await.unwrap();
-        let data_pool = SqlitePool::connect(":memory:").await.unwrap();
+        let settings_pool = create_test_settings_pool().await;
+        let _data_pool = SqlitePool::connect(":memory:").await.unwrap();
         let pools = crate::ShelfManager::new(settings_pool).await.unwrap();
 
         let event = Event {

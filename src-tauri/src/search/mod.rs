@@ -130,8 +130,7 @@ pub async fn search_files_paginated(
                 .join(",");
             // 指定されたすべてのタグを持つファイルのみを取得
             conditions.push(format!(
-                "f.id IN (SELECT file_id FROM file_tags WHERE tag_id IN ({}) GROUP BY file_id HAVING COUNT(DISTINCT tag_id) = {})",
-                placeholders, tag_count
+                "f.id IN (SELECT file_id FROM file_tags WHERE tag_id IN ({placeholders}) GROUP BY file_id HAVING COUNT(DISTINCT tag_id) = {tag_count})"
             ));
             params.extend(tag_ids.clone());
         }
@@ -155,12 +154,10 @@ pub async fn search_files_paginated(
         if cat != "all" {
             match cat.as_str() {
                 "image" => {
-                    let image_exts = vec![
-                        "jpg", "jpeg", "png", "gif", "bmp", "webp", "svg", "ico", "tiff", "raw",
-                    ];
+                    let image_exts = ["jpg", "jpeg", "png", "gif", "bmp", "webp", "svg", "ico", "tiff", "raw"];
                     let ext_conditions: Vec<String> = image_exts
                         .iter()
-                        .map(|ext| format!("LOWER(f.name) LIKE '%.{}'", ext))
+                        .map(|ext| format!("LOWER(f.name) LIKE '%.{ext}'"))
                         .collect();
                     conditions.push(format!(
                         "(f.mime_type LIKE 'image/%' OR {} )",
@@ -168,10 +165,10 @@ pub async fn search_files_paginated(
                     ));
                 }
                 "audio" => {
-                    let audio_exts = vec!["mp3", "wav", "ogg", "flac", "aac", "m4a", "wma", "opus"];
+                    let audio_exts = ["mp3", "wav", "ogg", "flac", "aac", "m4a", "wma", "opus"];
                     let ext_conditions: Vec<String> = audio_exts
                         .iter()
-                        .map(|ext| format!("LOWER(f.name) LIKE '%.{}'", ext))
+                        .map(|ext| format!("LOWER(f.name) LIKE '%.{ext}'"))
                         .collect();
                     conditions.push(format!(
                         "(f.mime_type LIKE 'audio/%' OR {} )",
@@ -179,12 +176,10 @@ pub async fn search_files_paginated(
                     ));
                 }
                 "video" => {
-                    let video_exts = vec![
-                        "mp4", "avi", "mov", "wmv", "flv", "webm", "mkv", "m4v", "3gp",
-                    ];
+                    let video_exts = ["mp4", "avi", "mov", "wmv", "flv", "webm", "mkv", "m4v", "3gp"];
                     let ext_conditions: Vec<String> = video_exts
                         .iter()
-                        .map(|ext| format!("LOWER(f.name) LIKE '%.{}'", ext))
+                        .map(|ext| format!("LOWER(f.name) LIKE '%.{ext}'"))
                         .collect();
                     conditions.push(format!(
                         "(f.mime_type LIKE 'video/%' OR {} )",
@@ -198,15 +193,15 @@ pub async fn search_files_paginated(
                     ];
                     let ext_conditions: Vec<String> = doc_exts
                         .iter()
-                        .map(|ext| format!("LOWER(f.name) LIKE '%.{}'", ext))
+                        .map(|ext| format!("LOWER(f.name) LIKE '%.{ext}'"))
                         .collect();
                     conditions.push(format!("(f.mime_type LIKE 'application/pdf' OR f.mime_type LIKE 'application/msword' OR f.mime_type LIKE 'application/vnd.%' OR f.mime_type LIKE 'text/%' OR {} )", ext_conditions.join(" OR ")));
                 }
                 "archive" => {
-                    let archive_exts = vec!["zip", "rar", "7z", "tar", "gz", "bz2", "xz", "lzma"];
+                    let archive_exts = ["zip", "rar", "7z", "tar", "gz", "bz2", "xz", "lzma"];
                     let ext_conditions: Vec<String> = archive_exts
                         .iter()
-                        .map(|ext| format!("LOWER(f.name) LIKE '%.{}'", ext))
+                        .map(|ext| format!("LOWER(f.name) LIKE '%.{ext}'"))
                         .collect();
                     conditions.push(format!("(f.mime_type LIKE 'application/zip' OR f.mime_type LIKE 'application/x-rar%' OR f.mime_type LIKE 'application/x-7z%' OR f.mime_type LIKE 'application/x-tar%' OR f.mime_type LIKE 'application/gzip' OR {} )", ext_conditions.join(" OR ")));
                 }
@@ -221,7 +216,7 @@ pub async fn search_files_paginated(
                     ];
                     let not_ext_conditions: Vec<String> = known_exts
                         .iter()
-                        .map(|ext| format!("LOWER(f.name) NOT LIKE '%.{}'", ext))
+                        .map(|ext| format!("LOWER(f.name) NOT LIKE '%.{ext}'"))
                         .collect();
                     conditions.push(format!("(f.mime_type IS NULL OR (f.mime_type NOT LIKE 'image/%' AND f.mime_type NOT LIKE 'audio/%' AND f.mime_type NOT LIKE 'video/%' AND f.mime_type NOT LIKE 'application/pdf' AND f.mime_type NOT LIKE 'application/msword' AND f.mime_type NOT LIKE 'application/vnd.%' AND f.mime_type NOT LIKE 'text/%' AND f.mime_type NOT LIKE 'application/zip' AND f.mime_type NOT LIKE 'application/x-rar%' AND f.mime_type NOT LIKE 'application/x-7z%' AND f.mime_type NOT LIKE 'application/x-tar%' AND f.mime_type NOT LIKE 'application/gzip' AND {} ))", not_ext_conditions.join(" AND ")));
                 }
@@ -308,8 +303,7 @@ pub async fn search_files_paginated(
     };
 
     sql.push_str(&format!(
-        " ORDER BY {} {} NULLS LAST",
-        sort_column, order_direction
+        " ORDER BY {sort_column} {order_direction} NULLS LAST"
     ));
 
     // 総件数取得用のクエリ
@@ -336,12 +330,12 @@ pub async fn search_files_paginated(
 
     // SQLクエリとパラメータをログに出力
     println!("=== SEARCH SQL DEBUG ===");
-    println!("Main SQL: {}", sql);
-    println!("Count SQL: {}", count_sql);
-    println!("Conditions: {:?}", conditions);
-    println!("Parameters: {:?}", params);
-    println!("Tag IDs: {:?}", tag_ids);
-    println!("Category: {:?}", category);
+    println!("Main SQL: {sql}");
+    println!("Count SQL: {count_sql}");
+    println!("Conditions: {conditions:?}");
+    println!("Parameters: {params:?}");
+    println!("Tag IDs: {tag_ids:?}");
+    println!("Category: {category:?}");
     println!("========================");
 
     // 総件数を取得
@@ -358,7 +352,7 @@ pub async fn search_files_paginated(
 
     // ページネーション追加
     if let (Some(limit), Some(offset)) = (limit, offset) {
-        sql.push_str(&format!(" LIMIT {} OFFSET {}", limit, offset));
+        sql.push_str(&format!(" LIMIT {limit} OFFSET {offset}"));
     }
 
     // クエリ実行
@@ -368,8 +362,8 @@ pub async fn search_files_paginated(
     }
 
     println!("=== EXECUTING MAIN QUERY ===");
-    println!("Final SQL: {}", sql);
-    println!("Final Parameters: {:?}", params);
+    println!("Final SQL: {sql}");
+    println!("Final Parameters: {params:?}");
     println!("============================");
 
     let rows = query_builder

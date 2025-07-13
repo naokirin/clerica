@@ -24,13 +24,16 @@ vi.mock('../../lib/viewmodels/FileViewModel', () => ({
 vi.mock('../../lib/viewmodels/SearchViewModel', () => ({
   SearchViewModel: vi.fn().mockImplementation(() => ({
     dispose: vi.fn(),
-    setSelectedDirectoryId: vi.fn()
+    setSelectedDirectoryId: vi.fn(),
+    isSearchActive: vi.fn().mockReturnValue(false),
+    performSearch: vi.fn().mockResolvedValue(undefined)
   }))
 }));
 
 vi.mock('../../lib/viewmodels/TagViewModel', () => ({
   TagViewModel: vi.fn().mockImplementation(() => ({
     loadTags: vi.fn().mockResolvedValue(undefined),
+    loadTopTags: vi.fn().mockResolvedValue(undefined),
     loadCustomMetadataKeys: vi.fn().mockResolvedValue(undefined),
     dispose: vi.fn()
   }))
@@ -71,10 +74,13 @@ describe('AppViewModel', () => {
       expect(appViewModel.tagViewModel).toBeDefined();
     });
 
-    it('should start app initialization', () => {
+    it('should initialize child view models without auto-loading', () => {
       appViewModel = new AppViewModel();
       
-      expect(appViewModel.directoryViewModel.loadDirectories).toHaveBeenCalled();
+      expect(appViewModel.directoryViewModel).toBeDefined();
+      expect(appViewModel.fileViewModel).toBeDefined();
+      expect(appViewModel.searchViewModel).toBeDefined();
+      expect(appViewModel.tagViewModel).toBeDefined();
     });
   });
 
@@ -100,8 +106,8 @@ describe('AppViewModel', () => {
       appViewModel = new AppViewModel();
     });
 
-    it('should be true initially', () => {
-      expect(get(appViewModel.isAppLoading)).toBe(true);
+    it('should be false initially', () => {
+      expect(get(appViewModel.isAppLoading)).toBe(false);
     });
 
     it('should be false when explicitly set to false', () => {
@@ -197,7 +203,7 @@ describe('AppViewModel', () => {
       const error = new Error('Reload failed');
       appViewModel.fileViewModel.loadFiles = vi.fn().mockRejectedValue(error);
 
-      await expect(appViewModel.reloadAllData()).rejects.toThrow('Reload failed');
+      await expect(appViewModel.reloadAllData()).rejects.toThrow(error);
     });
   });
 

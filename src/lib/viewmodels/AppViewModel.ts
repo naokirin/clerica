@@ -23,7 +23,7 @@ export class AppViewModel extends BaseViewModel {
     files: false,
   });
   private _loadingProgress: Writable<number> = writable(0);
-  private _isAppLoading: Writable<boolean> = writable(true);
+  private _isAppLoading: Writable<boolean> = writable(false);
   private _currentShelfId: Writable<string> = writable("");
 
   // サブスクリプション管理
@@ -50,9 +50,6 @@ export class AppViewModel extends BaseViewModel {
       this.searchViewModel.setSelectedDirectoryId(directoryId);
     });
     this._unsubscribers.push(unsubscriber);
-
-    // アプリケーション初期化
-    this.initializeApp();
   }
 
   public setActiveTab(tab: ActiveTab): void {
@@ -108,6 +105,8 @@ export class AppViewModel extends BaseViewModel {
       await this.fileViewModel.loadFiles();
     } catch (error) {
       console.error('データの再読み込みに失敗しました:', error);
+      this.setError('データの再読み込みに失敗しました');
+      throw error; // エラーを再スローしてテストでcatchできるようにする
     } finally {
       this.setLoading(false);
       this._isAppLoading.set(false);

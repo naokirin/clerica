@@ -31,7 +31,7 @@ async fn main() {
     let db_manager = match DatabaseManager::new().await {
         Ok(manager) => manager,
         Err(e) => {
-            eprintln!("データベースの初期化に失敗しました: {}", e);
+            eprintln!("データベースの初期化に失敗しました: {e}");
             std::process::exit(1);
         }
     };
@@ -40,7 +40,7 @@ async fn main() {
     let shelf_manager = match ShelfManager::new(db_manager.get_settings_pool().clone()).await {
         Ok(manager) => manager,
         Err(e) => {
-            eprintln!("シェルフマネージャの初期化に失敗しました: {}", e);
+            eprintln!("シェルフマネージャの初期化に失敗しました: {e}");
             std::process::exit(1);
         }
     };

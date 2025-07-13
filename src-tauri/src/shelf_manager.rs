@@ -197,7 +197,7 @@ impl ShelfManager {
 
         // 新しい接続プールを作成
         let db_path = self.get_data_db_path(shelf_id);
-        let db_url = format!("sqlite:{}", db_path);
+        let db_url = format!("sqlite:{db_path}");
 
         let connect_options = sqlx::sqlite::SqliteConnectOptions::from_str(&db_url)?
             .create_if_missing(true)
@@ -224,10 +224,10 @@ impl ShelfManager {
 
     fn get_data_db_path(&self, shelf_id: &str) -> String {
         if cfg!(debug_assertions) {
-            format!("./data_{}.db", shelf_id)
+            format!("./data_{shelf_id}.db")
         } else {
             let home = env::var("HOME").unwrap_or_else(|_| ".".to_string());
-            format!("{}/clerica_data_{}.db", home, shelf_id)
+            format!("{home}/clerica_data_{shelf_id}.db")
         }
     }
 }

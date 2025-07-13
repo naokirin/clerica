@@ -44,8 +44,8 @@ impl ExclusionPatternManager {
             match RegexSet::new(&pattern_strings) {
                 Ok(set) => Some(set),
                 Err(e) => {
-                    eprintln!("正規表現セットの作成エラー: {}", e);
-                    return Err(format!("正規表現セットの作成に失敗しました: {}", e));
+                    eprintln!("正規表現セットの作成エラー: {e}");
+                    return Err(format!("正規表現セットの作成に失敗しました: {e}"));
                 }
             }
         };
@@ -80,7 +80,7 @@ async fn get_exclusion_patterns_from_db(pool: &SqlitePool) -> Result<Vec<Exclusi
     )
     .fetch_all(pool)
     .await
-    .map_err(|e| format!("除外パターンの取得に失敗しました: {}", e))?;
+    .map_err(|e| format!("除外パターンの取得に失敗しました: {e}"))?;
 
     Ok(patterns)
 }
@@ -89,7 +89,7 @@ async fn get_exclusion_patterns_from_db(pool: &SqlitePool) -> Result<Vec<Exclusi
 fn validate_pattern(pattern: &str) -> Result<(), String> {
     match Regex::new(pattern) {
         Ok(_) => Ok(()),
-        Err(e) => Err(format!("無効な正規表現です: {}", e)),
+        Err(e) => Err(format!("無効な正規表現です: {e}")),
     }
 }
 
@@ -120,7 +120,7 @@ pub async fn add_exclusion_pattern(
             if e.to_string().contains("UNIQUE constraint failed") {
                 "このパターンは既に存在します".to_string()
             } else {
-                format!("除外パターンの追加に失敗しました: {}", e)
+                format!("除外パターンの追加に失敗しました: {e}")
             }
         })?;
 
@@ -138,7 +138,7 @@ pub async fn delete_exclusion_pattern(
         .bind(id)
         .execute(pool)
         .await
-        .map_err(|e| format!("除外パターンの削除に失敗しました: {}", e))?;
+        .map_err(|e| format!("除外パターンの削除に失敗しました: {e}"))?;
 
     if result.rows_affected() == 0 {
         return Err("指定されたパターンが見つかりません".to_string());
@@ -157,7 +157,7 @@ pub async fn test_exclusion_pattern(
 
     // テストパスにマッチするかチェック
     let regex = Regex::new(&pattern)
-        .map_err(|e| format!("正規表現の作成に失敗しました: {}", e))?;
+        .map_err(|e| format!("正規表現の作成に失敗しました: {e}"))?;
     
     Ok(regex.is_match(&test_path))
 }

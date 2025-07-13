@@ -164,7 +164,7 @@ pub async fn remove_directory(
                 .await
                 .map_err(|e| e.to_string())?;
         }
-        println!("削除されたタグ数: {}", deleted_tags_count);
+        println!("削除されたタグ数: {deleted_tags_count}");
     }
     
     // トランザクションをコミット
@@ -1367,7 +1367,7 @@ async fn analyze_and_auto_tag_directory(
     directory_path: &str,
     threshold: f64,
 ) -> Result<(), String> {
-    println!("ディレクトリツリー '{}' の自動タグ付けを開始", directory_path);
+    println!("ディレクトリツリー '{directory_path}' の自動タグ付けを開始");
     
     // ディレクトリツリー内のすべてのディレクトリを取得
     let walker = WalkDir::new(directory_path)
@@ -1390,7 +1390,7 @@ async fn analyze_and_auto_tag_directory(
         processed_directories += 1;
     }
     
-    println!("自動タグ付け完了: {} 個のディレクトリを処理しました", processed_directories);
+    println!("自動タグ付け完了: {processed_directories} 個のディレクトリを処理しました");
     Ok(())
 }
 
@@ -1699,7 +1699,7 @@ fn create_template_context(file: &File, tags: &[String], metadata: &serde_json::
     context.insert("file", &file);
     context.insert("filename", &file.name);
     context.insert("name_without_ext", &file.name.rsplit('.').nth(1).map(|s| s.to_string()).unwrap_or_else(|| file.name.clone()));
-    context.insert("extension", &file.name.split('.').last().unwrap_or(""));
+    context.insert("extension", &file.name.split('.').next_back().unwrap_or(""));
     context.insert("path", &file.path);
     context.insert("directory", &file.directory_id);
     
@@ -1710,11 +1710,11 @@ fn create_template_context(file: &File, tags: &[String], metadata: &serde_json::
     context.insert("tags_dash", &tags.join("-"));
     
     // ファイルメタデータ（EXIF、オーディオタグなど）
-    println!("File Metadata: {:?}", metadata);
+    println!("File Metadata: {metadata:?}");
     context.insert("metadata", metadata);
     
     // カスタムメタデータ（ユーザー設定）
-    println!("Custom Metadata: {:?}", custom_metadata);
+    println!("Custom Metadata: {custom_metadata:?}");
     context.insert("custom_metadata", custom_metadata);
     
     // カスタムメタデータの個別設定（直接アクセス用）
@@ -1856,9 +1856,9 @@ pub async fn preview_rename(
     
     // Teraテンプレートをレンダリング
     let intermediate_string = Tera::one_off(&format_template, &context, false)
-        .map_err(|e| RenameError::TemplateError(format!("Template error: {}", e)))?;
+        .map_err(|e| RenameError::TemplateError(format!("Template error: {e}")))?;
 
-    println!("Intermediate string: {}", intermediate_string);
+    println!("Intermediate string: {intermediate_string}");
     
     // 正規表現の後方参照を置換
     let final_name = regex.replace_all(&file.name, intermediate_string.as_str()).to_string();
@@ -1896,7 +1896,7 @@ pub async fn execute_rename(
     }
     
     // ファイルのリネーム実行
-    std::fs::rename(&old_path, &new_path)
+    std::fs::rename(old_path, &new_path)
         .map_err(|e| RenameError::IoError(e.to_string()))?;
     
     // データベースの更新
@@ -1952,7 +1952,7 @@ pub async fn preview_advanced_batch_rename(
                     file_id: op.file_id.clone(),
                     old_name: format!("File ID: {}", op.file_id),
                     new_name: "".to_string(),
-                    error: Some(format!("Failed to get file: {}", e)),
+                    error: Some(format!("Failed to get file: {e}")),
                 });
                 continue;
             }
@@ -2043,7 +2043,7 @@ pub async fn execute_advanced_batch_rename(
             }
             
             // ファイルのリネーム実行
-            match std::fs::rename(&old_path_obj, &new_path) {
+            match std::fs::rename(old_path_obj, &new_path) {
                 Ok(_) => {
                     // データベースの更新
                     let new_path_str = new_path.to_string_lossy().to_string();
@@ -2062,7 +2062,7 @@ pub async fn execute_advanced_batch_rename(
                         }
                         Err(e) => {
                             // ファイルは移動したがDBの更新に失敗した場合、ファイルを元に戻す
-                            let _ = std::fs::rename(&new_path, &old_path_obj);
+                            let _ = std::fs::rename(&new_path, old_path_obj);
                             failed_files.push((old_path, format!("データベース更新エラー: {e}")));
                         }
                     }
@@ -2113,7 +2113,7 @@ async fn generate_advanced_rename(
         
         // Teraテンプレートをレンダリング
         let intermediate_string = Tera::one_off(&op.replace_pattern, &context, false)
-            .map_err(|e| RenameError::TemplateError(format!("Template error: {}", e)))?;
+            .map_err(|e| RenameError::TemplateError(format!("Template error: {e}")))?;
         
         // 正規表現の後方参照を置換
         let final_name = regex.replace_all(original_name, intermediate_string.as_str()).to_string();
@@ -2139,7 +2139,7 @@ async fn generate_advanced_rename(
             
             // Teraテンプレートをレンダリング
             let rendered_replacement = Tera::one_off(&op.replace_pattern, &context, false)
-                .map_err(|e| RenameError::TemplateError(format!("Template error: {}", e)))?;
+                .map_err(|e| RenameError::TemplateError(format!("Template error: {e}")))?;
             
             let final_name = original_name.replace(&op.find_pattern, &rendered_replacement);
             Ok(final_name)

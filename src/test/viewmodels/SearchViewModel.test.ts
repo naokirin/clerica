@@ -5,7 +5,8 @@ import type { SearchResult, MetadataSearchFilter, File } from '../../lib/types';
 
 // Mock APIs
 vi.mock('../../lib/api/search', () => ({
-  searchFiles: vi.fn()
+  searchFiles: vi.fn(),
+  searchFilesPaginated: vi.fn()
 }));
 
 vi.mock('../../lib/api/settings', () => ({
@@ -17,7 +18,14 @@ vi.mock('../../lib/utils', () => ({
   getFileCategory: vi.fn()
 }));
 
-const { searchFiles: mockSearchFiles } = vi.mocked(await import('../../lib/api/search'));
+// Mock error store
+vi.mock('../../lib/stores/error', () => ({
+  errorStore: {
+    showError: vi.fn()
+  }
+}));
+
+const { searchFiles: mockSearchFiles, searchFilesPaginated: mockSearchFilesPaginated } = vi.mocked(await import('../../lib/api/search'));
 const { getSettings: mockGetSettings } = vi.mocked(await import('../../lib/api/settings'));
 const { getFileCategory: mockGetFileCategory } = vi.mocked(await import('../../lib/utils'));
 
@@ -55,9 +63,31 @@ describe('SearchViewModel', () => {
     }
   ];
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
     mockSearchFiles.mockResolvedValue(mockSearchResults);
+    mockSearchFilesPaginated.mockResolvedValue({
+      results: mockSearchResults,
+      total_count: 40, // More than 20 items for pagination
+      category_counts: {
+        all: 2,
+        image: 1,
+        audio: 0,
+        video: 0,
+        document: 1,
+        archive: 0,
+        other: 0,
+      },
+      total_category_counts: {
+        all: 2,
+        image: 1,
+        audio: 0,
+        video: 0,
+        document: 1,
+        archive: 0,
+        other: 0,
+      }
+    });
     mockGetSettings.mockResolvedValue({ show_hidden_files: false, files_per_page: 20 });
     mockGetFileCategory.mockImplementation((file: File) => {
       if (file.name.endsWith('.jpg')) return 'image';
@@ -66,6 +96,8 @@ describe('SearchViewModel', () => {
     });
     
     searchViewModel = new SearchViewModel();
+    // Wait for constructor async operations to complete
+    await new Promise(resolve => setTimeout(resolve, 10));
   });
 
   afterEach(() => {
@@ -78,9 +110,13 @@ describe('SearchViewModel', () => {
       expect(get(searchViewModel.selectedTags)).toEqual([]);
       expect(get(searchViewModel.metadataSearchFilters)).toEqual([]);
       expect(get(searchViewModel.metadataLogic)).toBe('AND');
-      expect(get(searchViewModel.searchResults)).toEqual([]);
       expect(get(searchViewModel.selectedCategory)).toBe('all');
       expect(get(searchViewModel.currentPage)).toBe(1);
+    });
+
+    it('should load initial files on construction', () => {
+      // After constructor async operations, searchResults should contain data
+      expect(get(searchViewModel.searchResults)).toEqual(mockSearchResults);
     });
   });
 
@@ -111,26 +147,47 @@ describe('SearchViewModel', () => {
   });
 
   describe('category filtering', () => {
-    beforeEach(async () => {
-      await searchViewModel.performSearch();
-    });
-
     it('should show all results by default', () => {
       const filtered = get(searchViewModel.filteredSearchResults);
       expect(filtered).toEqual(mockSearchResults);
     });
 
-    it('should filter by category', () => {
-      searchViewModel.selectCategory('image');
+    it('should filter by category', async () => {
+      // Setup mock for image category filter
+      const imageResults = [mockSearchResults[0]]; // Only the JPG file
+      mockSearchFilesPaginated.mockResolvedValueOnce({
+        results: imageResults,
+        total_count: 1,
+        category_counts: {
+          all: 1,
+          image: 1,
+          audio: 0,
+          video: 0,
+          document: 0,
+          archive: 0,
+          other: 0,
+        },
+        total_category_counts: {
+          all: 2,
+          image: 1,
+          audio: 0,
+          video: 0,
+          document: 1,
+          archive: 0,
+          other: 0,
+        }
+      });
+      
+      await searchViewModel.selectCategory('image');
       
       const filtered = get(searchViewModel.filteredSearchResults);
       expect(filtered).toHaveLength(1);
       expect(filtered[0].file.name).toBe('test.jpg');
     });
 
-    it('should reset page when category changes', () => {
-      searchViewModel.goToPage(2);
-      searchViewModel.selectCategory('image');
+    it('should reset page when category changes', async () => {
+      await searchViewModel.goToPage(2);
+      await searchViewModel.selectCategory('image');
       
       expect(get(searchViewModel.currentPage)).toBe(1);
     });
@@ -146,14 +203,10 @@ describe('SearchViewModel', () => {
   });
 
   describe('pagination', () => {
-    beforeEach(async () => {
-      await new Promise(resolve => setTimeout(resolve, 0)); // Wait for async operations in constructor
-      await searchViewModel.performSearch();
-    });
 
     it('should calculate total pages', () => {
       const totalPages = get(searchViewModel.searchTotalPages);
-      expect(totalPages).toBe(1); // 2 results, 20 per page
+      expect(totalPages).toBe(2); // 40 results, 20 per page
     });
 
     it('should paginate results', () => {
@@ -161,26 +214,26 @@ describe('SearchViewModel', () => {
       expect(paginated).toEqual(mockSearchResults);
     });
 
-    it('should navigate pages', () => {
-      searchViewModel.goToPage(2);
+    it('should navigate pages', async () => {
+      await searchViewModel.goToPage(2);
       expect(get(searchViewModel.currentPage)).toBe(2);
       
-      searchViewModel.goToPreviousPage();
+      await searchViewModel.goToPreviousPage();
       expect(get(searchViewModel.currentPage)).toBe(1);
       
-      searchViewModel.goToNextPage();
+      await searchViewModel.goToNextPage();
       expect(get(searchViewModel.currentPage)).toBe(2);
       
-      searchViewModel.goToFirstPage();
+      await searchViewModel.goToFirstPage();
       expect(get(searchViewModel.currentPage)).toBe(1);
       
-      searchViewModel.goToLastPage(5);
-      expect(get(searchViewModel.currentPage)).toBe(5);
+      await searchViewModel.goToLastPage();
+      expect(get(searchViewModel.currentPage)).toBe(2);
     });
 
-    it('should not go below page 1', () => {
-      searchViewModel.goToPage(1);
-      searchViewModel.goToPreviousPage();
+    it('should not go below page 1', async () => {
+      await searchViewModel.goToPage(1);
+      await searchViewModel.goToPreviousPage();
       
       expect(get(searchViewModel.currentPage)).toBe(1);
     });
@@ -196,13 +249,16 @@ describe('SearchViewModel', () => {
 
       await searchViewModel.performSearch();
 
-      expect(mockSearchFiles).toHaveBeenCalledWith(
+      expect(mockSearchFilesPaginated).toHaveBeenCalledWith(
         'test',
         ['tag1'],
         [{ field: 'size', operator: 'greater_than', value: '1000' }],
         'AND',
         'all',
-        { field: 'modified_at', order: 'desc' }
+        { field: 'modified_at', order: 'desc' },
+        20, // itemsPerPage
+        0,  // offset
+        'all' // category
       );
       expect(get(searchViewModel.searchResults)).toEqual(mockSearchResults);
       expect(get(searchViewModel.currentPage)).toBe(1);
@@ -210,19 +266,19 @@ describe('SearchViewModel', () => {
 
     it('should handle search errors', async () => {
       const error = new Error('Search failed');
-      mockSearchFiles.mockRejectedValue(error);
+      mockSearchFilesPaginated.mockRejectedValueOnce(error);
 
       await searchViewModel.performSearch();
 
       expect(get(searchViewModel.error)).toBeTruthy();
     });
 
-    it('should reset page after search', async () => {
-      searchViewModel.goToPage(3);
+    it('should maintain current page after search', async () => {
+      await searchViewModel.goToPage(2);
       
       await searchViewModel.performSearch();
       
-      expect(get(searchViewModel.currentPage)).toBe(1);
+      expect(get(searchViewModel.currentPage)).toBe(2);
     });
   });
 

@@ -459,8 +459,7 @@ impl DatabaseTrait for Database {
         };
 
         let query = format!(
-            "SELECT * FROM files ORDER BY {} {} NULLS LAST",
-            sort_column, order_direction
+            "SELECT * FROM files ORDER BY {sort_column} {order_direction} NULLS LAST"
         );
 
         let rows = sqlx::query(&query).fetch_all(pool).await?;
@@ -522,8 +521,7 @@ impl DatabaseTrait for Database {
         };
 
         let query = format!(
-            "SELECT * FROM files WHERE directory_id = ? ORDER BY {} {} NULLS LAST",
-            sort_column, order_direction
+            "SELECT * FROM files WHERE directory_id = ? ORDER BY {sort_column} {order_direction} NULLS LAST"
         );
 
         let rows = sqlx::query(&query)
@@ -607,8 +605,7 @@ impl DatabaseTrait for Database {
         };
 
         let query = format!(
-            "SELECT * FROM files {} ORDER BY {} {} NULLS LAST LIMIT ? OFFSET ?",
-            where_clause, sort_column, order_direction
+            "SELECT * FROM files {where_clause} ORDER BY {sort_column} {order_direction} NULLS LAST LIMIT ? OFFSET ?"
         );
 
         let rows = sqlx::query(&query)
@@ -747,7 +744,7 @@ impl DatabaseTrait for Database {
             format!("WHERE {}", where_conditions.join(" AND "))
         };
 
-        let query = format!("SELECT COUNT(*) FROM files {}", where_clause);
+        let query = format!("SELECT COUNT(*) FROM files {where_clause}");
         
         let count: i64 = sqlx::query_scalar(&query)
             .fetch_one(pool)
@@ -824,7 +821,7 @@ impl DatabaseTrait for Database {
         pool: &SqlitePool,
         query: &str,
     ) -> Result<Vec<Tag>, sqlx::Error> {
-        let search_pattern = format!("%{}%", query);
+        let search_pattern = format!("%{query}%");
         let rows = sqlx::query(
             "SELECT * FROM tags 
              WHERE name LIKE ? 
