@@ -110,6 +110,7 @@ pub trait DatabaseTrait {
         sort_order: Option<String>,
         limit: u32,
         offset: u32,
+        show_hidden_files: bool,
     ) -> Result<Vec<File>, sqlx::Error>;
     async fn get_files_by_directory_paginated(
         &self,
@@ -119,9 +120,10 @@ pub trait DatabaseTrait {
         sort_order: Option<String>,
         limit: u32,
         offset: u32,
+        show_hidden_files: bool,
     ) -> Result<Vec<File>, sqlx::Error>;
-    async fn count_all_files(&self, pool: &SqlitePool) -> Result<u32, sqlx::Error>;
-    async fn count_files_by_directory(&self, pool: &SqlitePool, directory_id: &str) -> Result<u32, sqlx::Error>;
+    async fn count_all_files(&self, pool: &SqlitePool, show_hidden_files: bool) -> Result<u32, sqlx::Error>;
+    async fn count_files_by_directory(&self, pool: &SqlitePool, directory_id: &str, show_hidden_files: bool) -> Result<u32, sqlx::Error>;
     async fn get_files_paginated_with_category(
         &self,
         pool: &SqlitePool,
@@ -130,6 +132,7 @@ pub trait DatabaseTrait {
         sort_order: Option<String>,
         limit: u32,
         offset: u32,
+        show_hidden_files: bool,
     ) -> Result<Vec<File>, sqlx::Error>;
     async fn get_files_by_directory_paginated_with_category(
         &self,
@@ -140,9 +143,10 @@ pub trait DatabaseTrait {
         sort_order: Option<String>,
         limit: u32,
         offset: u32,
+        show_hidden_files: bool,
     ) -> Result<Vec<File>, sqlx::Error>;
-    async fn count_files_with_category(&self, pool: &SqlitePool, category: &str) -> Result<u32, sqlx::Error>;
-    async fn count_files_by_directory_with_category(&self, pool: &SqlitePool, directory_id: &str, category: &str) -> Result<u32, sqlx::Error>;
+    async fn count_files_with_category(&self, pool: &SqlitePool, category: &str, show_hidden_files: bool) -> Result<u32, sqlx::Error>;
+    async fn count_files_by_directory_with_category(&self, pool: &SqlitePool, directory_id: &str, category: &str, show_hidden_files: bool) -> Result<u32, sqlx::Error>;
     async fn get_all_tags(&self, pool: &SqlitePool) -> Result<Vec<Tag>, sqlx::Error>;
     async fn get_top_tags(&self, pool: &SqlitePool, limit: u32) -> Result<Vec<Tag>, sqlx::Error>;
     async fn search_tags_by_name(
@@ -561,6 +565,7 @@ impl DatabaseTrait for Database {
         sort_order: Option<String>,
         limit: u32,
         offset: u32,
+        show_hidden_files: bool,
     ) -> Result<Vec<File>, sqlx::Error> {
         let sort_field = sort_field.as_deref().unwrap_or("modified_at");
         let sort_order = sort_order.as_deref().unwrap_or("desc");
@@ -580,9 +585,15 @@ impl DatabaseTrait for Database {
             _ => "DESC",
         };
 
+        let hidden_files_clause = if show_hidden_files {
+            ""
+        } else {
+            "WHERE name NOT LIKE '.%'"
+        };
+
         let query = format!(
-            "SELECT * FROM files ORDER BY {} {} NULLS LAST LIMIT ? OFFSET ?",
-            sort_column, order_direction
+            "SELECT * FROM files {} ORDER BY {} {} NULLS LAST LIMIT ? OFFSET ?",
+            hidden_files_clause, sort_column, order_direction
         );
 
         let rows = sqlx::query(&query)
@@ -630,6 +641,7 @@ impl DatabaseTrait for Database {
         sort_order: Option<String>,
         limit: u32,
         offset: u32,
+        show_hidden_files: bool,
     ) -> Result<Vec<File>, sqlx::Error> {
         let sort_field = sort_field.as_deref().unwrap_or("modified_at");
         let sort_order = sort_order.as_deref().unwrap_or("desc");
@@ -649,9 +661,15 @@ impl DatabaseTrait for Database {
             _ => "DESC",
         };
 
+        let hidden_files_clause = if show_hidden_files {
+            ""
+        } else {
+            " AND name NOT LIKE '.%'"
+        };
+
         let query = format!(
-            "SELECT * FROM files WHERE directory_id = ? ORDER BY {} {} NULLS LAST LIMIT ? OFFSET ?",
-            sort_column, order_direction
+            "SELECT * FROM files WHERE directory_id = ?{} ORDER BY {} {} NULLS LAST LIMIT ? OFFSET ?",
+            hidden_files_clause, sort_column, order_direction
         );
 
         let rows = sqlx::query(&query)
@@ -692,15 +710,31 @@ impl DatabaseTrait for Database {
         Ok(files)
     }
 
-    async fn count_all_files(&self, pool: &SqlitePool) -> Result<u32, sqlx::Error> {
-        let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM files")
+    async fn count_all_files(&self, pool: &SqlitePool, show_hidden_files: bool) -> Result<u32, sqlx::Error> {
+        let hidden_files_clause = if show_hidden_files {
+            ""
+        } else {
+            "WHERE name NOT LIKE '.%'"
+        };
+
+        let query = format!("SELECT COUNT(*) FROM files {}", hidden_files_clause);
+        
+        let count: i64 = sqlx::query_scalar(&query)
             .fetch_one(pool)
             .await?;
         Ok(count as u32)
     }
 
-    async fn count_files_by_directory(&self, pool: &SqlitePool, directory_id: &str) -> Result<u32, sqlx::Error> {
-        let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM files WHERE directory_id = ?")
+    async fn count_files_by_directory(&self, pool: &SqlitePool, directory_id: &str, show_hidden_files: bool) -> Result<u32, sqlx::Error> {
+        let hidden_files_clause = if show_hidden_files {
+            ""
+        } else {
+            " AND name NOT LIKE '.%'"
+        };
+
+        let query = format!("SELECT COUNT(*) FROM files WHERE directory_id = ?{}", hidden_files_clause);
+        
+        let count: i64 = sqlx::query_scalar(&query)
             .bind(directory_id)
             .fetch_one(pool)
             .await?;
@@ -1362,6 +1396,7 @@ impl DatabaseTrait for Database {
         sort_order: Option<String>,
         limit: u32,
         offset: u32,
+        show_hidden_files: bool,
     ) -> Result<Vec<File>, sqlx::Error> {
         let sort_field = sort_field.as_deref().unwrap_or("modified_at");
         let sort_order = sort_order.as_deref().unwrap_or("desc");
@@ -1382,10 +1417,15 @@ impl DatabaseTrait for Database {
         };
 
         let category_where_clause = build_category_where_clause(category);
+        let hidden_files_clause = if show_hidden_files {
+            ""
+        } else {
+            " AND name NOT LIKE '.%'"
+        };
 
         let query = format!(
-            "SELECT * FROM files WHERE 1=1{} ORDER BY {} {} NULLS LAST LIMIT ? OFFSET ?",
-            category_where_clause, sort_column, order_direction
+            "SELECT * FROM files WHERE 1=1{}{} ORDER BY {} {} NULLS LAST LIMIT ? OFFSET ?",
+            category_where_clause, hidden_files_clause, sort_column, order_direction
         );
 
         let rows = sqlx::query(&query)
@@ -1434,6 +1474,7 @@ impl DatabaseTrait for Database {
         sort_order: Option<String>,
         limit: u32,
         offset: u32,
+        show_hidden_files: bool,
     ) -> Result<Vec<File>, sqlx::Error> {
         let sort_field = sort_field.as_deref().unwrap_or("modified_at");
         let sort_order = sort_order.as_deref().unwrap_or("desc");
@@ -1454,10 +1495,15 @@ impl DatabaseTrait for Database {
         };
 
         let category_where_clause = build_category_where_clause(category);
+        let hidden_files_clause = if show_hidden_files {
+            ""
+        } else {
+            " AND name NOT LIKE '.%'"
+        };
 
         let query = format!(
-            "SELECT * FROM files WHERE directory_id = ?{} ORDER BY {} {} NULLS LAST LIMIT ? OFFSET ?",
-            category_where_clause, sort_column, order_direction
+            "SELECT * FROM files WHERE directory_id = ?{}{} ORDER BY {} {} NULLS LAST LIMIT ? OFFSET ?",
+            category_where_clause, hidden_files_clause, sort_column, order_direction
         );
 
         let rows = sqlx::query(&query)
@@ -1498,9 +1544,15 @@ impl DatabaseTrait for Database {
         Ok(files)
     }
 
-    async fn count_files_with_category(&self, pool: &SqlitePool, category: &str) -> Result<u32, sqlx::Error> {
+    async fn count_files_with_category(&self, pool: &SqlitePool, category: &str, show_hidden_files: bool) -> Result<u32, sqlx::Error> {
         let category_where_clause = build_category_where_clause(category);
-        let query = format!("SELECT COUNT(*) FROM files WHERE 1=1{}", category_where_clause);
+        let hidden_files_clause = if show_hidden_files {
+            ""
+        } else {
+            " AND name NOT LIKE '.%'"
+        };
+
+        let query = format!("SELECT COUNT(*) FROM files WHERE 1=1{}{}", category_where_clause, hidden_files_clause);
         
         let count: i64 = sqlx::query_scalar(&query)
             .fetch_one(pool)
@@ -1508,9 +1560,15 @@ impl DatabaseTrait for Database {
         Ok(count as u32)
     }
 
-    async fn count_files_by_directory_with_category(&self, pool: &SqlitePool, directory_id: &str, category: &str) -> Result<u32, sqlx::Error> {
+    async fn count_files_by_directory_with_category(&self, pool: &SqlitePool, directory_id: &str, category: &str, show_hidden_files: bool) -> Result<u32, sqlx::Error> {
         let category_where_clause = build_category_where_clause(category);
-        let query = format!("SELECT COUNT(*) FROM files WHERE directory_id = ?{}", category_where_clause);
+        let hidden_files_clause = if show_hidden_files {
+            ""
+        } else {
+            " AND name NOT LIKE '.%'"
+        };
+
+        let query = format!("SELECT COUNT(*) FROM files WHERE directory_id = ?{}{}", category_where_clause, hidden_files_clause);
         
         let count: i64 = sqlx::query_scalar(&query)
             .bind(directory_id)

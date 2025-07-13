@@ -220,17 +220,14 @@ pub async fn get_files_paginated(
 ) -> Result<Vec<File>, String> {
     let db = Database;
     let data_pool = pools.get_active_data_pool().map_err(|e| e.to_string())?;
-    let mut files = db.get_all_files_paginated(&data_pool, sort_field, sort_order, limit, offset)
-        .await
-        .map_err(|e| e.to_string())?;
     
-    // 設定を取得して隠しファイルを除外するかどうかを決定
+    // 設定を取得して隠しファイルを表示するかどうかを決定
     let settings = settings::get_all_settings(pools.get_settings_pool()).await
         .map_err(|e| e.to_string())?;
     
-    if !settings.show_hidden_files {
-        files.retain(|file| !settings::is_hidden_file(&file.path));
-    }
+    let files = db.get_all_files_paginated(&data_pool, sort_field, sort_order, limit, offset, settings.show_hidden_files)
+        .await
+        .map_err(|e| e.to_string())?;
     
     Ok(files)
 }
@@ -730,17 +727,14 @@ pub async fn get_files_by_directory_paginated(
 ) -> Result<Vec<File>, String> {
     let db = Database;
     let data_pool = pools.get_active_data_pool().map_err(|e| e.to_string())?;
-    let mut files = db.get_files_by_directory_paginated(&data_pool, &directory_id, sort_field, sort_order, limit, offset)
-        .await
-        .map_err(|e| e.to_string())?;
     
-    // 設定を取得して隠しファイルを除外するかどうかを決定
+    // 設定を取得して隠しファイルを表示するかどうかを決定
     let settings = settings::get_all_settings(pools.get_settings_pool()).await
         .map_err(|e| e.to_string())?;
     
-    if !settings.show_hidden_files {
-        files.retain(|file| !settings::is_hidden_file(&file.path));
-    }
+    let files = db.get_files_by_directory_paginated(&data_pool, &directory_id, sort_field, sort_order, limit, offset, settings.show_hidden_files)
+        .await
+        .map_err(|e| e.to_string())?;
     
     Ok(files)
 }
@@ -751,7 +745,12 @@ pub async fn count_files(
 ) -> Result<u32, String> {
     let db = Database;
     let data_pool = pools.get_active_data_pool().map_err(|e| e.to_string())?;
-    db.count_all_files(&data_pool)
+    
+    // 設定を取得して隠しファイルを表示するかどうかを決定
+    let settings = settings::get_all_settings(pools.get_settings_pool()).await
+        .map_err(|e| e.to_string())?;
+    
+    db.count_all_files(&data_pool, settings.show_hidden_files)
         .await
         .map_err(|e| e.to_string())
 }
@@ -763,7 +762,12 @@ pub async fn count_files_by_directory(
 ) -> Result<u32, String> {
     let db = Database;
     let data_pool = pools.get_active_data_pool().map_err(|e| e.to_string())?;
-    db.count_files_by_directory(&data_pool, &directory_id)
+    
+    // 設定を取得して隠しファイルを表示するかどうかを決定
+    let settings = settings::get_all_settings(pools.get_settings_pool()).await
+        .map_err(|e| e.to_string())?;
+    
+    db.count_files_by_directory(&data_pool, &directory_id, settings.show_hidden_files)
         .await
         .map_err(|e| e.to_string())
 }
@@ -824,7 +828,12 @@ pub async fn get_files_paginated_with_category(
 ) -> Result<Vec<File>, String> {
     let db = Database;
     let data_pool = pools.get_active_data_pool().map_err(|e| e.to_string())?;
-    db.get_files_paginated_with_category(&data_pool, &category, sort_field, sort_order, limit, offset)
+    
+    // 設定を取得して隠しファイルを表示するかどうかを決定
+    let settings = settings::get_all_settings(pools.get_settings_pool()).await
+        .map_err(|e| e.to_string())?;
+    
+    db.get_files_paginated_with_category(&data_pool, &category, sort_field, sort_order, limit, offset, settings.show_hidden_files)
         .await
         .map_err(|e| e.to_string())
 }
@@ -841,7 +850,12 @@ pub async fn get_files_by_directory_paginated_with_category(
 ) -> Result<Vec<File>, String> {
     let db = Database;
     let data_pool = pools.get_active_data_pool().map_err(|e| e.to_string())?;
-    db.get_files_by_directory_paginated_with_category(&data_pool, &directory_id, &category, sort_field, sort_order, limit, offset)
+    
+    // 設定を取得して隠しファイルを表示するかどうかを決定
+    let settings = settings::get_all_settings(pools.get_settings_pool()).await
+        .map_err(|e| e.to_string())?;
+    
+    db.get_files_by_directory_paginated_with_category(&data_pool, &directory_id, &category, sort_field, sort_order, limit, offset, settings.show_hidden_files)
         .await
         .map_err(|e| e.to_string())
 }
@@ -853,7 +867,12 @@ pub async fn count_files_with_category(
 ) -> Result<u32, String> {
     let db = Database;
     let data_pool = pools.get_active_data_pool().map_err(|e| e.to_string())?;
-    db.count_files_with_category(&data_pool, &category)
+    
+    // 設定を取得して隠しファイルを表示するかどうかを決定
+    let settings = settings::get_all_settings(pools.get_settings_pool()).await
+        .map_err(|e| e.to_string())?;
+    
+    db.count_files_with_category(&data_pool, &category, settings.show_hidden_files)
         .await
         .map_err(|e| e.to_string())
 }
@@ -866,7 +885,12 @@ pub async fn count_files_by_directory_with_category(
 ) -> Result<u32, String> {
     let db = Database;
     let data_pool = pools.get_active_data_pool().map_err(|e| e.to_string())?;
-    db.count_files_by_directory_with_category(&data_pool, &directory_id, &category)
+    
+    // 設定を取得して隠しファイルを表示するかどうかを決定
+    let settings = settings::get_all_settings(pools.get_settings_pool()).await
+        .map_err(|e| e.to_string())?;
+    
+    db.count_files_by_directory_with_category(&data_pool, &directory_id, &category, settings.show_hidden_files)
         .await
         .map_err(|e| e.to_string())
 }
