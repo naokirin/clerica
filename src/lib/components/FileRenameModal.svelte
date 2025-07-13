@@ -4,6 +4,7 @@
   import * as filesApi from "../api/files";
   import { errorStore } from "../stores/error";
   import { t } from "$lib/i18n";
+  import RenameHelp from "./RenameHelp.svelte";
 
   interface Props {
     file: File | null;
@@ -11,11 +12,7 @@
     onFileRenamed?: () => void;
   }
 
-  let {
-    file,
-    onClose,
-    onFileRenamed,
-  }: Props = $props();
+  let { file, onClose, onFileRenamed }: Props = $props();
 
   // リネーム機能の状態管理
   let renameMode = $state<"simple" | "regex">("simple");
@@ -40,12 +37,15 @@
         previewResult = "";
         return;
       }
-      
+
       isPreviewLoading = true;
       renameError = "";
-      
+
       try {
-        const result = await filesApi.previewSimpleRename(file.id, newFileName.trim());
+        const result = await filesApi.previewSimpleRename(
+          file.id,
+          newFileName.trim(),
+        );
         previewResult = result;
       } catch (error: any) {
         console.error("プレビューエラー:", error);
@@ -65,9 +65,13 @@
 
     isPreviewLoading = true;
     renameError = "";
-    
+
     try {
-      const result = await filesApi.previewRename(file.id, regexPattern, formatTemplate);
+      const result = await filesApi.previewRename(
+        file.id,
+        regexPattern,
+        formatTemplate,
+      );
       previewResult = result;
     } catch (error: any) {
       console.error("プレビューエラー:", error);
@@ -84,7 +88,7 @@
 
     // シンプルモードの場合
     if (renameMode === "simple" && !newFileName.trim()) return;
-    
+
     // 正規表現モードの場合
     if (renameMode === "regex" && (!regexPattern || !formatTemplate)) return;
 
@@ -93,22 +97,31 @@
 
     try {
       let newName: string;
-      
+
       if (renameMode === "simple") {
-        newName = await filesApi.executeSimpleRename(file.id, newFileName.trim());
+        newName = await filesApi.executeSimpleRename(
+          file.id,
+          newFileName.trim(),
+        );
       } else {
-        newName = await filesApi.executeRename(file.id, regexPattern, formatTemplate);
+        newName = await filesApi.executeRename(
+          file.id,
+          regexPattern,
+          formatTemplate,
+        );
       }
-      
+
       console.log("リネーム成功:", newName);
-      
+
       // 親コンポーネントに通知
       if (onFileRenamed) {
         onFileRenamed();
       }
-      
-      errorStore.showError($t("common.fileDetail.renameSuccess", { name: newName }));
-      
+
+      errorStore.showError(
+        $t("common.fileDetail.renameSuccess", { name: newName }),
+      );
+
       // モーダルを閉じる
       onClose();
     } catch (error: any) {
@@ -135,7 +148,7 @@
     if (file && renameMode === "simple") {
       // 拡張子を除いたファイル名を初期値として設定
       const fileName = file.name;
-      const lastDotIndex = fileName.lastIndexOf('.');
+      const lastDotIndex = fileName.lastIndexOf(".");
       if (lastDotIndex > 0) {
         newFileName = fileName.substring(0, lastDotIndex);
       } else {
@@ -174,9 +187,7 @@
                   value="simple"
                   disabled={isRenaming}
                 />
-                <span class="radio-text">
-                  シンプルリネーム
-                </span>
+                <span class="radio-text"> シンプルリネーム </span>
               </label>
               <label class="radio-label">
                 <input
@@ -185,9 +196,7 @@
                   value="regex"
                   disabled={isRenaming}
                 />
-                <span class="radio-text">
-                  正規表現リネーム
-                </span>
+                <span class="radio-text"> 正規表現リネーム </span>
               </label>
             </div>
           </div>
@@ -203,14 +212,14 @@
                 placeholder="新しいファイル名を入力"
                 disabled={isRenaming}
               />
-              <small class="input-hint">
-                拡張子は自動的に保持されます
-              </small>
+              <small class="input-hint"> 拡張子は自動的に保持されます </small>
             </div>
           {:else}
             <!-- 正規表現リネームモード -->
             <div class="rename-input-group">
-              <label for="regex-pattern">{$t("common.fileDetail.regexPattern")}:</label>
+              <label for="regex-pattern"
+                >{$t("common.fileDetail.regexPattern")}:</label
+              >
               <input
                 id="regex-pattern"
                 type="text"
@@ -221,12 +230,14 @@
             </div>
 
             <div class="rename-input-group">
-              <label for="format-template">{$t("common.fileDetail.formatTemplate")}:</label>
+              <label for="format-template"
+                >{$t("common.fileDetail.formatTemplate")}:</label
+              >
               <input
                 id="format-template"
                 type="text"
                 bind:value={formatTemplate}
-                placeholder="例: {`{{ file.name_stem }}_{{ tags | join(\"_\") }}.$2`}"
+                placeholder="例: {`{{ file.name_stem }}_{{ tags | join(sep=\"_\") }}.$2`}"
                 disabled={isRenaming}
               />
             </div>
@@ -245,29 +256,16 @@
               {:else if previewResult}
                 <span class="preview-text">{file.name} → {previewResult}</span>
               {:else}
-                <span class="placeholder-text">{$t("common.fileDetail.previewPlaceholder")}</span>
+                <span class="placeholder-text"
+                  >{$t("common.fileDetail.previewPlaceholder")}</span
+                >
               {/if}
             </div>
           </div>
 
           <!-- ヘルプセクション -->
           {#if renameMode === "regex"}
-            <div class="rename-help">
-              <details>
-                <summary>{$t("common.fileDetail.renameHelp")}</summary>
-                <div class="help-content">
-                  <h5>{$t("common.fileDetail.availableVariables")}:</h5>
-                  <ul>
-                    <li><code>{`{{ file.name }}`}</code> - {$t("common.fileDetail.fullFilename")}</li>
-                    <li><code>{`{{ file.name_stem }}`}</code> - {$t("common.fileDetail.filenameWithoutExtension")}</li>
-                    <li><code>{`{{ file.extension }}`}</code> - {$t("common.fileDetail.fileExtension")}</li>
-                    <li><code>{`{{ tags | join("_") }}`}</code> - {$t("common.fileDetail.tagsJoined")}</li>
-                  </ul>
-                  <h5>{$t("common.fileDetail.regexBackreferences")}:</h5>
-                  <p>$1, $2, $3... - {$t("common.fileDetail.regexBackreferencesDesc")}</p>
-                </div>
-              </details>
-            </div>
+            <RenameHelp showRegexHelp={true} />
           {/if}
 
           <div class="rename-actions">
@@ -349,7 +347,9 @@
     align-items: center;
     justify-content: center;
     color: #6c757d;
-    transition: background-color 0.2s, color 0.2s;
+    transition:
+      background-color 0.2s,
+      color 0.2s;
   }
 
   .close-button:hover:not(:disabled) {
@@ -449,7 +449,7 @@
     border: 1px solid #ced4da;
     border-radius: 4px;
     font-size: 0.875rem;
-    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
   }
 
   .rename-input-group input:focus {
@@ -481,7 +481,7 @@
   }
 
   .preview-result {
-    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
     font-size: 0.875rem;
     min-height: 1.5rem;
   }
@@ -497,54 +497,6 @@
   .placeholder-text {
     color: #6c757d;
     font-style: italic;
-  }
-
-  .rename-help {
-    margin-top: 0.5rem;
-  }
-
-  .rename-help details summary {
-    cursor: pointer;
-    font-size: 0.875rem;
-    color: #007acc;
-    margin-bottom: 0.5rem;
-  }
-
-  .help-content {
-    background-color: white;
-    padding: 1rem;
-    border: 1px solid #dee2e6;
-    border-radius: 4px;
-    font-size: 0.875rem;
-  }
-
-  .help-content h5 {
-    margin: 0 0 0.5rem 0;
-    color: #495057;
-    font-size: 0.875rem;
-  }
-
-  .help-content ul {
-    margin: 0 0 1rem 0;
-    padding-left: 1.5rem;
-  }
-
-  .help-content li {
-    margin-bottom: 0.25rem;
-  }
-
-  .help-content code {
-    background-color: #f8f9fa;
-    padding: 0.125rem 0.25rem;
-    border-radius: 3px;
-    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-    font-size: 0.8rem;
-    color: #e83e8c;
-  }
-
-  .help-content p {
-    margin: 0;
-    color: #6c757d;
   }
 
   .rename-actions {

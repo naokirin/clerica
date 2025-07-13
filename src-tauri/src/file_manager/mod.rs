@@ -1615,7 +1615,30 @@ fn create_template_context(file: &File, tags: &[String], metadata: &serde_json::
     context.insert("tags_dash", &tags.join("-"));
     
     // メタデータ
+    println!("Metadata: {:?}", metadata);
     context.insert("metadata", metadata);
+    
+    // カスタムメタデータの個別設定
+    if let Some(obj) = metadata.as_object() {
+        for (key, value) in obj {
+            // JSON値を文字列に変換してコンテキストに追加
+            let value_str = match value {
+                serde_json::Value::String(s) => s.clone(),
+                serde_json::Value::Number(n) => n.to_string(),
+                serde_json::Value::Bool(b) => b.to_string(),
+                serde_json::Value::Array(arr) => {
+                    // 配列は文字列のリストとして結合
+                    arr.iter()
+                        .filter_map(|v| v.as_str())
+                        .collect::<Vec<&str>>()
+                        .join(", ")
+                },
+                serde_json::Value::Object(_) => serde_json::to_string(value).unwrap_or_default(),
+                serde_json::Value::Null => String::new(),
+            };
+            context.insert(key, &value_str);
+        }
+    }
     
     // 日時情報
     if let Some(created) = &file.created_at {
