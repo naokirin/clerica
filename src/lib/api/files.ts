@@ -80,6 +80,29 @@ export async function deleteFile(filePath: string): Promise<void> {
   return await invoke("delete_file", { filePath });
 }
 
+export interface DeleteResult {
+  successful_files: string[];
+  failed_files: Array<[string, string]>; // [file_path, error_message]
+}
+
+export async function deleteFiles(fileIds: number[]): Promise<DeleteResult> {
+  return await invoke("delete_files", { fileIds });
+}
+
+export interface BatchRenameOperation {
+  old_path: string;
+  new_name: string;
+}
+
+export interface BatchRenameResult {
+  successful_files: string[];
+  failed_files: Array<[string, string]>; // [file_path, error_message]
+}
+
+export async function batchRenameFiles(operations: BatchRenameOperation[]): Promise<BatchRenameResult> {
+  return await invoke("batch_rename_files", { operations });
+}
+
 export async function generateVideoThumbnail(filePath: string): Promise<string> {
   return await invoke("generate_video_thumbnail", { filePath });
 }

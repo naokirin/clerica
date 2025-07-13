@@ -363,6 +363,181 @@ pub async fn delete_file(
     }
 }
 
+#[derive(Serialize)]
+pub struct DeleteResult {
+    pub successful_files: Vec<String>,
+    pub failed_files: Vec<(String, String)>, // (file_path, error_message)
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+pub struct BatchRenameOperation {
+    pub old_path: String,
+    pub new_name: String, // ファイル名のみ（パスではない）
+}
+
+#[derive(Serialize)]
+pub struct BatchRenameResult {
+    pub successful_files: Vec<String>,
+    pub failed_files: Vec<(String, String)>, // (file_path, error_message)
+}
+
+#[tauri::command]
+pub async fn delete_files(
+    pools: State<'_, ShelfManager>,
+    file_ids: Vec<i64>,
+) -> Result<DeleteResult, String> {
+    let data_pool = pools.get_active_data_pool().map_err(|e| e.to_string())?;
+    
+    // ファイルIDからファイルパスを取得
+    let mut file_paths = Vec::new();
+    for file_id in file_ids {
+        let result = sqlx::query_scalar::<_, String>("SELECT path FROM files WHERE id = ?")
+            .bind(file_id)
+            .fetch_optional(&data_pool)
+            .await
+            .map_err(|e| format!("ファイル情報取得エラー: {e}"))?;
+            
+        if let Some(path) = result {
+            file_paths.push((file_id, path));
+        }
+    }
+    
+    let mut successful_files = Vec::new();
+    let mut failed_files = Vec::new();
+    
+    // トランザクションを開始
+    let mut tx = data_pool.begin()
+        .await
+        .map_err(|e| format!("トランザクション開始エラー: {e}"))?;
+    
+    for (file_id, file_path) in file_paths {
+        // ファイルの存在確認
+        if !std::path::Path::new(&file_path).exists() {
+            failed_files.push((file_path.clone(), "ファイルが見つかりません".to_string()));
+            continue;
+        }
+        
+        // macOSでファイルをゴミ箱に移動
+        let result = Command::new("osascript")
+            .arg("-e")
+            .arg(format!(
+                "tell application \"Finder\" to move POSIX file \"{file_path}\" to trash"
+            ))
+            .output();
+        
+        match result {
+            Ok(output) => {
+                if output.status.success() {
+                    // データベースからファイル情報を削除
+                    if let Err(e) = sqlx::query("DELETE FROM files WHERE id = ?")
+                        .bind(file_id)
+                        .execute(&mut *tx)
+                        .await
+                    {
+                        failed_files.push((file_path.clone(), format!("データベース更新エラー: {e}")));
+                    } else {
+                        successful_files.push(file_path);
+                    }
+                } else {
+                    let error_message = String::from_utf8_lossy(&output.stderr);
+                    failed_files.push((file_path, format!("ゴミ箱移動失敗: {error_message}")));
+                }
+            }
+            Err(e) => {
+                failed_files.push((file_path, format!("コマンド実行エラー: {e}")));
+            }
+        }
+    }
+    
+    // トランザクションをコミット
+    tx.commit()
+        .await
+        .map_err(|e| format!("トランザクションコミットエラー: {e}"))?;
+    
+    Ok(DeleteResult {
+        successful_files,
+        failed_files,
+    })
+}
+
+#[tauri::command]
+pub async fn batch_rename_files(
+    pools: State<'_, ShelfManager>,
+    operations: Vec<BatchRenameOperation>,
+) -> Result<BatchRenameResult, String> {
+    let data_pool = pools.get_active_data_pool().map_err(|e| e.to_string())?;
+    
+    let mut successful_files = Vec::new();
+    let mut failed_files = Vec::new();
+    
+    // トランザクションを開始
+    let mut tx = data_pool.begin()
+        .await
+        .map_err(|e| format!("トランザクション開始エラー: {e}"))?;
+    
+    for operation in operations {
+        let old_path = &operation.old_path;
+        
+        // ファイルの存在確認
+        if !std::path::Path::new(old_path).exists() {
+            failed_files.push((old_path.clone(), "ファイルが見つかりません".to_string()));
+            continue;
+        }
+        
+        // 新しいパスを構築
+        let old_path_obj = std::path::Path::new(old_path);
+        let parent_dir = match old_path_obj.parent() {
+            Some(dir) => dir,
+            None => {
+                failed_files.push((old_path.clone(), "親ディレクトリが取得できません".to_string()));
+                continue;
+            }
+        };
+        
+        let new_path = parent_dir.join(&operation.new_name);
+        let new_path_str = new_path.to_string_lossy().to_string();
+        
+        // 新しいパスが既に存在するかチェック
+        if new_path.exists() && new_path != old_path_obj {
+            failed_files.push((old_path.clone(), "移動先のファイルが既に存在します".to_string()));
+            continue;
+        }
+        
+        // ファイルシステムでリネーム
+        match std::fs::rename(old_path, &new_path) {
+            Ok(_) => {
+                // データベースのパスを更新
+                if let Err(e) = sqlx::query("UPDATE files SET path = ?, name = ? WHERE path = ?")
+                    .bind(&new_path_str)
+                    .bind(&operation.new_name)
+                    .execute(&mut *tx)
+                    .await
+                {
+                    // ファイルシステムの変更は成功したが、DBの更新に失敗
+                    // ファイルを元に戻そうと試みる
+                    let _ = std::fs::rename(&new_path, old_path);
+                    failed_files.push((old_path.clone(), format!("データベース更新エラー: {e}")));
+                } else {
+                    successful_files.push(new_path_str);
+                }
+            }
+            Err(e) => {
+                failed_files.push((old_path.clone(), format!("ファイルリネームエラー: {e}")));
+            }
+        }
+    }
+    
+    // トランザクションをコミット
+    tx.commit()
+        .await
+        .map_err(|e| format!("トランザクションコミットエラー: {e}"))?;
+    
+    Ok(BatchRenameResult {
+        successful_files,
+        failed_files,
+    })
+}
+
 #[tauri::command]
 pub async fn move_file(
     _pools: State<'_, ShelfManager>,

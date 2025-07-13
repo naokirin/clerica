@@ -139,6 +139,8 @@ async fn main() {
             file_manager::get_file_tags,
             file_manager::update_file_tags,
             file_manager::delete_file,
+            file_manager::delete_files,
+            file_manager::batch_rename_files,
             file_manager::move_file,
             file_manager::rescan_directory,
             file_manager::open_file,

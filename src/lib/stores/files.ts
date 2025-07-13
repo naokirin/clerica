@@ -9,6 +9,9 @@ import { settingsService } from '../services/SettingsService';
 import { getFiles } from '../api/files';
 import type { File, FileWithTags, Tag, FileCategory } from '../types';
 
+// 複数ファイル選択機能の状態管理ストア
+export const selectedFileIds = writable<Set<number>>(new Set());
+
 export interface FileFilter extends FilterState {
   selectedDirectory: string | null;
   fileType: FileCategory;

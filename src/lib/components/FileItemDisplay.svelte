@@ -11,6 +11,7 @@
   } from "../utils";
   import { onMount } from "svelte";
   import { errorStore } from "../stores/error";
+  import { selectedFileIds } from "../stores/files";
 
   interface Props {
     file: File;
@@ -19,6 +20,71 @@
   }
 
   let { file, tags = [], onSelectFile }: Props = $props();
+  
+  // 選択状態の管理
+  let isSelected = $state(false);
+  let lastSelectedId: number | null = null;
+  
+  // 選択状態の同期
+  $effect(() => {
+    $selectedFileIds.has(file.id);
+    isSelected = $selectedFileIds.has(file.id);
+  });
+  
+  // チェックボックスの変更ハンドラー
+  const handleCheckboxChange = (event: Event) => {
+    event.stopPropagation();
+    const checked = (event.target as HTMLInputElement).checked;
+    
+    selectedFileIds.update(currentSelected => {
+      const newSelected = new Set(currentSelected);
+      
+      if (checked) {
+        newSelected.add(file.id);
+      } else {
+        newSelected.delete(file.id);
+      }
+      
+      return newSelected;
+    });
+  };
+  
+  // Shift+Clickでの範囲選択ハンドラー
+  const handleItemClick = (event: MouseEvent) => {
+    if (event.shiftKey && lastSelectedId !== null) {
+      // Shift+Clickの場合は範囲選択
+      event.preventDefault();
+      selectFileRange(lastSelectedId, file.id);
+    } else if (event.ctrlKey || event.metaKey) {
+      // Ctrl/Cmd+Clickの場合は単一選択切り替え
+      event.preventDefault();
+      handleCheckboxChange({ target: { checked: !isSelected }, stopPropagation: () => {} } as any);
+    } else {
+      // 通常クリックの場合は詳細表示
+      onSelectFile(file);
+    }
+    
+    lastSelectedId = file.id;
+  };
+  
+  // 範囲選択の実装
+  const selectFileRange = (startId: number, endId: number) => {
+    // ここではシンプルにID順で範囲選択を実装
+    // 実際のファイル表示順序に合わせる場合は、親コンポーネントから
+    // ファイルの順序情報を受け取る必要がある
+    const minId = Math.min(startId, endId);
+    const maxId = Math.max(startId, endId);
+    
+    selectedFileIds.update(currentSelected => {
+      const newSelected = new Set(currentSelected);
+      
+      for (let id = minId; id <= maxId; id++) {
+        newSelected.add(id);
+      }
+      
+      return newSelected;
+    });
+  };
 
   let imageUrlCache = new Map<string, string>();
 
@@ -78,7 +144,15 @@
   }
 </script>
 
-<div class="file-item" onclick={() => onSelectFile(file)}>
+<div class="file-item {isSelected ? 'selected' : ''}" onclick={handleItemClick}>
+  <div class="file-checkbox">
+    <input
+      type="checkbox"
+      checked={isSelected}
+      onchange={handleCheckboxChange}
+      onclick={(e) => e.stopPropagation()}
+    />
+  </div>
   <div class="file-icon">
     {#if file.is_directory}
       <span class="icon-emoji">📁</span>
@@ -228,10 +302,35 @@
     border-radius: 6px;
     cursor: pointer;
     transition: background-color 0.2s ease;
+    border: 2px solid transparent;
   }
 
   .file-item:hover {
     background-color: #f8f9fa;
+  }
+  
+  .file-item.selected {
+    background-color: #e3f2fd;
+    border-color: #2196f3;
+  }
+  
+  .file-item.selected:hover {
+    background-color: #bbdefb;
+  }
+  
+  .file-checkbox {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+  }
+  
+  .file-checkbox input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
   }
 
   .file-icon {
