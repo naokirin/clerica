@@ -18,6 +18,7 @@
   import DeleteConfirmDialog from "./DeleteConfirmDialog.svelte";
   import BatchRenameModal from "./BatchRenameModal.svelte";
   import { deleteFiles, type DeleteResult } from "../api/files";
+  import { viewMode } from "../stores/common";
 
   interface Props {
     searchQuery: string;
@@ -648,6 +649,7 @@
     }))}
     {currentPage}
     {totalPages}
+    viewMode={$viewMode}
     emptyMessage={searchResults.length === 0 &&
     (searchQuery || metadataSearchFilters.some((f) => f.keyId && f.value))
       ? $t("common.search.noSearchResults")

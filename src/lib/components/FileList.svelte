@@ -1,11 +1,13 @@
 <script lang="ts">
   import type { FileWithTags } from "../types";
+  import type { ViewMode } from "../stores/common";
   import FileItemDisplay from "./FileItemDisplay.svelte";
 
   interface Props {
     filesWithTags: FileWithTags[];
     currentPage: number;
     totalPages: number;
+    viewMode: ViewMode;
     emptyMessage?: string;
     showEmptyState?: boolean;
     onSelectFile: (file: any) => void;
@@ -20,6 +22,7 @@
     filesWithTags,
     currentPage,
     totalPages,
+    viewMode,
     emptyMessage = "ファイルが見つかりませんでした", // デフォルト、親から渡されることを想定
     showEmptyState = true,
     onSelectFile,
@@ -31,11 +34,12 @@
   }: Props = $props();
 </script>
 
-<div class="file-list">
+<div class="file-list" class:grid-view={viewMode === 'grid'}>
   {#each filesWithTags as fileWithTags (fileWithTags.file.id)}
     <FileItemDisplay
       file={fileWithTags.file}
       tags={fileWithTags.tags}
+      {viewMode}
       {onSelectFile}
     />
   {/each}
@@ -96,9 +100,16 @@
 
 <style>
   .file-list {
-    display: grid;
-    gap: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
     padding: 1rem;
+  }
+
+  .file-list.grid-view {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1.5rem;
   }
 
   .no-files {

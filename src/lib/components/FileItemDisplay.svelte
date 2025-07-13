@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { File, Tag } from "../types";
+  import type { ViewMode } from "../stores/common";
   import {
     formatFileSize,
     formatDate,
@@ -16,10 +17,11 @@
   interface Props {
     file: File;
     tags?: Tag[];
+    viewMode: ViewMode;
     onSelectFile: (file: File) => void;
   }
 
-  let { file, tags = [], onSelectFile }: Props = $props();
+  let { file, tags = [], viewMode, onSelectFile }: Props = $props();
   
   // 選択状態の管理
   let isSelected = $state(false);
@@ -142,10 +144,23 @@
       throw error;
     }
   }
+
+  // アイコンコンポーネント
+  function renderFileIcon() {
+    if (file.is_directory) {
+      return "📁";
+    } else if (file.mime_type?.includes("pdf")) {
+      return "📄";
+    } else if (file.mime_type?.includes("text")) {
+      return "📝";
+    } else {
+      return "📄";
+    }
+  }
 </script>
 
-<div class="file-item {isSelected ? 'selected' : ''}" onclick={handleItemClick}>
-  <div class="file-checkbox">
+<div class="file-item {viewMode}-item {isSelected ? 'selected' : ''}" onclick={handleItemClick}>
+  <div class="file-checkbox {viewMode}-checkbox">
     <input
       type="checkbox"
       checked={isSelected}
@@ -153,7 +168,8 @@
       onclick={(e) => e.stopPropagation()}
     />
   </div>
-  <div class="file-icon">
+  
+  <div class="file-icon {viewMode}-icon">
     {#if file.is_directory}
       <span class="icon-emoji">📁</span>
     {:else if isImageFile(file)}
@@ -249,38 +265,45 @@
           <span class="icon-emoji">📦</span>
         {/await}
       </div>
-    {:else if file.mime_type?.includes("pdf")}
-      <span class="icon-emoji">📄</span>
-    {:else if file.mime_type?.includes("text")}
-      <span class="icon-emoji">📝</span>
     {:else}
-      <span class="icon-emoji">📄</span>
+      <span class="icon-emoji">{renderFileIcon()}</span>
     {/if}
   </div>
 
-  <div class="file-details">
+  <div class="file-details {viewMode}-details">
     <div class="file-name">{file.name}</div>
-    <div class="file-info">
-      {#if !file.is_directory}
-        {formatFileSize(file.file_size || file.size)}
-        {#if file.mime_type}
-          • {file.mime_type}
-        {:else if file.file_type}
-          • {file.file_type}
+    {#if viewMode === 'list'}
+      <div class="file-info">
+        {#if !file.is_directory}
+          {formatFileSize(file.file_size || file.size)}
+          {#if file.mime_type}
+            • {file.mime_type}
+          {:else if file.file_type}
+            • {file.file_type}
+          {/if}
+        {:else}
+          ディレクトリ
         {/if}
-      {:else}
-        ディレクトリ
-      {/if}
-    </div>
-    <div class="file-path">{file.path}</div>
-    <div class="file-meta">
-      {#if file.modified_at}
-        更新: {formatDate(file.modified_at)}
-      {/if}
-      {#if file.permissions}
-        • 権限: {file.permissions}
-      {/if}
-    </div>
+      </div>
+      <div class="file-path">{file.path}</div>
+      <div class="file-meta">
+        {#if file.modified_at}
+          更新: {formatDate(file.modified_at)}
+        {/if}
+        {#if file.permissions}
+          • 権限: {file.permissions}
+        {/if}
+      </div>
+    {:else}
+      <!-- グリッド表示では簡潔な情報のみ -->
+      <div class="file-info">
+        {#if !file.is_directory}
+          {formatFileSize(file.file_size || file.size)}
+        {:else}
+          ディレクトリ
+        {/if}
+      </div>
+    {/if}
     {#if tags.length > 0}
       <div class="file-tags">
         {#each tags as tag (tag.id)}
@@ -294,11 +317,8 @@
 </div>
 
 <style>
+  /* 共通スタイル */
   .file-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 8px;
     border-radius: 6px;
     cursor: pointer;
     transition: background-color 0.2s ease;
@@ -317,8 +337,16 @@
   .file-item.selected:hover {
     background-color: #bbdefb;
   }
+
+  /* リスト表示スタイル */
+  .list-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px;
+  }
   
-  .file-checkbox {
+  .list-checkbox {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -326,14 +354,8 @@
     height: 20px;
     flex-shrink: 0;
   }
-  
-  .file-checkbox input[type="checkbox"] {
-    width: 16px;
-    height: 16px;
-    cursor: pointer;
-  }
 
-  .file-icon {
+  .list-icon {
     width: 48px;
     height: 48px;
     display: flex;
@@ -342,17 +364,97 @@
     flex-shrink: 0;
   }
 
+  .list-details {
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* グリッド表示スタイル */
+  .grid-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 16px 12px;
+    position: relative;
+  }
+
+  .grid-checkbox {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 3px;
+    z-index: 1;
+  }
+
+  .grid-checkbox input[type="checkbox"] {
+    width: 14px;
+    height: 14px;
+  }
+
+  .grid-icon {
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 8px;
+  }
+
+  .grid-details {
+    width: 100%;
+  }
+
+  .grid-details .file-name {
+    font-size: 0.875rem;
+    line-height: 1.3;
+    margin-bottom: 4px;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+
+  .grid-details .file-info {
+    font-size: 0.75rem;
+    color: #666;
+  }
+
+  /* チェックボックス共通スタイル */
+  .file-checkbox input[type="checkbox"] {
+    cursor: pointer;
+  }
+
+  .list-checkbox input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+  }
+
+  /* アイコン共通スタイル */
   .icon-emoji {
-    font-size: 32px;
     line-height: 1;
+  }
+
+  .list-icon .icon-emoji {
+    font-size: 32px;
+  }
+
+  .grid-icon .icon-emoji {
+    font-size: 48px;
   }
 
   .image-preview,
   .video-preview,
   .audio-preview,
   .archive-preview {
-    width: 48px;
-    height: 48px;
+    width: 100%;
+    height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -362,16 +464,30 @@
     position: relative;
   }
 
+  .grid-icon .image-preview,
+  .grid-icon .video-preview,
+  .grid-icon .audio-preview,
+  .grid-icon .archive-preview {
+    border-radius: 8px;
+  }
+
   .thumbnail {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    border-radius: 4px;
     transition: transform 0.2s ease;
   }
 
+  .list-icon .thumbnail {
+    border-radius: 4px;
+  }
+
+  .grid-icon .thumbnail {
+    border-radius: 8px;
+  }
+
   .thumbnail:hover {
-    transform: scale(1.1);
+    transform: scale(1.05);
   }
 
   .video-thumbnail {
@@ -390,17 +506,39 @@
     align-items: center;
     justify-content: center;
     background-color: rgba(0, 0, 0, 0.3);
-    border-radius: 4px;
     pointer-events: none;
     opacity: 0.7;
+  }
+
+  .list-icon .video-overlay,
+  .list-icon .audio-overlay,
+  .list-icon .archive-overlay {
+    border-radius: 4px;
+  }
+
+  .grid-icon .video-overlay,
+  .grid-icon .audio-overlay,
+  .grid-icon .archive-overlay {
+    border-radius: 8px;
   }
 
   .play-icon,
   .music-icon,
   .archive-icon {
-    font-size: 12px;
     opacity: 0.9;
     color: white;
+  }
+
+  .list-icon .play-icon,
+  .list-icon .music-icon,
+  .list-icon .archive-icon {
+    font-size: 12px;
+  }
+
+  .grid-icon .play-icon,
+  .grid-icon .music-icon,
+  .grid-icon .archive-icon {
+    font-size: 20px;
   }
 
   .album-art,
@@ -426,11 +564,7 @@
     color: #999;
   }
 
-  .file-details {
-    flex: 1;
-    min-width: 0;
-  }
-
+  /* ファイル詳細共通スタイル */
   .file-name {
     font-weight: 500;
     color: #333;
@@ -461,6 +595,10 @@
     flex-wrap: wrap;
     gap: 4px;
     margin-top: 4px;
+  }
+
+  .grid-details .file-tags {
+    justify-content: center;
   }
 
   .file-tag {

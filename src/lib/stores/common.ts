@@ -9,6 +9,42 @@ import { writable, derived, type Readable, type Writable } from 'svelte/store';
 export const isLoading = writable(false);
 export const loadingMessage = writable('');
 
+// 表示モードの型定義
+export type ViewMode = 'list' | 'grid';
+
+// 表示モードストア（localStorageと連携）
+function createViewModeStore() {
+  // 初期値をlocalStorageから取得（サーバーサイドでは'list'をデフォルト）
+  const getInitialViewMode = (): ViewMode => {
+    if (typeof window === 'undefined') return 'list';
+    const stored = localStorage.getItem('viewMode') as ViewMode;
+    return stored && (stored === 'list' || stored === 'grid') ? stored : 'list';
+  };
+
+  const { subscribe, set, update } = writable<ViewMode>(getInitialViewMode());
+
+  return {
+    subscribe,
+    set: (value: ViewMode) => {
+      set(value);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('viewMode', value);
+      }
+    },
+    toggleMode: () => {
+      update(current => {
+        const newMode = current === 'list' ? 'grid' : 'list';
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('viewMode', newMode);
+        }
+        return newMode;
+      });
+    }
+  };
+}
+
+export const viewMode = createViewModeStore();
+
 export interface PaginationState {
   currentPage: number;
   itemsPerPage: number;

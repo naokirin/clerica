@@ -16,6 +16,8 @@
   import BatchRenameModal from "./BatchRenameModal.svelte";
   import { deleteFiles, type DeleteResult } from "../api/files";
   import { createEventDispatcher } from "svelte";
+  import { viewMode, type ViewMode } from "../stores/common";
+  import { List, Grid } from "lucide-svelte";
 
   interface Props {
     files: File[];
@@ -174,24 +176,48 @@
 
 <div class="files-view">
   <div class="files-header">
-    <h2>{$t("common.files.title")}</h2>
-    <div class="files-stats">
-      <span class="total-files">
-        {selectedCategory === "all"
-          ? $t("common.files.total")
-          : $t(`common.files.category.${selectedCategory}`)}:
-        {$t("common.files.totalFiles", { count: totalFiles.toLocaleString() })}
-      </span>
-      {#if totalPages > 1}
-        <span class="page-info">
-          {$t("common.pagination.page")} {currentPage} {$t("common.pagination.of", { total: totalPages })}
-          ({$t("common.pagination.showing", { 
-            start: ((currentPage - 1) * itemsPerPage + 1).toLocaleString(),
-            end: Math.min(currentPage * itemsPerPage, totalFiles).toLocaleString(),
-            total: totalFiles.toLocaleString()
-          })})
+    <div class="header-left">
+      <h2>{$t("common.files.title")}</h2>
+      <div class="files-stats">
+        <span class="total-files">
+          {selectedCategory === "all"
+            ? $t("common.files.total")
+            : $t(`common.files.category.${selectedCategory}`)}:
+          {$t("common.files.totalFiles", { count: totalFiles.toLocaleString() })}
         </span>
-      {/if}
+        {#if totalPages > 1}
+          <span class="page-info">
+            {$t("common.pagination.page")} {currentPage} {$t("common.pagination.of", { total: totalPages })}
+            ({$t("common.pagination.showing", { 
+              start: ((currentPage - 1) * itemsPerPage + 1).toLocaleString(),
+              end: Math.min(currentPage * itemsPerPage, totalFiles).toLocaleString(),
+              total: totalFiles.toLocaleString()
+            })})
+          </span>
+        {/if}
+      </div>
+    </div>
+    
+    <!-- 表示モード切り替えボタン -->
+    <div class="view-mode-switcher">
+      <button
+        class="view-mode-btn {$viewMode === 'list' ? 'active' : ''}"
+        onclick={() => viewMode.set('list')}
+        title="リスト表示"
+        aria-label="リスト表示"
+        aria-pressed={$viewMode === 'list'}
+      >
+        <List size={18} />
+      </button>
+      <button
+        class="view-mode-btn {$viewMode === 'grid' ? 'active' : ''}"
+        onclick={() => viewMode.set('grid')}
+        title="グリッド表示"
+        aria-label="グリッド表示"
+        aria-pressed={$viewMode === 'grid'}
+      >
+        <Grid size={18} />
+      </button>
     </div>
   </div>
   
@@ -271,6 +297,7 @@
     {filesWithTags}
     {currentPage}
     {totalPages}
+    viewMode={$viewMode}
     emptyMessage={totalFiles === 0 && selectedDirectoryId === "all" 
       ? $t("common.files.emptyDirectories") 
       : $t("common.files.noFiles")}
@@ -285,8 +312,15 @@
 </div>
 
 <style>
-  .files-header h2 {
-    margin: 0 0 1rem 0;
+  .files-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+  }
+
+  .header-left h2 {
+    margin: 0 0 0.5rem 0;
   }
 
   .pagination-controls {
@@ -399,5 +433,56 @@
   .select-all-btn:hover {
     background: #e0e0e0;
     border-color: #bbb;
+  }
+
+  /* 表示モード切り替えボタン */
+  .view-mode-switcher {
+    display: flex;
+    gap: 0;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    overflow: hidden;
+    background: #ffffff;
+  }
+
+  .view-mode-btn {
+    padding: 8px 12px;
+    background: #ffffff;
+    border: none;
+    cursor: pointer;
+    color: #6b7280;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+
+  .view-mode-btn:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 20%;
+    bottom: 20%;
+    width: 1px;
+    background: #d1d5db;
+  }
+
+  .view-mode-btn:hover {
+    background: #f3f4f6;
+    color: #374151;
+  }
+
+  .view-mode-btn.active {
+    background: #3b82f6;
+    color: #ffffff;
+  }
+
+  .view-mode-btn.active:hover {
+    background: #2563eb;
+  }
+
+  .view-mode-btn.active:not(:last-child)::after {
+    background: transparent;
   }
 </style>
