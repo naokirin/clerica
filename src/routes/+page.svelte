@@ -11,6 +11,7 @@
   import SearchView from "../lib/components/SearchView.svelte";
   import TagsView from "../lib/components/TagsView.svelte";
   import FileDetailModal from "../lib/components/FileDetailModal.svelte";
+  import FileRenameModal from "../lib/components/FileRenameModal.svelte";
   import CustomMetadataKeyManager from "../lib/components/CustomMetadataKeyManager.svelte";
   import SettingsModal from "../lib/components/SettingsModal.svelte";
 
@@ -75,6 +76,10 @@
 
   // 設定モーダルの状態管理
   let isSettingsModalOpen = false;
+  
+  // リネームモーダルの状態管理
+  let isRenameModalOpen = false;
+  let renameTargetFile: File | null = null;
 
   let fileSystemChangeListenerPromise: Promise<void> | null = null;
   let unlisten: (() => void) | null = null;
@@ -85,6 +90,17 @@
 
   const closeSettingsModal = () => {
     isSettingsModalOpen = false;
+  };
+  
+  // リネームモーダルの関数
+  const openRenameModal = (file: File) => {
+    renameTargetFile = file;
+    isRenameModalOpen = true;
+  };
+
+  const closeRenameModal = () => {
+    isRenameModalOpen = false;
+    renameTargetFile = null;
   };
 
   onMount(() => {
@@ -425,6 +441,14 @@
     onDeleteFile={deleteFile}
     onClose={closeFileDetails}
     onTagsUpdated={handleTagsUpdated}
+    onFileRenamed={handleTagsUpdated}
+    onOpenRenameModal={openRenameModal}
+  />
+  
+  <FileRenameModal
+    file={renameTargetFile}
+    onClose={closeRenameModal}
+    onFileRenamed={handleTagsUpdated}
   />
 
   <!-- 設定モーダル -->
