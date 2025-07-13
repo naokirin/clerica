@@ -1596,8 +1596,39 @@ type RenameResult<T> = Result<T, RenameError>;
 
 // 使用されていない構造体を削除（Teraコンテキストに置き換え済み）
 
+// カスタムメタデータを取得してJSONに変換するヘルパー関数
+async fn get_custom_metadata_for_file(pools: &ShelfManager, file_id: &str) -> Result<serde_json::Value, RenameError> {
+    let db = Database;
+    let pool = pools.get_active_data_pool()
+        .map_err(|e| RenameError::Database(e.to_string()))?;
+    
+    let custom_values = db.get_custom_metadata_values_by_file(&pool, file_id).await
+        .map_err(|e| RenameError::Database(e.to_string()))?;
+    
+    let custom_keys = db.get_all_custom_metadata_keys(&pools.settings_pool).await
+        .map_err(|e| RenameError::Database(e.to_string()))?;
+    
+    // キーIDから名前へのマッピングを作成
+    let key_name_map: std::collections::HashMap<String, String> = custom_keys
+        .into_iter()
+        .map(|key| (key.id, key.name))
+        .collect();
+    
+    // カスタムメタデータをJSONオブジェクトに変換
+    let mut custom_metadata = serde_json::Map::new();
+    for value in custom_values {
+        if let Some(key_name) = key_name_map.get(&value.key_id) {
+            if let Some(val) = value.value {
+                custom_metadata.insert(key_name.clone(), serde_json::Value::String(val));
+            }
+        }
+    }
+    
+    Ok(serde_json::Value::Object(custom_metadata))
+}
+
 // Teraテンプレートコンテキストを作成するヘルパー関数
-fn create_template_context(file: &File, tags: &[String], metadata: &serde_json::Value) -> Context {
+fn create_template_context(file: &File, tags: &[String], metadata: &serde_json::Value, custom_metadata: &serde_json::Value) -> Context {
     let mut context = Context::new();
     
     // ファイル情報
@@ -1614,12 +1645,16 @@ fn create_template_context(file: &File, tags: &[String], metadata: &serde_json::
     context.insert("tags_underscore", &tags.join("_"));
     context.insert("tags_dash", &tags.join("-"));
     
-    // メタデータ
-    println!("Metadata: {:?}", metadata);
+    // ファイルメタデータ（EXIF、オーディオタグなど）
+    println!("File Metadata: {:?}", metadata);
     context.insert("metadata", metadata);
     
-    // カスタムメタデータの個別設定
-    if let Some(obj) = metadata.as_object() {
+    // カスタムメタデータ（ユーザー設定）
+    println!("Custom Metadata: {:?}", custom_metadata);
+    context.insert("custom_metadata", custom_metadata);
+    
+    // カスタムメタデータの個別設定（直接アクセス用）
+    if let Some(obj) = custom_metadata.as_object() {
         for (key, value) in obj {
             // JSON値を文字列に変換してコンテキストに追加
             let value_str = match value {
@@ -1749,8 +1784,11 @@ pub async fn preview_rename(
     // タグ名のリストを作成
     let tag_names: Vec<String> = tags.iter().map(|t| t.name.clone()).collect();
     
+    // カスタムメタデータを取得
+    let custom_metadata = get_custom_metadata_for_file(&pools, &file_id).await?;
+    
     // Teraテンプレートコンテキストを作成
-    let context = create_template_context(&file, &tag_names, &metadata);
+    let context = create_template_context(&file, &tag_names, &metadata, &custom_metadata);
     
     // Teraテンプレートをレンダリング
     let intermediate_string = Tera::one_off(&format_template, &context, false)
@@ -2001,8 +2039,11 @@ async fn generate_advanced_rename(
         // タグ名のリストを作成
         let tag_names: Vec<String> = tags.iter().map(|t| t.name.clone()).collect();
         
+        // カスタムメタデータを取得（空のJSONオブジェクトで代替、後で改善）
+        let custom_metadata = serde_json::json!({});
+        
         // Teraテンプレートコンテキストを作成
-        let mut context = create_template_context(file, &tag_names, metadata);
+        let mut context = create_template_context(file, &tag_names, metadata, &custom_metadata);
         // 連番を追加（1から開始）
         context.insert("n", &(index + 1));
         
@@ -2024,8 +2065,11 @@ async fn generate_advanced_rename(
             // タグ名のリストを作成
             let tag_names: Vec<String> = tags.iter().map(|t| t.name.clone()).collect();
             
+            // カスタムメタデータを取得（空のJSONオブジェクトで代替、後で改善）
+            let custom_metadata = serde_json::json!({});
+            
             // Teraテンプレートコンテキストを作成
-            let mut context = create_template_context(file, &tag_names, metadata);
+            let mut context = create_template_context(file, &tag_names, metadata, &custom_metadata);
             // 連番を追加（1から開始）
             context.insert("n", &(index + 1));
             
