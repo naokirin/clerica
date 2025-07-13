@@ -1,4 +1,5 @@
 use crate::database::{Database, DatabaseTrait, File};
+use crate::exclusion_patterns::ExclusionPatternManager;
 use crate::ShelfManager;
 use chrono::Utc;
 use notify::{Event, EventKind, RecursiveMode, Watcher};
@@ -15,6 +16,7 @@ use uuid::Uuid;
 pub struct FileWatcher {
     watcher: notify::FsEventWatcher,
     watched_directories: HashMap<String, String>, // directory_id -> path
+    exclusion_manager: Arc<ExclusionPatternManager>,
 }
 
 impl FileWatcher {
@@ -25,6 +27,22 @@ impl FileWatcher {
         let (tx, rx) = mpsc::channel();
         let pools_clone = Arc::clone(&pools);
 
+        // 除外パターンマネージャーを初期化
+        let exclusion_manager = Arc::new(ExclusionPatternManager::new());
+        let exclusion_manager_clone = Arc::clone(&exclusion_manager);
+
+        // 除外パターンを読み込み
+        let settings_pool = pools.get_settings_pool().clone();
+        tokio::spawn(async move {
+            if let Err(e) = exclusion_manager_clone.refresh_patterns(&settings_pool).await {
+                eprintln!("除外パターンの初期化エラー: {}", e);
+            } else {
+                println!("除外パターンマネージャーが初期化されました（パターン数: {}）", 
+                    exclusion_manager_clone.pattern_count());
+            }
+        });
+
+        let exclusion_manager_for_thread = Arc::clone(&exclusion_manager);
         thread::spawn(move || {
             let rt = tokio::runtime::Runtime::new().unwrap();
             let mut last_event_time = Instant::now();
@@ -73,7 +91,7 @@ impl FileWatcher {
                             // データベースロック競合を避けるため、各イベント間に少し待機
                             if let Err(e) = rt.block_on(async {
                                 tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
-                                handle_file_event(&pools_clone, event.clone(), app_handle.clone()).await
+                                handle_file_event(&pools_clone, event.clone(), app_handle.clone(), &exclusion_manager_for_thread).await
                             }) {
                                 eprintln!("ファイルイベント処理エラー: {e}");
                             }
@@ -103,6 +121,7 @@ impl FileWatcher {
         Ok(FileWatcher {
             watcher,
             watched_directories: HashMap::new(),
+            exclusion_manager,
         })
     }
 
@@ -160,16 +179,17 @@ pub async fn handle_file_event(
     pools: &ShelfManager,
     event: Event,
     app_handle: Option<AppHandle>,
+    exclusion_manager: &Arc<ExclusionPatternManager>,
 ) -> Result<(), String> {
     match event.kind {
         EventKind::Create(_) => {
-            handle_create_event(pools, &event.paths, &app_handle).await
+            handle_create_event(pools, &event.paths, &app_handle, exclusion_manager).await
         }
         EventKind::Remove(_) => {
-            handle_remove_event(pools, &event.paths, &app_handle).await
+            handle_remove_event(pools, &event.paths, &app_handle, exclusion_manager).await
         }
         EventKind::Modify(_) => {
-            handle_modify_event(pools, &event.paths, &app_handle).await
+            handle_modify_event(pools, &event.paths, &app_handle, exclusion_manager).await
         }
         _ => {
             // 他のイベントは無視
@@ -182,10 +202,18 @@ async fn handle_create_event(
     pools: &ShelfManager,
     paths: &[std::path::PathBuf],
     app_handle: &Option<AppHandle>,
+    exclusion_manager: &Arc<ExclusionPatternManager>,
 ) -> Result<(), String> {
     let db = Database;
 
     for path in paths {
+        let path_str = path.to_string_lossy();
+        
+        // 除外パターンチェック
+        if exclusion_manager.should_exclude(&path_str) {
+            println!("ファイルが除外パターンにマッチしたためスキップしました: {}", path_str);
+            continue;
+        }
         
         match fs::metadata(path) {
             Ok(metadata) => {
@@ -219,11 +247,17 @@ async fn handle_remove_event(
     pools: &ShelfManager,
     paths: &[std::path::PathBuf],
     app_handle: &Option<AppHandle>,
+    exclusion_manager: &Arc<ExclusionPatternManager>,
 ) -> Result<(), String> {
     let db = Database;
 
     for path in paths {
         let path_str = path.to_string_lossy().to_string();
+        
+        // 除外パターンチェック（削除イベントでもチェックして一貫性を保つ）
+        if exclusion_manager.should_exclude(&path_str) {
+            continue;
+        }
         
         let data_pool = pools.get_active_data_pool().map_err(|e| e.to_string())?;
         match db.remove_file_by_path(&data_pool, &path_str).await {
@@ -241,8 +275,15 @@ async fn handle_modify_event(
     pools: &ShelfManager,
     paths: &[std::path::PathBuf],
     app_handle: &Option<AppHandle>,
+    exclusion_manager: &Arc<ExclusionPatternManager>,
 ) -> Result<(), String> {
     for path in paths {
+        let path_str = path.to_string_lossy();
+        
+        // 除外パターンチェック
+        if exclusion_manager.should_exclude(&path_str) {
+            continue;
+        }
         
         match fs::metadata(path) {
             Ok(metadata) => {
@@ -572,7 +613,8 @@ mod tests {
             attrs: Default::default(),
         };
 
-        let result = handle_file_event(&pools, event, None).await;
+        let exclusion_manager = Arc::new(ExclusionPatternManager::new());
+        let result = handle_file_event(&pools, event, None, &exclusion_manager).await;
         // メタデータ取得に失敗するためエラーは発生しない（pathが存在しないため）
         assert!(result.is_ok());
     }
@@ -589,7 +631,8 @@ mod tests {
             attrs: Default::default(),
         };
 
-        let result = handle_file_event(&pools, event, None).await;
+        let exclusion_manager = Arc::new(ExclusionPatternManager::new());
+        let result = handle_file_event(&pools, event, None, &exclusion_manager).await;
         assert!(result.is_ok());
     }
 
@@ -607,7 +650,8 @@ mod tests {
             attrs: Default::default(),
         };
 
-        let result = handle_file_event(&pools, event, None).await;
+        let exclusion_manager = Arc::new(ExclusionPatternManager::new());
+        let result = handle_file_event(&pools, event, None, &exclusion_manager).await;
         assert!(result.is_ok());
     }
 
@@ -623,7 +667,8 @@ mod tests {
             attrs: Default::default(),
         };
 
-        let result = handle_file_event(&pools, event, None).await;
+        let exclusion_manager = Arc::new(ExclusionPatternManager::new());
+        let result = handle_file_event(&pools, event, None, &exclusion_manager).await;
         assert!(result.is_ok());
     }
 }

@@ -13,6 +13,7 @@ mod database;
 mod database_manager;
 mod exif_config;
 mod exif_constants;
+mod exclusion_patterns;
 mod file_manager;
 mod shelf_commands;
 mod shelf_manager;
@@ -185,6 +186,11 @@ async fn main() {
             shelf_commands::switch_shelf,
             shelf_commands::delete_shelf,
             shelf_commands::update_shelf_name,
+            exclusion_patterns::get_exclusion_patterns,
+            exclusion_patterns::add_exclusion_pattern,
+            exclusion_patterns::delete_exclusion_pattern,
+            exclusion_patterns::test_exclusion_pattern,
+            exclusion_patterns::validate_exclusion_pattern,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

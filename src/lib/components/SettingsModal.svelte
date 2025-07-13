@@ -5,6 +5,7 @@
   import { errorStore } from "../stores/error";
   import { t, locale } from "$lib/i18n";
   import LanguageSwitcher from "./LanguageSwitcher.svelte";
+  import ExclusionPatternsManager from "./ExclusionPatternsManager.svelte";
 
   export let isOpen = false;
   export let onClose: () => void;
@@ -160,6 +161,10 @@
               {$t("common.settings.showHiddenFiles")}
             </label>
           </div>
+        </div>
+
+        <div class="settings-section">
+          <ExclusionPatternsManager />
         </div>
 
         <div class="settings-actions">

@@ -1,4 +1,5 @@
 use crate::database::{Database, DatabaseTrait, Directory, File, Tag};
+use crate::exclusion_patterns::ExclusionPatternManager;
 use crate::watcher::FileWatcher;
 use crate::settings;
 use crate::ShelfManager;
@@ -631,6 +632,10 @@ fn infer_mime_type(path: &std::path::Path) -> Option<String> {
 }
 
 pub async fn scan_directory(pools: &ShelfManager, directory_id: &str, path: &str) -> Result<(), String> {
+    // 除外パターンマネージャーを初期化
+    let exclusion_manager = ExclusionPatternManager::new();
+    exclusion_manager.refresh_patterns(pools.get_settings_pool()).await?;
+    
     let walker = WalkDir::new(path)
         .follow_links(false)
         .into_iter()
@@ -638,6 +643,13 @@ pub async fn scan_directory(pools: &ShelfManager, directory_id: &str, path: &str
     
     for entry in walker {
         let path = entry.path();
+        let path_str = path.to_string_lossy();
+        
+        // 除外パターンチェック
+        if exclusion_manager.should_exclude(&path_str) {
+            continue;
+        }
+        
         if let Ok(metadata) = fs::metadata(path) {
             // MIMEタイプの推定
             let mime_type = infer_mime_type(path);
