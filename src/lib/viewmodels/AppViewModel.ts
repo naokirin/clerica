@@ -25,7 +25,7 @@ export class AppViewModel extends BaseViewModel {
   private _loadingProgress: Writable<number> = writable(0);
   private _isAppLoading: Writable<boolean> = writable(true);
   private _currentShelfId: Writable<string> = writable("");
-  
+
   // サブスクリプション管理
   private _unsubscribers: Unsubscriber[] = [];
 
@@ -37,7 +37,7 @@ export class AppViewModel extends BaseViewModel {
 
   constructor() {
     super();
-    
+
     // 子ViewModelを初期化
     this.directoryViewModel = new DirectoryViewModel();
     this.fileViewModel = new FileViewModel();
@@ -75,17 +75,34 @@ export class AppViewModel extends BaseViewModel {
     return currentShelfId;
   }
 
+  public getCurrentActiveTab(): ActiveTab {
+    let currentTab: ActiveTab = "files";
+    this._activeTab.subscribe(tab => currentTab = tab)();
+    return currentTab;
+  }
+
   public async reloadAllData(): Promise<void> {
     this._isAppLoading.set(true);
     this.setLoading(true);
 
     try {
+      // シェルフ切替前に検索状態を事前チェック（clearSearchする前に）
+      const currentTab = this.getCurrentActiveTab();
+      const isSearchActive = this.searchViewModel.isSearchActive();
+
       // すべてのViewModelでデータをクリアしてから再読み込み
       await Promise.all([
         this.directoryViewModel.loadDirectories(),
         this.tagViewModel.loadTags(),
+        this.tagViewModel.loadTopTags(),
         this.tagViewModel.loadCustomMetadataKeys()
       ]);
+
+      // 検索画面の処理：事前チェックした結果で分岐
+      if (currentTab === "search") {
+        // 検索画面で再検索を実行
+        await this.searchViewModel.performSearch();
+      }
 
       // ファイルデータも再読み込み
       await this.fileViewModel.loadFiles();
@@ -112,6 +129,7 @@ export class AppViewModel extends BaseViewModel {
       // タグとメタデータキー読み込み
       await Promise.all([
         this.tagViewModel.loadTags(),
+        this.tagViewModel.loadTopTags(),
         this.tagViewModel.loadCustomMetadataKeys()
       ]);
       this._loadingSteps.update(steps => ({ ...steps, tags: true }));
@@ -140,35 +158,35 @@ export class AppViewModel extends BaseViewModel {
   // ディレクトリ追加用のヘルパーメソッド（タグ更新を含む）
   public async addNewDirectory(path: string, name: string): Promise<boolean> {
     const result = await this.directoryViewModel.addNewDirectory(path, name, this.tagViewModel);
-    
+
     // ディレクトリ追加が成功した場合、ファイル読み込みも更新
     if (result) {
       await this.fileViewModel.loadFiles();
     }
-    
+
     return result;
   }
 
   // ディレクトリ再スキャン用のヘルパーメソッド（タグ更新を含む）
   public async rescanDirectory(directoryId: string): Promise<boolean> {
     const result = await this.directoryViewModel.rescanExistingDirectory(directoryId, this.tagViewModel);
-    
+
     // 再スキャンが成功した場合、ファイル読み込みも更新
     if (result) {
       await this.fileViewModel.loadFiles();
     }
-    
+
     return result;
   }
 
   // リソースクリーンアップ
   public dispose(): void {
     super.dispose();
-    
+
     // サブスクリプションのクリーンアップ
     this._unsubscribers.forEach(unsubscriber => unsubscriber());
     this._unsubscribers = [];
-    
+
     this.directoryViewModel.dispose();
     this.fileViewModel.dispose();
     this.searchViewModel.dispose();

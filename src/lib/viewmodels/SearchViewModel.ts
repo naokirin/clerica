@@ -334,6 +334,23 @@ export class SearchViewModel extends BaseViewModel {
     await this.performSearch(); // ソート変更時に検索を再実行
   }
 
+  // 検索がアクティブ（検索条件が入力されている）かどうかを判定
+  public isSearchActive(): boolean {
+    let query = "";
+    let tags: string[] = [];
+    let filters: MetadataSearchFilter[] = [];
+
+    const queryUnsub = this._searchQuery.subscribe(q => query = q);
+    const tagsUnsub = this._selectedTags.subscribe(t => tags = t);
+    const filtersUnsub = this._metadataSearchFilters.subscribe(f => filters = f);
+
+    queryUnsub();
+    tagsUnsub();
+    filtersUnsub();
+
+    return !!(query.trim() || tags.length > 0 || filters.some(f => f.keyId && f.value));
+  }
+
   // タグが更新された時の再検索メソッド
   public async refreshSearchResults(): Promise<void> {
     // 既に検索結果がある場合のみ再検索を実行

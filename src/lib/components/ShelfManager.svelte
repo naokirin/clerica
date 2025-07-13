@@ -31,9 +31,7 @@
 
   async function loadShelves() {
     try {
-      console.log("シェルフ読み込み開始...");
       shelves = await shelvesApi.getShelves();
-      console.log("シェルフ読み込み完了:", shelves);
     } catch (error) {
       console.error("シェルフの読み込みに失敗しました:", error);
       throw error;
@@ -42,9 +40,7 @@
 
   async function loadActiveShelf() {
     try {
-      console.log("アクティブシェルフ読み込み開始...");
       activeShelfId = await shelvesApi.getActiveShelfId();
-      console.log("アクティブシェルフ読み込み完了:", activeShelfId);
       
       // AppViewModelにアクティブシェルフIDを設定
       if (appViewModel && activeShelfId) {
