@@ -159,3 +159,29 @@ export async function executeRename(
 ): Promise<string> {
   return await invoke("execute_rename", { fileId, regexPattern, formatTemplate });
 }
+
+export async function previewSimpleRename(
+  fileId: string,
+  newName: string
+): Promise<string> {
+  // シンプルリネームの場合は、拡張子を保持して新しい名前にする
+  // 正規表現APIを使って実装: 全体をキャプチャして新しい名前に置換
+  return await invoke("preview_rename", { 
+    fileId, 
+    regexPattern: "^(.+?)(\\.([^.]+))?$", 
+    formatTemplate: `${newName}$2` 
+  });
+}
+
+export async function executeSimpleRename(
+  fileId: string,
+  newName: string
+): Promise<string> {
+  // シンプルリネームの場合は、拡張子を保持して新しい名前にする
+  // 正規表現APIを使って実装: 全体をキャプチャして新しい名前に置換
+  return await invoke("execute_rename", { 
+    fileId, 
+    regexPattern: "^(.+?)(\\.([^.]+))?$", 
+    formatTemplate: `${newName}$2` 
+  });
+}
