@@ -1064,29 +1064,62 @@ impl DatabaseTrait for Database {
         if key_exists == 0 {
             return Err(sqlx::Error::RowNotFound);
         }
-        let id = Uuid::new_v4().to_string();
+
         let now = Utc::now();
 
-        sqlx::query(
-            "INSERT OR REPLACE INTO custom_metadata_values (id, file_id, key_id, value, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)"
+        // 既存のレコードをチェック
+        if let Ok(existing) = sqlx::query_as::<_, (String, DateTime<Utc>)>(
+            "SELECT id, created_at FROM custom_metadata_values WHERE file_id = ? AND key_id = ?"
         )
-        .bind(&id)
         .bind(file_id)
         .bind(key_id)
-        .bind(value.as_deref())
-        .bind(now)
-        .bind(now)
-        .execute(data_pool)
-        .await?;
+        .fetch_one(data_pool)
+        .await
+        {
+            // 既存レコードがある場合は更新
+            sqlx::query(
+                "UPDATE custom_metadata_values SET value = ?, updated_at = ? WHERE file_id = ? AND key_id = ?"
+            )
+            .bind(value.as_deref())
+            .bind(now)
+            .bind(file_id)
+            .bind(key_id)
+            .execute(data_pool)
+            .await?;
 
-        Ok(CustomMetadataValue {
-            id,
-            file_id: file_id.to_string(),
-            key_id: key_id.to_string(),
-            value,
-            created_at: now,
-            updated_at: now,
-        })
+            Ok(CustomMetadataValue {
+                id: existing.0,
+                file_id: file_id.to_string(),
+                key_id: key_id.to_string(),
+                value,
+                created_at: existing.1,
+                updated_at: now,
+            })
+        } else {
+            // 既存レコードがない場合は新規作成
+            let id = Uuid::new_v4().to_string();
+            
+            sqlx::query(
+                "INSERT INTO custom_metadata_values (id, file_id, key_id, value, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)"
+            )
+            .bind(&id)
+            .bind(file_id)
+            .bind(key_id)
+            .bind(value.as_deref())
+            .bind(now)
+            .bind(now)
+            .execute(data_pool)
+            .await?;
+
+            Ok(CustomMetadataValue {
+                id,
+                file_id: file_id.to_string(),
+                key_id: key_id.to_string(),
+                value,
+                created_at: now,
+                updated_at: now,
+            })
+        }
     }
 
     async fn get_custom_metadata_values_by_file(
