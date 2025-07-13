@@ -315,13 +315,6 @@
   background-color: #2563eb;
 }
 
-.search-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-}
-
 .search-header h2 {
   margin: 0;
 }
@@ -868,14 +861,6 @@
 }
 
 /* ファイル一覧ヘッダー */
-.files-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid #e5e7eb;
-}
 
 .files-header h2 {
   margin: 0;
@@ -905,7 +890,6 @@
   justify-content: center;
   align-items: center;
   margin: 1.5rem 0;
-  padding: 1rem 0;
 }
 
 .pagination-bottom {

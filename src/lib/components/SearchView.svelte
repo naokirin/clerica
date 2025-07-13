@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Search, Plus, X, Tag } from "lucide-svelte";
+  import { Search, Plus, X, Tag, List, Grid } from "lucide-svelte";
   import type {
     SearchResult,
     FileCategory,
@@ -93,86 +93,91 @@
     onSortChange,
     onTagsUpdated,
   }: Props = $props();
-  
+
   // 選択中のファイル数
   let selectedCount = $derived($selectedFileIds.size);
   let hasSelection = $derived(selectedCount > 0);
   let isMultipleSelection = $derived(selectedCount > 1);
-  
+
   // モーダルの状態
   let isDeleteDialogOpen = $state(false);
   let isBatchRenameModalOpen = $state(false);
-  
+
   // 全選択・全解除
   const handleSelectAll = () => {
     selectedFileIds.update(() => {
       const newSelected = new Set<number>();
-      filteredResults.forEach(result => {
+      filteredResults.forEach((result) => {
         newSelected.add(result.file.id);
       });
       return newSelected;
     });
   };
-  
+
   const handleClearSelection = () => {
     selectedFileIds.update(() => new Set());
   };
-  
+
   // 削除処理
   const handleDeleteSelected = async () => {
     if (!hasSelection) return;
     isDeleteDialogOpen = true;
   };
-  
+
   // 削除確認
   const confirmDelete = async () => {
     if (!hasSelection) return;
-    
+
     const selectedIds = Array.from($selectedFileIds);
-    
+
     try {
       const result: DeleteResult = await deleteFiles(selectedIds);
-      
+
       // 結果をユーザーに通知
       if (result.successful_files.length > 0) {
-        console.log(`${result.successful_files.length}件のファイルが削除されました`);
+        console.log(
+          `${result.successful_files.length}件のファイルが削除されました`,
+        );
       }
-      
+
       if (result.failed_files.length > 0) {
-        console.error(`${result.failed_files.length}件のファイルの削除に失敗しました:`);
+        console.error(
+          `${result.failed_files.length}件のファイルの削除に失敗しました:`,
+        );
         result.failed_files.forEach(([path, error]) => {
           console.error(`  ${path}: ${error}`);
         });
         // TODO: エラー通知UI
       }
-      
+
       // 選択をクリア
       selectedFileIds.update(() => new Set());
-      
+
       // 検索結果を再読み込み
       onSearch();
-      
     } catch (error) {
-      console.error('削除処理でエラーが発生しました:', error);
+      console.error("削除処理でエラーが発生しました:", error);
       // TODO: エラー通知UI
     } finally {
       isDeleteDialogOpen = false;
     }
   };
-  
+
   // 削除キャンセル
   const cancelDelete = () => {
     isDeleteDialogOpen = false;
   };
-  
+
   // リネーム処理
   const handleRenameSelected = async () => {
     if (!hasSelection) return;
-    
+
     if (selectedCount === 1) {
       // 単一ファイルの場合は既存のファイル詳細モーダルを使用
       const selectedId = Array.from($selectedFileIds)[0];
-      const selectedResult = filteredResults.find(r => r.file.id === selectedId);
+      const selectedResult = filteredResults.find(
+        (r) => r.file.id === selectedId,
+      );
       if (selectedResult) {
         selectedFileIds.update(() => new Set());
         onSelectFile(selectedResult.file);
@@ -182,24 +187,24 @@
       isBatchRenameModalOpen = true;
     }
   };
-  
+
   // バッチリネームモーダルのクローズ処理
   const closeBatchRenameModal = () => {
     isBatchRenameModalOpen = false;
   };
-  
+
   // バッチリネーム完了後の処理
   const handleBatchRenameCompleted = () => {
     selectedFileIds.update(() => new Set());
     onSearch(); // 検索結果を再読み込み
   };
-  
+
   // 選択中のファイル情報を取得
   let selectedFiles = $derived.by(() => {
     const selectedIds = Array.from($selectedFileIds);
     return filteredResults
-      .filter(result => selectedIds.includes(result.file.id))
-      .map(result => result.file);
+      .filter((result) => selectedIds.includes(result.file.id))
+      .map((result) => result.file);
   });
 
   // タグが更新された時の処理
@@ -297,32 +302,60 @@
 
 <div class="search-view">
   <div class="search-header">
-    <h2>{$t("common.search.title")}</h2>
-
-    {#if searchResults.length > 0}
-      <div class="search-stats">
-        <span class="total-results">
-          {selectedCategory === "all"
-            ? $t("common.search.results")
-            : $t(`common.files.category.${selectedCategory}`)}:
-          {totalSearchResults.toLocaleString()}
-          {$t("common.search.items")}
-        </span>
-        <span class="page-info">
-          {#if totalPages > 1}
-            ページ {currentPage} / {totalPages} ({(
-              (currentPage - 1) * itemsPerPage +
-              1
-            ).toLocaleString()} - {Math.min(
-              currentPage * itemsPerPage,
-              totalSearchResults,
-            ).toLocaleString()} / {totalSearchResults.toLocaleString()} 件を表示)
-          {:else}
-            {totalSearchResults.toLocaleString()} 件を表示
-          {/if}
-        </span>
+    <div class="header-top">
+      <div class="header-left">
+        <h2>{$t("common.search.title")}</h2>
       </div>
-    {/if}
+
+      <!-- 表示モード切り替えボタン -->
+      <div class="view-mode-switcher">
+        <button
+          class="view-mode-btn {$viewMode === 'list' ? 'active' : ''}"
+          onclick={() => viewMode.set("list")}
+          title="リスト表示"
+          aria-label="リスト表示"
+          aria-pressed={$viewMode === "list"}
+        >
+          <List size={18} />
+        </button>
+        <button
+          class="view-mode-btn {$viewMode === 'grid' ? 'active' : ''}"
+          onclick={() => viewMode.set("grid")}
+          title="グリッド表示"
+          aria-label="グリッド表示"
+          aria-pressed={$viewMode === "grid"}
+        >
+          <Grid size={18} />
+        </button>
+      </div>
+    </div>
+
+    <div class="header-bottom">
+      {#if searchResults.length > 0}
+        <div class="search-stats">
+          <span class="total-results">
+            {selectedCategory === "all"
+              ? $t("common.search.results")
+              : $t(`common.files.category.${selectedCategory}`)}:
+            {totalSearchResults.toLocaleString()}
+            {$t("common.search.items")}
+          </span>
+          <span class="page-info">
+            {#if totalPages > 1}
+              ページ {currentPage} / {totalPages} ({(
+                (currentPage - 1) * itemsPerPage +
+                1
+              ).toLocaleString()} - {Math.min(
+                currentPage * itemsPerPage,
+                totalSearchResults,
+              ).toLocaleString()} / {totalSearchResults.toLocaleString()} 件を表示)
+            {:else}
+              {totalSearchResults.toLocaleString()} 件を表示
+            {/if}
+          </span>
+        </div>
+      {/if}
+    </div>
   </div>
 
   <div class="search-controls">
@@ -571,12 +604,8 @@
   </div>
 
   <!-- 検索結果のファイル種別フィルター -->
-  <FileCategoryFilters
-    {selectedCategory}
-    {categoryCounts}
-    {onSelectCategory}
-  />
-  
+  <FileCategoryFilters {selectedCategory} {categoryCounts} {onSelectCategory} />
+
   <!-- コンテキストアクションバー -->
   {#if hasSelection}
     <div class="selection-action-bar">
@@ -587,10 +616,12 @@
         </button>
       </div>
       <div class="selection-actions">
-        <button 
-          class="action-btn rename-btn" 
+        <button
+          class="action-btn rename-btn"
           onclick={handleRenameSelected}
-          title={selectedCount === 1 ? "選択したファイルをリネーム" : `${selectedCount}件のファイルをバッチリネーム`}
+          title={selectedCount === 1
+            ? "選択したファイルをリネーム"
+            : `${selectedCount}件のファイルをバッチリネーム`}
         >
           リネーム
         </button>
@@ -606,7 +637,7 @@
       </button>
     </div>
   {/if}
-  
+
   <!-- 削除確認ダイアログ -->
   <DeleteConfirmDialog
     isOpen={isDeleteDialogOpen}
@@ -614,7 +645,7 @@
     onConfirm={confirmDelete}
     onCancel={cancelDelete}
   />
-  
+
   <!-- バッチリネームモーダル -->
   <BatchRenameModal
     isOpen={isBatchRenameModalOpen}
@@ -756,8 +787,72 @@
     background-color: #c82333;
   }
 
-  .search-header h2 {
-    margin: 0 0 1rem 0;
+  .search-header .header-top,
+  .search-header .header-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+  }
+
+  .header-left h2 {
+    margin: 0 0 0.5rem 0;
+  }
+
+  .search-stats {
+    text-align: right;
+    width: 100%;
+  }
+
+  /* 表示モード切り替えボタン */
+  .view-mode-switcher {
+    display: flex;
+    gap: 0;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    overflow: hidden;
+    background: #ffffff;
+  }
+
+  .view-mode-btn {
+    padding: 8px 12px;
+    background: #ffffff;
+    border: none;
+    cursor: pointer;
+    color: #6b7280;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+
+  .view-mode-btn:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    right: 0;
+    top: 20%;
+    bottom: 20%;
+    width: 1px;
+    background: #d1d5db;
+  }
+
+  .view-mode-btn:hover {
+    background: #f3f4f6;
+    color: #374151;
+  }
+
+  .view-mode-btn.active {
+    background: #3b82f6;
+    color: #ffffff;
+  }
+
+  .view-mode-btn.active:hover {
+    background: #2563eb;
+  }
+
+  .view-mode-btn.active:not(:last-child)::after {
+    background: transparent;
   }
 
   .pagination-controls {
@@ -921,18 +1016,18 @@
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
-  
+
   .selection-info {
     display: flex;
     align-items: center;
     gap: 12px;
   }
-  
+
   .selection-count {
     font-weight: 500;
     color: #1976d2;
   }
-  
+
   .clear-selection-btn {
     padding: 4px 8px;
     background: transparent;
@@ -943,17 +1038,17 @@
     font-size: 0.875rem;
     transition: all 0.2s ease;
   }
-  
+
   .clear-selection-btn:hover {
     background: #2196f3;
     color: white;
   }
-  
+
   .selection-actions {
     display: flex;
     gap: 8px;
   }
-  
+
   .action-btn {
     padding: 8px 16px;
     border: none;
@@ -962,39 +1057,39 @@
     font-weight: 500;
     transition: all 0.2s ease;
   }
-  
+
   .rename-btn {
     background: #4caf50;
     color: white;
   }
-  
+
   .rename-btn:hover:not(:disabled) {
     background: #45a049;
   }
-  
+
   .rename-btn:disabled {
     background: #cccccc;
     color: #666;
     cursor: not-allowed;
   }
-  
+
   /* 複数選択時のリネームボタンのスタイル調整は不要（無効化しないため） */
-  
+
   .delete-btn {
     background: #f44336;
     color: white;
   }
-  
+
   .delete-btn:hover {
     background: #da190b;
   }
-  
+
   .bulk-actions {
     display: flex;
     justify-content: flex-end;
     margin: 1rem 0;
   }
-  
+
   .select-all-btn {
     padding: 8px 16px;
     background: #f5f5f5;
@@ -1005,7 +1100,7 @@
     font-weight: 500;
     transition: all 0.2s ease;
   }
-  
+
   .select-all-btn:hover {
     background: #e0e0e0;
     border-color: #bbb;
