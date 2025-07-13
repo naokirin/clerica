@@ -103,7 +103,8 @@
   .pagination-controls {
     display: flex;
     justify-content: center;
-    margin: 1rem 0;
+    align-items: center;
+    margin: 1.5rem 0;
   }
 
   .pagination-buttons {
@@ -112,32 +113,79 @@
   }
 
   .pagination-btn {
-    padding: 0.5rem 0.75rem;
-    border: 1px solid #d1d5db;
-    background: white;
-    color: #374151;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 0.875rem;
-    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     min-width: 40px;
+    height: 40px;
+    padding: 0.5rem;
+    border: 1px solid #d1d5db;
+    background-color: white;
+    color: #374151;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border-radius: 0;
+    cursor: pointer;
+    transition: all 0.2s;
+    user-select: none;
+    margin-left: -1px;
+  }
+
+  .pagination-btn:first-child {
+    border-top-left-radius: 0.375rem;
+    border-bottom-left-radius: 0.375rem;
+    margin-left: 0;
+  }
+
+  .pagination-btn:last-child {
+    border-top-right-radius: 0.375rem;
+    border-bottom-right-radius: 0.375rem;
   }
 
   .pagination-btn:hover:not(:disabled) {
-    background: #f3f4f6;
+    background-color: #f9fafb;
     border-color: #9ca3af;
-  }
-
-  .pagination-btn.active {
-    background: #3b82f6;
-    color: white;
-    border-color: #3b82f6;
+    z-index: 1;
+    position: relative;
   }
 
   .pagination-btn:disabled {
-    background: #f9fafb;
-    color: #9ca3af;
-    border-color: #e5e7eb;
+    opacity: 0.5;
     cursor: not-allowed;
+    background-color: #f9fafb;
+    color: #9ca3af;
+  }
+
+  .pagination-btn.active {
+    background-color: #3b82f6;
+    border-color: #3b82f6;
+    color: white;
+    z-index: 1;
+    position: relative;
+  }
+
+  .pagination-btn.active:hover {
+    background-color: #2563eb;
+    border-color: #2563eb;
+  }
+
+  .pagination-bottom {
+    margin-top: 1.5rem;
+    border-top: 1px solid #e5e7eb;
+    padding-top: 1.5rem;
+  }
+
+  /* レスポンシブ対応 */
+  @media (max-width: 768px) {
+    .pagination-controls {
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .pagination-btn {
+      min-width: 36px;
+      height: 36px;
+      font-size: 0.75rem;
+    }
   }
 </style>

@@ -147,39 +147,54 @@
 <style>
   .file-category-filters {
     display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background-color: #f8fafc;
+    border-radius: 0.5rem;
+    border: 1px solid #e2e8f0;
     flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
   }
 
   .category-filter-btn {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    background-color: #f8f9fa;
-    border: 1px solid #dee2e6;
-    border-radius: 6px;
+    padding: 0.75rem 1rem;
+    background-color: white;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.2s;
     font-size: 0.875rem;
-    color: #495057;
+    color: #374151;
+    white-space: nowrap;
   }
 
   .category-filter-btn:hover:not(:disabled) {
-    background-color: #e9ecef;
-    border-color: #adb5bd;
-  }
-
-  .category-filter-btn.active {
-    background-color: #007bff;
-    border-color: #007bff;
-    color: white;
+    background-color: #f9fafb;
+    border-color: #9ca3af;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   }
 
   .category-filter-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+    background-color: #f9fafb;
+    color: #9ca3af;
+  }
+
+  .category-filter-btn.active {
+    background-color: #3b82f6;
+    border-color: #3b82f6;
+    color: white;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+  }
+
+  .category-filter-btn.active:hover {
+    background-color: #2563eb;
+    border-color: #2563eb;
   }
 
   .category-icon {
@@ -193,5 +208,31 @@
   .category-count {
     font-size: 0.75rem;
     opacity: 0.8;
+    font-weight: 400;
+  }
+
+  .category-filter-btn.active .category-count {
+    opacity: 0.9;
+  }
+
+  /* レスポンシブ対応 */
+  @media (max-width: 768px) {
+    .file-category-filters {
+      gap: 0.5rem;
+      padding: 0.75rem;
+    }
+
+    .category-filter-btn {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.75rem;
+    }
+
+    .category-label {
+      display: none;
+    }
+
+    .category-icon {
+      font-size: 1.125rem;
+    }
   }
 </style>

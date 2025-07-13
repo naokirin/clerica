@@ -326,6 +326,18 @@
 </div>
 
 <style>
+  .files-view {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .files-view h2 {
+    margin: 0 0 1.5rem 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #111827;
+  }
+
   .files-header .header-top,
   .files-header .header-bottom {
     display: flex;
@@ -341,6 +353,21 @@
   .files-stats {
     text-align: right;
     width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.25rem;
+  }
+
+  .total-files {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #374151;
+  }
+
+  .page-info {
+    font-size: 0.875rem;
+    color: #6b7280;
   }
 
   .pagination-controls {
@@ -422,8 +449,6 @@
     cursor: not-allowed;
   }
 
-  /* 複数選択時のリネームボタンのスタイル調整は不要（無効化しないため） */
-
   .delete-btn {
     background: #f44336;
     color: white;
@@ -504,5 +529,19 @@
 
   .view-mode-btn.active:not(:last-child)::after {
     background: transparent;
+  }
+
+  /* レスポンシブ対応 */
+  @media (max-width: 768px) {
+    .files-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+
+    .files-stats {
+      align-items: flex-start;
+      width: 100%;
+    }
   }
 </style>

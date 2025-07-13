@@ -696,6 +696,11 @@
 </div>
 
 <style>
+  .search-view {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
   .metadata-search-section {
     margin: 1rem 0;
     padding: 1rem;
@@ -802,6 +807,10 @@
   .search-stats {
     text-align: right;
     width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.25rem;
   }
 
   /* 表示モード切り替えボタン */
@@ -853,6 +862,37 @@
 
   .view-mode-btn.active:not(:last-child)::after {
     background: transparent;
+  }
+
+  .search-controls {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .search-input {
+    flex: 1;
+    padding: 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    font-size: 1rem;
+  }
+
+  .search-button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background-color: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+
+  .search-button:hover {
+    background-color: #2563eb;
   }
 
   .pagination-controls {
