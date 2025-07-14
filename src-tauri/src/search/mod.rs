@@ -10,6 +10,33 @@ use uuid::Uuid;
 #[cfg(test)]
 mod tests;
 
+#[derive(Debug, Clone)]
+pub struct SearchParams {
+    pub query: String,
+    pub tag_ids: Option<Vec<String>>,
+    pub metadata_filters: Vec<MetadataSearchFilter>,
+    pub metadata_logic: Option<String>,
+    pub sort_field: Option<String>,
+    pub sort_order: Option<String>,
+    pub directory_id: Option<String>,
+    pub category: Option<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct PaginatedSearchParams {
+    pub query: String,
+    pub tag_ids: Option<Vec<String>>,
+    pub metadata_filters: Vec<MetadataSearchFilter>,
+    pub metadata_logic: Option<String>,
+    pub sort_field: Option<String>,
+    pub sort_order: Option<String>,
+    pub directory_id: Option<String>,
+    pub limit: Option<u32>,
+    pub offset: Option<u32>,
+    pub category: Option<String>,
+}
+
+
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct SearchResult {
     pub file: File,
@@ -25,7 +52,7 @@ pub struct PaginatedSearchResult {
     pub total_category_counts: std::collections::HashMap<String, i64>,
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct MetadataSearchFilter {
     #[serde(rename = "keyId")]
     pub key_id: String,
@@ -40,6 +67,7 @@ pub struct MetadataSearchFilter {
 }
 
 #[tauri::command]
+#[allow(clippy::too_many_arguments)]
 pub async fn search_files(
     pools: State<'_, ShelfManager>,
     query: String,
@@ -51,9 +79,8 @@ pub async fn search_files(
     directory_id: Option<String>,
     category: Option<String>,
 ) -> Result<Vec<SearchResult>, String> {
-    // 後方互換性のため、全件取得版を残す
-    let paginated_result = search_files_paginated(
-        pools,
+    // パラメータを構造体にまとめて内部関数を呼び出す
+    let params = SearchParams {
         query,
         tag_ids,
         metadata_filters,
@@ -61,18 +88,40 @@ pub async fn search_files(
         sort_field,
         sort_order,
         directory_id,
-        None,
-        None,
         category,
-    )
-    .await?;
+    };
+    
+    search_files_internal(pools, params).await
+}
+
+async fn search_files_internal(
+    pools: State<'_, ShelfManager>,
+    params: SearchParams,
+) -> Result<Vec<SearchResult>, String> {
+    // 後方互換性のため、全件取得版を残す
+    let paginated_params = PaginatedSearchParams {
+        query: params.query,
+        tag_ids: params.tag_ids,
+        metadata_filters: params.metadata_filters,
+        metadata_logic: params.metadata_logic,
+        sort_field: params.sort_field,
+        sort_order: params.sort_order,
+        directory_id: params.directory_id,
+        limit: None,
+        offset: None,
+        category: params.category,
+    };
+    
+    let paginated_result = search_files_paginated_internal(pools, paginated_params).await?;
 
     // 実際にはSearchResult構造体でカテゴリ別件数も返すべきだが、
     // 後方互換性のためとりあえずresultsのみ返す
     Ok(paginated_result.results)
 }
 
+
 #[tauri::command]
+#[allow(clippy::too_many_arguments)]
 pub async fn search_files_paginated(
     pools: State<'_, ShelfManager>,
     query: String,
@@ -86,8 +135,29 @@ pub async fn search_files_paginated(
     offset: Option<u32>,
     category: Option<String>,
 ) -> Result<PaginatedSearchResult, String> {
+    // パラメータを構造体にまとめて内部関数を呼び出す
+    let params = PaginatedSearchParams {
+        query,
+        tag_ids,
+        metadata_filters,
+        metadata_logic,
+        sort_field,
+        sort_order,
+        directory_id,
+        limit,
+        offset,
+        category,
+    };
+    
+    search_files_paginated_internal(pools, params).await
+}
+
+async fn search_files_paginated_internal(
+    pools: State<'_, ShelfManager>,
+    params: PaginatedSearchParams,
+) -> Result<PaginatedSearchResult, String> {
     // メタデータフィルタの有効性をチェック
-    let valid_metadata_filters: Vec<&MetadataSearchFilter> = metadata_filters
+    let valid_metadata_filters: Vec<&MetadataSearchFilter> = params.metadata_filters
         .iter()
         .filter(|f| !f.key_id.is_empty() && !f.value.is_empty())
         .collect();
@@ -111,16 +181,16 @@ pub async fn search_files_paginated(
     }
 
     let mut conditions = Vec::new();
-    let mut params: Vec<String> = Vec::new();
+    let mut sql_params: Vec<String> = Vec::new();
 
     // ファイル名検索
-    if !query.is_empty() {
+    if !params.query.is_empty() {
         conditions.push("f.name LIKE ?".to_string());
-        params.push(format!("%{query}%"));
+        sql_params.push(format!("%{}%", params.query));
     }
 
     // タグフィルタ - 複数のタグがAND条件で絞り込まれる
-    if let Some(ref tag_ids) = tag_ids {
+    if let Some(ref tag_ids) = params.tag_ids {
         if !tag_ids.is_empty() {
             let tag_count = tag_ids.len();
             let placeholders = tag_ids
@@ -132,25 +202,27 @@ pub async fn search_files_paginated(
             conditions.push(format!(
                 "f.id IN (SELECT file_id FROM file_tags WHERE tag_id IN ({placeholders}) GROUP BY file_id HAVING COUNT(DISTINCT tag_id) = {tag_count})"
             ));
-            params.extend(tag_ids.clone());
+            for tag_id in tag_ids {
+                sql_params.push(tag_id.clone());
+            }
         }
     }
 
     // ディレクトリフィルタ
-    if let Some(dir_id) = directory_id {
+    if let Some(ref dir_id) = params.directory_id {
         if dir_id != "all" {
             conditions.push("f.directory_id = ?".to_string());
-            params.push(dir_id);
+            sql_params.push(dir_id.clone());
         }
     }
 
     // カテゴリフィルタ適用前の総件数を計算（現在のSQL + 条件をコピー）
     let pre_category_sql = sql.clone();
     let pre_category_conditions = conditions.clone();
-    let pre_category_params = params.clone();
+    let pre_category_params = sql_params.clone();
 
     // カテゴリフィルタ
-    if let Some(ref cat) = category {
+    if let Some(ref cat) = params.category {
         if cat != "all" {
             match cat.as_str() {
                 "image" => {
@@ -227,7 +299,7 @@ pub async fn search_files_paginated(
 
     // カスタムメタデータフィルタ
     if !valid_metadata_filters.is_empty() {
-        let metadata_logic = metadata_logic.unwrap_or_else(|| "AND".to_string());
+        let metadata_logic = params.metadata_logic.clone().unwrap_or_else(|| "AND".to_string());
         let mut metadata_conditions = Vec::new();
 
         for (i, filter) in valid_metadata_filters.iter().enumerate() {
@@ -245,12 +317,12 @@ pub async fn search_files_paginated(
             };
 
             metadata_conditions.push(metadata_condition);
-            params.push(filter.key_id.clone());
+            sql_params.push(filter.key_id.clone());
 
             if filter.operator == "contains" {
-                params.push(format!("%{}%", filter.value));
+                sql_params.push(format!("%{}%", filter.value));
             } else {
-                params.push(filter.value.clone());
+                sql_params.push(filter.value.clone());
             }
         }
 
@@ -284,8 +356,8 @@ pub async fn search_files_paginated(
     sql.push_str(" GROUP BY f.id");
 
     // ソート
-    let sort_field = sort_field.as_deref().unwrap_or("modified_at");
-    let sort_order = sort_order.as_deref().unwrap_or("desc");
+    let sort_field = params.sort_field.as_deref().unwrap_or("modified_at");
+    let sort_order = params.sort_order.as_deref().unwrap_or("desc");
 
     let sort_column = match sort_field {
         "name" => "f.name",
@@ -333,14 +405,14 @@ pub async fn search_files_paginated(
     println!("Main SQL: {sql}");
     println!("Count SQL: {count_sql}");
     println!("Conditions: {conditions:?}");
-    println!("Parameters: {params:?}");
-    println!("Tag IDs: {tag_ids:?}");
-    println!("Category: {category:?}");
+    println!("Parameters: {sql_params:?}");
+    println!("Tag IDs: {:?}", params.tag_ids);
+    println!("Category: {:?}", params.category);
     println!("========================");
 
     // 総件数を取得
     let mut count_query = sqlx::query(&count_sql);
-    for param in &params {
+    for param in &sql_params {
         count_query = count_query.bind(param);
     }
 
@@ -351,19 +423,19 @@ pub async fn search_files_paginated(
         .get("total_count");
 
     // ページネーション追加
-    if let (Some(limit), Some(offset)) = (limit, offset) {
+    if let (Some(limit), Some(offset)) = (params.limit, params.offset) {
         sql.push_str(&format!(" LIMIT {limit} OFFSET {offset}"));
     }
 
     // クエリ実行
     let mut query_builder = sqlx::query(&sql);
-    for param in &params {
+    for param in &sql_params {
         query_builder = query_builder.bind(param);
     }
 
     println!("=== EXECUTING MAIN QUERY ===");
     println!("Final SQL: {sql}");
-    println!("Final Parameters: {params:?}");
+    println!("Final Parameters: {sql_params:?}");
     println!("============================");
 
     let rows = query_builder
@@ -433,7 +505,7 @@ pub async fn search_files_paginated(
         calculate_category_counts(&pools.get_active_data_pool().map_err(|e| e.to_string())?, &total_sql, &pre_category_params).await?;
 
     // カテゴリフィルタ適用後の件数を計算
-    let category_counts = calculate_category_counts(&pools.get_active_data_pool().map_err(|e| e.to_string())?, &sql, &params).await?;
+    let category_counts = calculate_category_counts(&pools.get_active_data_pool().map_err(|e| e.to_string())?, &sql, &sql_params).await?;
 
     Ok(PaginatedSearchResult {
         results,

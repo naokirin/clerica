@@ -14,6 +14,7 @@ use std::os::unix::fs::PermissionsExt;
 use std::process::Command;
 use std::sync::{Arc, Mutex};
 use std::collections::HashMap;
+use std::fmt::{Display, Formatter};
 use regex::{Regex, RegexBuilder};
 use tera::{Context, Tera};
 use thiserror::Error;
@@ -58,17 +59,19 @@ impl FileCategory {
             _ => FileCategory::Other,
         }
     }
-    
-    pub fn to_string(&self) -> String {
+}
+
+impl Display for FileCategory {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            FileCategory::Image => "Image".to_string(),
-            FileCategory::Video => "Video".to_string(),
-            FileCategory::Audio => "Audio".to_string(),
-            FileCategory::Document => "Document".to_string(),
-            FileCategory::Text => "Text".to_string(),
-            FileCategory::Programming => "Programming".to_string(),
-            FileCategory::Archive => "Archive".to_string(),
-            FileCategory::Other => "Other".to_string(),
+            FileCategory::Image => write!(f, "Image"),
+            FileCategory::Video => write!(f, "Video"),
+            FileCategory::Audio => write!(f, "Audio"),
+            FileCategory::Document => write!(f, "Document"),
+            FileCategory::Text => write!(f, "Text"),
+            FileCategory::Programming => write!(f, "Programming"),
+            FileCategory::Archive => write!(f, "Archive"),
+            FileCategory::Other => write!(f, "Other"),
         }
     }
 }
@@ -1391,31 +1394,29 @@ async fn analyze_and_auto_tag_single_directory(
     let mut has_git_directory = false;
     
     // ディレクトリ直下のファイルをスキャンしてカテゴリを分析
-    for entry in entries {
-        if let Ok(entry) = entry {
-            let path = entry.path();
-            
-            // .gitディレクトリをチェック
-            if let Ok(metadata) = entry.metadata() {
-                if metadata.is_dir() {
-                    // .gitディレクトリが存在するかチェック
-                    if let Some(file_name) = path.file_name() {
-                        if file_name == ".git" {
-                            has_git_directory = true;
-                        }
+    for entry in entries.flatten() {
+        let path = entry.path();
+        
+        // .gitディレクトリをチェック
+        if let Ok(metadata) = entry.metadata() {
+            if metadata.is_dir() {
+                // .gitディレクトリが存在するかチェック
+                if let Some(file_name) = path.file_name() {
+                    if file_name == ".git" {
+                        has_git_directory = true;
                     }
-                    continue; // ディレクトリはファイルカウントから除外
                 }
+                continue; // ディレクトリはファイルカウントから除外
             }
+        }
+        
+        // 拡張子がある通常ファイルのみを対象にする
+        if let Some(extension) = path.extension().and_then(|ext| ext.to_str()) {
+            let category = FileCategory::from_extension(extension);
+            let category_name = category.to_string();
             
-            // 拡張子がある通常ファイルのみを対象にする
-            if let Some(extension) = path.extension().and_then(|ext| ext.to_str()) {
-                let category = FileCategory::from_extension(extension);
-                let category_name = category.to_string();
-                
-                *category_counts.entry(category_name).or_insert(0) += 1;
-                total_files += 1;
-            }
+            *category_counts.entry(category_name).or_insert(0) += 1;
+            total_files += 1;
         }
     }
     

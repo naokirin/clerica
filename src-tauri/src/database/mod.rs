@@ -2,6 +2,7 @@ use chrono::{DateTime, Utc};
 use sqlx::{Row, SqlitePool};
 use uuid::Uuid;
 
+
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone, PartialEq)]
 pub struct Directory {
     pub id: String,
@@ -96,6 +97,7 @@ pub trait DatabaseTrait {
         sort_field: Option<String>,
         sort_order: Option<String>,
     ) -> Result<Vec<File>, sqlx::Error>;
+    #[allow(clippy::too_many_arguments)]
     async fn get_all_files_paginated(
         &self,
         pool: &SqlitePool,
@@ -106,6 +108,7 @@ pub trait DatabaseTrait {
         show_hidden_files: bool,
         show_directories: bool,
     ) -> Result<Vec<File>, sqlx::Error>;
+    #[allow(clippy::too_many_arguments)]
     async fn get_files_by_directory_paginated(
         &self,
         pool: &SqlitePool,
@@ -119,6 +122,7 @@ pub trait DatabaseTrait {
     ) -> Result<Vec<File>, sqlx::Error>;
     async fn count_all_files(&self, pool: &SqlitePool, show_hidden_files: bool, show_directories: bool) -> Result<u32, sqlx::Error>;
     async fn count_files_by_directory(&self, pool: &SqlitePool, directory_id: &str, show_hidden_files: bool, show_directories: bool) -> Result<u32, sqlx::Error>;
+    #[allow(clippy::too_many_arguments)]
     async fn get_files_paginated_with_category(
         &self,
         pool: &SqlitePool,
@@ -130,6 +134,7 @@ pub trait DatabaseTrait {
         show_hidden_files: bool,
         show_directories: bool,
     ) -> Result<Vec<File>, sqlx::Error>;
+    #[allow(clippy::too_many_arguments)]
     async fn get_files_by_directory_paginated_with_category(
         &self,
         pool: &SqlitePool,
