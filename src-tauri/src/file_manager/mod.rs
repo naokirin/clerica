@@ -107,6 +107,7 @@ pub async fn add_directory(
     if let Err(e) = watcher_guard.watch_directory(&directory.id, &path) {
         eprintln!("ファイル監視開始エラー: {e}");
     } else {
+        #[cfg(debug_assertions)]
         println!("ディレクトリの監視を開始しました: {path}");
     }
     
@@ -167,6 +168,7 @@ pub async fn remove_directory(
                 .await
                 .map_err(|e| e.to_string())?;
         }
+        #[cfg(debug_assertions)]
         println!("削除されたタグ数: {deleted_tags_count}");
     }
     
@@ -1347,6 +1349,7 @@ async fn analyze_and_auto_tag_directory(
     directory_path: &str,
     threshold: f64,
 ) -> Result<(), String> {
+    #[cfg(debug_assertions)]
     println!("ディレクトリツリー '{directory_path}' の自動タグ付けを開始");
     
     // ディレクトリツリー内のすべてのディレクトリを取得
@@ -1370,6 +1373,7 @@ async fn analyze_and_auto_tag_directory(
         processed_directories += 1;
     }
     
+    #[cfg(debug_assertions)]
     println!("自動タグ付け完了: {processed_directories} 個のディレクトリを処理しました");
     Ok(())
 }
@@ -1442,6 +1446,7 @@ async fn analyze_and_auto_tag_single_directory(
                     eprintln!("Gitタグ追加エラー (directory_file_id: {}, tag_id: {}): {}", directory_file_id, git_tag.id, e);
                 }
             } else {
+                #[cfg(debug_assertions)]
                 println!("Git自動タグ付け完了: ディレクトリ '{}' に 'git' タグを追加", directory_path.display());
             }
         }
@@ -1476,6 +1481,7 @@ async fn analyze_and_auto_tag_single_directory(
                         eprintln!("ディレクトリタグ追加エラー (directory_file_id: {}, tag_id: {}): {}", directory_file_id, tag.id, e);
                     }
                 } else {
+                    #[cfg(debug_assertions)]
                     println!("自動タグ付け完了: ディレクトリ '{}' に '{}' タグを追加 ({}% - {} ファイル)", 
                              directory_path.display(),
                              category_name, 
@@ -1679,10 +1685,12 @@ fn create_template_context(file: &File, tags: &[String], metadata: &serde_json::
     context.insert("tags_dash", &tags.join("-"));
     
     // ファイルメタデータ（EXIF、オーディオタグなど）
+    #[cfg(debug_assertions)]
     println!("File Metadata: {metadata:?}");
     context.insert("metadata", metadata);
     
     // カスタムメタデータ（ユーザー設定）
+    #[cfg(debug_assertions)]
     println!("Custom Metadata: {custom_metadata:?}");
     context.insert("custom_metadata", custom_metadata);
     
@@ -1827,6 +1835,7 @@ pub async fn preview_rename(
     let intermediate_string = Tera::one_off(&format_template, &context, false)
         .map_err(|e| RenameError::TemplateError(format!("Template error: {e}")))?;
 
+    #[cfg(debug_assertions)]
     println!("Intermediate string: {intermediate_string}");
     
     // 正規表現の後方参照を置換

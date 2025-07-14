@@ -400,15 +400,18 @@ async fn search_files_paginated_internal(
         }
     );
 
-    // SQLクエリとパラメータをログに出力
-    println!("=== SEARCH SQL DEBUG ===");
-    println!("Main SQL: {sql}");
-    println!("Count SQL: {count_sql}");
-    println!("Conditions: {conditions:?}");
-    println!("Parameters: {sql_params:?}");
-    println!("Tag IDs: {:?}", params.tag_ids);
-    println!("Category: {:?}", params.category);
-    println!("========================");
+    // デバッグ情報（開発時のみ）
+    #[cfg(debug_assertions)]
+    {
+        println!("=== SEARCH SQL DEBUG ===");
+        println!("Main SQL: {sql}");
+        println!("Count SQL: {count_sql}");
+        println!("Conditions: {conditions:?}");
+        println!("Parameters: {sql_params:?}");
+        println!("Tag IDs: {:?}", params.tag_ids);
+        println!("Category: {:?}", params.category);
+        println!("========================");
+    }
 
     // 総件数を取得
     let mut count_query = sqlx::query(&count_sql);
@@ -433,10 +436,13 @@ async fn search_files_paginated_internal(
         query_builder = query_builder.bind(param);
     }
 
-    println!("=== EXECUTING MAIN QUERY ===");
-    println!("Final SQL: {sql}");
-    println!("Final Parameters: {sql_params:?}");
-    println!("============================");
+    #[cfg(debug_assertions)]
+    {
+        println!("=== EXECUTING MAIN QUERY ===");
+        println!("Final SQL: {sql}");
+        println!("Final Parameters: {sql_params:?}");
+        println!("============================");
+    }
 
     let rows = query_builder
         .fetch_all(&pools.get_active_data_pool().map_err(|e| e.to_string())?)

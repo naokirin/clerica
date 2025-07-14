@@ -37,6 +37,7 @@ impl FileWatcher {
             if let Err(e) = exclusion_manager_clone.refresh_patterns(&settings_pool).await {
                 eprintln!("除外パターンの初期化エラー: {e}");
             } else {
+                #[cfg(debug_assertions)]
                 println!("除外パターンマネージャーが初期化されました（パターン数: {}）", 
                     exclusion_manager_clone.pattern_count());
             }
@@ -211,6 +212,7 @@ async fn handle_create_event(
         
         // 除外パターンチェック
         if exclusion_manager.should_exclude(&path_str) {
+            #[cfg(debug_assertions)]
             println!("ファイルが除外パターンにマッチしたためスキップしました: {path_str}");
             continue;
         }

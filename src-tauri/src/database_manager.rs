@@ -29,6 +29,7 @@ impl DatabaseManager {
         let settings_exists = Path::new(&settings_path).exists();
 
         if !settings_exists {
+            #[cfg(debug_assertions)]
             println!("設定データベースファイルが存在しません。新規作成します: {settings_path}");
         }
 
@@ -53,6 +54,7 @@ impl DatabaseManager {
         // 設定用データベースのマイグレーション
         let settings_migrator = Migrator::new(Path::new("./settings_migrations")).await?;
         settings_migrator.run(settings_pool).await?;
+        #[cfg(debug_assertions)]
         println!("設定データベースのマイグレーションが完了しました");
 
         Ok(())
