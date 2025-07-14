@@ -16,7 +16,7 @@ use uuid::Uuid;
 pub struct FileWatcher {
     watcher: notify::FsEventWatcher,
     watched_directories: HashMap<String, String>, // directory_id -> path
-    exclusion_manager: Arc<ExclusionPatternManager>,
+    _exclusion_manager: Arc<ExclusionPatternManager>,
 }
 
 impl FileWatcher {
@@ -121,7 +121,7 @@ impl FileWatcher {
         Ok(FileWatcher {
             watcher,
             watched_directories: HashMap::new(),
-            exclusion_manager,
+            _exclusion_manager: exclusion_manager,
         })
     }
 

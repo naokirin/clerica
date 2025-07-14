@@ -82,13 +82,7 @@ pub trait DatabaseTrait {
         name: &str,
     ) -> Result<Directory, sqlx::Error>;
     async fn get_directories(&self, pool: &SqlitePool) -> Result<Vec<Directory>, sqlx::Error>;
-    async fn remove_directory(&self, pool: &SqlitePool, id: &str) -> Result<(), sqlx::Error>;
     async fn add_file(&self, pool: &SqlitePool, file: &File) -> Result<(), sqlx::Error>;
-    async fn get_files_by_directory(
-        &self,
-        pool: &SqlitePool,
-        directory_id: &str,
-    ) -> Result<Vec<File>, sqlx::Error>;
     async fn get_files_by_directory_sorted(
         &self,
         pool: &SqlitePool,
@@ -96,7 +90,6 @@ pub trait DatabaseTrait {
         sort_field: Option<String>,
         sort_order: Option<String>,
     ) -> Result<Vec<File>, sqlx::Error>;
-    async fn get_all_files(&self, pool: &SqlitePool) -> Result<Vec<File>, sqlx::Error>;
     async fn get_all_files_sorted(
         &self,
         pool: &SqlitePool,
@@ -316,14 +309,6 @@ impl DatabaseTrait for Database {
         Ok(directories)
     }
 
-    async fn remove_directory(&self, pool: &SqlitePool, id: &str) -> Result<(), sqlx::Error> {
-        sqlx::query("DELETE FROM directories WHERE id = ?")
-            .bind(id)
-            .execute(pool)
-            .await?;
-
-        Ok(())
-    }
 
     async fn add_file(&self, pool: &SqlitePool, file: &File) -> Result<(), sqlx::Error> {
         sqlx::query(
@@ -357,82 +342,7 @@ impl DatabaseTrait for Database {
         Ok(())
     }
 
-    async fn get_files_by_directory(
-        &self,
-        pool: &SqlitePool,
-        directory_id: &str,
-    ) -> Result<Vec<File>, sqlx::Error> {
-        let rows = sqlx::query("SELECT * FROM files WHERE directory_id = ? ORDER BY name")
-            .bind(directory_id)
-            .fetch_all(pool)
-            .await?;
 
-        let mut files = Vec::new();
-        for row in rows {
-            files.push(File {
-                id: row.get("id"),
-                path: row.get("path"),
-                name: row.get("name"),
-                directory_id: row.get("directory_id"),
-                size: row.get("size"),
-                file_type: row.get("file_type"),
-                created_at: row.get("created_at"),
-                modified_at: row.get("modified_at"),
-                birth_time: row.get("birth_time"),
-                inode: row.get("inode"),
-                is_directory: row.get("is_directory"),
-                created_at_db: row.get("created_at_db"),
-                updated_at_db: row.get("updated_at_db"),
-                file_size: row.get("file_size"),
-                mime_type: row.get("mime_type"),
-                permissions: row.get("permissions"),
-                owner_uid: row.get("owner_uid"),
-                group_gid: row.get("group_gid"),
-                hard_links: row.get("hard_links"),
-                device_id: row.get("device_id"),
-                last_accessed: row.get("last_accessed"),
-                metadata: row.get("metadata"),
-            });
-        }
-
-        Ok(files)
-    }
-
-    async fn get_all_files(&self, pool: &SqlitePool) -> Result<Vec<File>, sqlx::Error> {
-        let rows = sqlx::query("SELECT * FROM files ORDER BY name")
-            .fetch_all(pool)
-            .await?;
-
-        let mut files = Vec::new();
-        for row in rows {
-            files.push(File {
-                id: row.get("id"),
-                path: row.get("path"),
-                name: row.get("name"),
-                directory_id: row.get("directory_id"),
-                size: row.get("size"),
-                file_type: row.get("file_type"),
-                created_at: row.get("created_at"),
-                modified_at: row.get("modified_at"),
-                birth_time: row.get("birth_time"),
-                inode: row.get("inode"),
-                is_directory: row.get("is_directory"),
-                created_at_db: row.get("created_at_db"),
-                updated_at_db: row.get("updated_at_db"),
-                file_size: row.get("file_size"),
-                mime_type: row.get("mime_type"),
-                permissions: row.get("permissions"),
-                owner_uid: row.get("owner_uid"),
-                group_gid: row.get("group_gid"),
-                hard_links: row.get("hard_links"),
-                device_id: row.get("device_id"),
-                last_accessed: row.get("last_accessed"),
-                metadata: row.get("metadata"),
-            });
-        }
-
-        Ok(files)
-    }
 
     async fn get_all_files_sorted(
         &self,

@@ -955,29 +955,6 @@ fn get_file_category_from_path(file_path: &str) -> String {
     }
 }
 
-// カテゴリ条件をSQL WHERE句に変換する関数
-fn build_category_where_clause(category: &str) -> String {
-    if category == "all" {
-        return String::new();
-    }
-    
-    let extensions = match category {
-        "image" => vec!["jpg", "jpeg", "png", "gif", "bmp", "webp", "svg", "ico", "tiff", "raw"],
-        "audio" => vec!["mp3", "wav", "ogg", "flac", "aac", "m4a", "wma", "opus"],
-        "video" => vec!["mp4", "avi", "mov", "wmv", "flv", "webm", "mkv", "m4v", "3gp"],
-        "document" => vec!["pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt", "md", "html", "htm", "css", "js", "json", "xml", "csv", "rtf"],
-        "archive" => vec!["zip", "rar", "7z", "tar", "gz", "bz2", "xz", "lzma"],
-        "other" => return " AND (path NOT LIKE '%.jpg' AND path NOT LIKE '%.jpeg' AND path NOT LIKE '%.png' AND path NOT LIKE '%.gif' AND path NOT LIKE '%.bmp' AND path NOT LIKE '%.webp' AND path NOT LIKE '%.svg' AND path NOT LIKE '%.ico' AND path NOT LIKE '%.tiff' AND path NOT LIKE '%.raw' AND path NOT LIKE '%.mp3' AND path NOT LIKE '%.wav' AND path NOT LIKE '%.ogg' AND path NOT LIKE '%.flac' AND path NOT LIKE '%.aac' AND path NOT LIKE '%.m4a' AND path NOT LIKE '%.wma' AND path NOT LIKE '%.opus' AND path NOT LIKE '%.mp4' AND path NOT LIKE '%.avi' AND path NOT LIKE '%.mov' AND path NOT LIKE '%.wmv' AND path NOT LIKE '%.flv' AND path NOT LIKE '%.webm' AND path NOT LIKE '%.mkv' AND path NOT LIKE '%.m4v' AND path NOT LIKE '%.3gp' AND path NOT LIKE '%.pdf' AND path NOT LIKE '%.doc' AND path NOT LIKE '%.docx' AND path NOT LIKE '%.xls' AND path NOT LIKE '%.xlsx' AND path NOT LIKE '%.ppt' AND path NOT LIKE '%.pptx' AND path NOT LIKE '%.txt' AND path NOT LIKE '%.md' AND path NOT LIKE '%.html' AND path NOT LIKE '%.htm' AND path NOT LIKE '%.css' AND path NOT LIKE '%.js' AND path NOT LIKE '%.json' AND path NOT LIKE '%.xml' AND path NOT LIKE '%.csv' AND path NOT LIKE '%.rtf' AND path NOT LIKE '%.zip' AND path NOT LIKE '%.rar' AND path NOT LIKE '%.7z' AND path NOT LIKE '%.tar' AND path NOT LIKE '%.gz' AND path NOT LIKE '%.bz2' AND path NOT LIKE '%.xz' AND path NOT LIKE '%.lzma')".to_string(),
-        _ => return String::new(),
-    };
-    
-    let conditions: Vec<String> = extensions.iter()
-        .map(|ext| format!("path LIKE '%.{}' OR path LIKE '%.{}'", ext, ext.to_uppercase()))
-        .collect();
-    
-    format!(" AND ({})", conditions.join(" OR "))
-}
-
 #[tauri::command]
 pub async fn get_files_by_directory_with_tags(
     pools: State<'_, ShelfManager>,
@@ -1509,15 +1486,6 @@ async fn analyze_and_auto_tag_single_directory(
     }
     
     Ok(())
-}
-
-/// ファイルパスからファイルIDを取得する関数
-async fn get_file_id_by_path(pool: &SqlitePool, file_path: &str) -> Result<String, sqlx::Error> {
-    let file_id: String = sqlx::query_scalar("SELECT id FROM files WHERE path = ?")
-        .bind(file_path)
-        .fetch_one(pool)
-        .await?;
-    Ok(file_id)
 }
 
 /// ディレクトリをfilesテーブルのエントリとして作成または取得する関数
