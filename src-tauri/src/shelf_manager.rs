@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use sqlx::{SqlitePool, Row};
+use sqlx::{Row, SqlitePool};
 use std::collections::HashMap;
 use std::env;
 use std::path::Path;
@@ -78,7 +78,7 @@ impl ShelfManager {
 
     pub async fn get_shelves(&self) -> Result<Vec<Shelf>, Box<dyn std::error::Error>> {
         let rows = sqlx::query_as::<_, Shelf>(
-            "SELECT id, name, created_at FROM shelves ORDER BY created_at"
+            "SELECT id, name, created_at FROM shelves ORDER BY created_at",
         )
         .fetch_all(&self.settings_pool)
         .await?;
@@ -87,14 +87,12 @@ impl ShelfManager {
     }
 
     pub async fn create_shelf(&self, shelf: &Shelf) -> Result<(), Box<dyn std::error::Error>> {
-        sqlx::query(
-            "INSERT INTO shelves (id, name, created_at) VALUES (?, ?, ?)"
-        )
-        .bind(&shelf.id)
-        .bind(&shelf.name)
-        .bind(&shelf.created_at)
-        .execute(&self.settings_pool)
-        .await?;
+        sqlx::query("INSERT INTO shelves (id, name, created_at) VALUES (?, ?, ?)")
+            .bind(&shelf.id)
+            .bind(&shelf.name)
+            .bind(&shelf.created_at)
+            .execute(&self.settings_pool)
+            .await?;
 
         // 新しいグループ用のデータベースを作成
         self.get_or_create_data_pool(&shelf.id).await?;
@@ -175,12 +173,10 @@ impl ShelfManager {
     }
 
     async fn set_active_shelf(&self, shelf_id: &str) -> Result<(), Box<dyn std::error::Error>> {
-        sqlx::query(
-            "INSERT OR REPLACE INTO active_shelf (id, shelf_id) VALUES (1, ?)"
-        )
-        .bind(shelf_id)
-        .execute(&self.settings_pool)
-        .await?;
+        sqlx::query("INSERT OR REPLACE INTO active_shelf (id, shelf_id) VALUES (1, ?)")
+            .bind(shelf_id)
+            .execute(&self.settings_pool)
+            .await?;
         Ok(())
     }
 
@@ -224,10 +220,10 @@ impl ShelfManager {
 
     fn get_data_db_path(&self, shelf_id: &str) -> String {
         if cfg!(debug_assertions) {
-            format!("./data_{shelf_id}.db")
+            format!("../db/data_{shelf_id}.db")
         } else {
             let home = env::var("HOME").unwrap_or_else(|_| ".".to_string());
-            format!("{home}/clerica_data_{shelf_id}.db")
+            format!("{home}/.clerica/clerica_data_{shelf_id}.db")
         }
     }
 }

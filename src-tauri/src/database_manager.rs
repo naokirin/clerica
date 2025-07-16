@@ -13,15 +13,21 @@ pub struct DatabaseManager {
 impl DatabaseManager {
     pub async fn new() -> Result<Self, Box<dyn std::error::Error>> {
         let (settings_url, settings_path) = if cfg!(debug_assertions) {
+            std::fs::create_dir_all("../db").unwrap_or_else(|_| {
+                eprintln!("プロジェクトルートに設定ディレクトリを作成できません: ../db");
+            });
             // 開発モード: プロジェクトルートに配置
             (
-                "sqlite:./settings.db".to_string(),
-                "./settings.db".to_string(),
+                "sqlite:../db/settings.db".to_string(),
+                "../db/settings.db".to_string(),
             )
         } else {
             // 本番モード: ホームディレクトリに配置
             let home = env::var("HOME").unwrap_or_else(|_| ".".to_string());
-            let settings_path = format!("{home}/clerica_settings.db");
+            std::fs::create_dir_all(format!("{home}/.clerica")).unwrap_or_else(|_| {
+                eprintln!("ホームディレクトリに設定ディレクトリを作成できません: {home}/.clerica");
+            });
+            let settings_path = format!("{home}/.clerica/clerica_settings.db");
             (format!("sqlite:{settings_path}"), settings_path)
         };
 

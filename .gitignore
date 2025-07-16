@@ -1,4 +1,5 @@
 # Clerica
+/db
 *.db
 *.db-journal
 *.db-shm
