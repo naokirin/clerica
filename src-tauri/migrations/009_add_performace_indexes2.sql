@@ -1,1 +1,0 @@
-CREATE INDEX IF NOT EXISTS idx_files_birth_time ON files(birth_time);
