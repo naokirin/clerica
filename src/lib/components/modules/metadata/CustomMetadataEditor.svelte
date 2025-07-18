@@ -4,14 +4,14 @@
     getCustomMetadataValuesByFile,
     setCustomMetadataValue,
     deleteCustomMetadataValue,
-  } from "../api/metadata";
+  } from "../../../api/metadata";
   import type {
     CustomMetadataKey,
     CustomMetadataValue,
     CustomMetadataDataType,
     SetCustomMetadataValueRequest,
-  } from "../types";
-  import { errorStore } from "../stores/error";
+  } from "../../../types";
+  import { errorStore } from "../../../stores/error";
   import { t } from "$lib/i18n";
 
   interface Props {

@@ -1,14 +1,14 @@
 <script lang="ts">
   import { X, Trash2, Loader2, ExternalLink, Folder, Edit3 } from "lucide-svelte";
-  import type { File, CustomMetadataKey, Tag } from "../types";
-  import { formatFileSize, formatDate } from "../utils";
-  import CustomMetadataEditor from "./CustomMetadataEditor.svelte";
-  import TagInput from "./TagInput.svelte";
-  import Dropdown from "./Dropdown.svelte";
-  import * as exifApi from "../api/exif";
-  import * as filesApi from "../api/files";
-  import * as tagsApi from "../api/tags";
-  import { errorStore } from "../stores/error";
+  import type { File, CustomMetadataKey, Tag } from "../../../types";
+  import { formatFileSize, formatDate } from "../../../utils";
+  import CustomMetadataEditor from "../metadata/CustomMetadataEditor.svelte";
+  import TagInput from "../../parts/TagInput.svelte";
+  import Dropdown from "../../parts/Dropdown.svelte";
+  import * as exifApi from "../../../api/exif";
+  import * as filesApi from "../../../api/files";
+  import * as tagsApi from "../../../api/tags";
+  import { errorStore } from "../../../stores/error";
   import { t } from "$lib/i18n";
 
   interface Props {

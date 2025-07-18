@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Tag } from "../types";
+  import type { Tag } from "../../../types";
   import { t } from "$lib/i18n";
 
   interface Props {

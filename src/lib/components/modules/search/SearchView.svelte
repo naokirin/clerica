@@ -8,17 +8,17 @@
     CustomMetadataKey,
     SortOptions,
     Tag as TagType,
-  } from "../types";
-  import FileList from "./FileList.svelte";
-  import SortControl from "./SortControl.svelte";
-  import FileCategoryFilters from "./FileCategoryFilters.svelte";
-  import Pagination from "./Pagination.svelte";
+  } from "../../../types";
+  import FileList from "../files/FileList.svelte";
+  import SortControl from "../../parts/SortControl.svelte";
+  import FileCategoryFilters from "../files/FileCategoryFilters.svelte";
+  import Pagination from "../../parts/Pagination.svelte";
   import { t } from "$lib/i18n";
-  import { selectedFileIds } from "../stores/files";
-  import DeleteConfirmDialog from "./DeleteConfirmDialog.svelte";
-  import BatchRenameModal from "./BatchRenameModal.svelte";
-  import { deleteFiles, type DeleteResult } from "../api/files";
-  import { viewMode } from "../stores/common";
+  import { selectedFileIds } from "../../../stores/files";
+  import DeleteConfirmDialog from "../files/DeleteConfirmDialog.svelte";
+  import BatchRenameModal from "../files/BatchRenameModal.svelte";
+  import { deleteFiles, type DeleteResult } from "../../../api/files";
+  import { viewMode } from "../../../stores/common";
 
   interface Props {
     searchQuery: string;

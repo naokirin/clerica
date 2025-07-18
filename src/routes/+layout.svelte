@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import '../index.css';
-  import Snackbar from '../lib/components/Snackbar.svelte';
+  import Snackbar from '../lib/components/parts/Snackbar.svelte';
   import { locale } from '$lib/i18n';
   import { errorStore } from '../lib/stores/error';
   import type { LayoutData } from './$types';

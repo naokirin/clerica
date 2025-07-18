@@ -4,16 +4,16 @@
   import { FileText, Search, Tag, Settings } from "lucide-svelte";
 
   // コンポーネントのインポート
-  import LoadingScreen from "../lib/components/LoadingScreen.svelte";
-  import SimpleLoadingScreen from "../lib/components/SimpleLoadingScreen.svelte";
-  import Sidebar from "../lib/components/Sidebar.svelte";
-  import FilesView from "../lib/components/FilesView.svelte";
-  import SearchView from "../lib/components/SearchView.svelte";
-  import TagsView from "../lib/components/TagsView.svelte";
-  import FileDetailModal from "../lib/components/FileDetailModal.svelte";
-  import FileRenameModal from "../lib/components/FileRenameModal.svelte";
-  import CustomMetadataKeyManager from "../lib/components/CustomMetadataKeyManager.svelte";
-  import SettingsModal from "../lib/components/SettingsModal.svelte";
+  import LoadingScreen from "../lib/components/parts/LoadingScreen.svelte";
+  import SimpleLoadingScreen from "../lib/components/parts/SimpleLoadingScreen.svelte";
+  import Sidebar from "../lib/components/parts/Sidebar.svelte";
+  import FilesView from "../lib/components/modules/files/FilesView.svelte";
+  import SearchView from "../lib/components/modules/search/SearchView.svelte";
+  import TagsView from "../lib/components/modules/tags/TagsView.svelte";
+  import FileDetailModal from "../lib/components/modules/files/FileDetailModal.svelte";
+  import FileRenameModal from "../lib/components/modules/files/FileRenameModal.svelte";
+  import CustomMetadataKeyManager from "../lib/components/modules/metadata/CustomMetadataKeyManager.svelte";
+  import SettingsModal from "../lib/components/modules/settings/SettingsModal.svelte";
 
   // ViewModel のインポート
   import { AppViewModel, type ActiveTab } from "../lib/viewmodels/AppViewModel";

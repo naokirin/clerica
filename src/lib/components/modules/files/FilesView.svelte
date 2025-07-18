@@ -5,18 +5,18 @@
     FileCategory,
     FileCategoryInfo,
     SortOptions,
-  } from "../types";
+  } from "../../../types";
   import FileList from "./FileList.svelte";
-  import SortControl from "./SortControl.svelte";
+  import SortControl from "../../parts/SortControl.svelte";
   import FileCategoryFilters from "./FileCategoryFilters.svelte";
-  import Pagination from "./Pagination.svelte";
+  import Pagination from "../../parts/Pagination.svelte";
   import { t } from "$lib/i18n";
-  import { selectedFileIds } from "../stores/files";
+  import { selectedFileIds } from "../../../stores/files";
   import DeleteConfirmDialog from "./DeleteConfirmDialog.svelte";
   import BatchRenameModal from "./BatchRenameModal.svelte";
-  import { deleteFiles, type DeleteResult } from "../api/files";
+  import { deleteFiles, type DeleteResult } from "../../../api/files";
   import { createEventDispatcher } from "svelte";
-  import { viewMode, type ViewMode } from "../stores/common";
+  import { viewMode, type ViewMode } from "../../../stores/common";
   import { List, Grid } from "lucide-svelte";
 
   interface Props {

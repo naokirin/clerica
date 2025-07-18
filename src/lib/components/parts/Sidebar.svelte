@@ -1,8 +1,8 @@
 <script lang="ts">
   import { FolderPlus, Tag, RefreshCw, X } from "lucide-svelte";
-  import type { Directory, Tag as TagType } from "../types";
+  import type { Directory, Tag as TagType } from "../../types";
   import { t } from "$lib/i18n";
-  import ShelfManager from "./ShelfManager.svelte";
+  import ShelfManager from "../modules/settings/ShelfManager.svelte";
   import type { AppViewModel } from "$lib/viewmodels/AppViewModel";
   import Button from "./Button.svelte";
 

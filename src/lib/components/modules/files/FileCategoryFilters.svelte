@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { FileCategory, FileCategoryInfo } from "../types";
+  import type { FileCategory, FileCategoryInfo } from "../../../types";
   import { t } from "$lib/i18n";
 
   interface Props {

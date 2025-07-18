@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { File } from "../types";
+  import type { File } from "../../../types";
   import {
     batchRenameFiles,
     type BatchRenameOperation,
@@ -8,7 +8,7 @@
     executeAdvancedBatchRename,
     type AdvancedBatchRenameOperation,
     type AdvancedBatchRenamePreview,
-  } from "../api/files";
+  } from "../../../api/files";
   import RenameHelp from "./RenameHelp.svelte";
 
   interface Props {

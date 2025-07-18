@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { exclusionPatternsApi, type ExclusionPattern } from '$lib/api';
   import { errorStore } from '$lib/stores/error';
-  import LoadingScreen from './LoadingScreen.svelte';
+  import LoadingScreen from '../../parts/LoadingScreen.svelte';
 
   let patterns: ExclusionPattern[] = $state([]);
   let newPattern = $state('');

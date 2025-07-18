@@ -3,7 +3,7 @@
   import { onMount } from "svelte";
   import { Edit, Trash2, Plus } from "lucide-svelte";
   import type { AppViewModel } from "$lib/viewmodels/AppViewModel";
-  import Button from "./Button.svelte";
+  import Button from "../../parts/Button.svelte";
   import { t } from "$lib/i18n";
 
   interface Props {

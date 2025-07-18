@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { File, Tag } from "../types";
-  import type { ViewMode } from "../stores/common";
+  import type { File, Tag } from "../../../types";
+  import type { ViewMode } from "../../../stores/common";
   import {
     formatFileSize,
     formatDate,
@@ -9,10 +9,10 @@
     isAudioFile,
     isArchiveFile,
     getImageUrl,
-  } from "../utils";
+  } from "../../../utils";
   import { onMount } from "svelte";
-  import { errorStore } from "../stores/error";
-  import { selectedFileIds } from "../stores/files";
+  import { errorStore } from "../../../stores/error";
+  import { selectedFileIds } from "../../../stores/files";
 
   interface Props {
     file: File;

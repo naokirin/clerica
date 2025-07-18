@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { FileWithTags } from "../types";
-  import type { ViewMode } from "../stores/common";
+  import type { FileWithTags } from "../../../types";
+  import type { ViewMode } from "../../../stores/common";
   import FileItemDisplay from "./FileItemDisplay.svelte";
 
   interface Props {
