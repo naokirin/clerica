@@ -14,6 +14,7 @@
   } from "../../../types";
   import { errorStore } from "../../../stores/error";
   import { t } from "$lib/i18n";
+  import IconButton from "../../parts/IconButton.svelte";
 
   interface Props {
     keys: CustomMetadataKey[];
@@ -353,20 +354,18 @@
                 <code>{key.name}</code>
               </div>
               <div class="key-actions">
-                <button
-                  class="edit-btn"
-                  onclick={() => startEdit(key)}
+                <IconButton
+                  icon={Edit}
                   title={$t("common.buttons.edit")}
-                >
-                  <Edit size={14} />
-                </button>
-                <button
-                  class="delete-btn"
-                  onclick={() => deleteKey(key.id, key.display_name)}
+                  onClick={() => startEdit(key)}
+                  class="green"
+                />
+                <IconButton
+                  icon={Trash2}
                   title={$t("common.buttons.delete")}
-                >
-                  <Trash2 size={14} />
-                </button>
+                  onClick={() => deleteKey(key.id, key.display_name)}
+                  class="red"
+                />
               </div>
             </div>
 
@@ -606,36 +605,6 @@
     gap: 4px;
   }
 
-  .edit-btn,
-  .delete-btn {
-    padding: 4px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .edit-btn {
-    background: #f8f9fa;
-    color: #6c757d;
-  }
-
-  .edit-btn:hover {
-    background: #e9ecef;
-    color: #495057;
-  }
-
-  .delete-btn {
-    background: #f8f9fa;
-    color: #dc3545;
-  }
-
-  .delete-btn:hover {
-    background: #f5c6cb;
-    color: #721c24;
-  }
 
   .key-details {
     display: flex;

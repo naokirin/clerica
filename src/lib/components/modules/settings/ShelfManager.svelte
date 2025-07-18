@@ -4,6 +4,7 @@
   import { Edit, Trash2, Plus } from "lucide-svelte";
   import type { AppViewModel } from "$lib/viewmodels/AppViewModel";
   import Button from "../../parts/Button.svelte";
+  import IconButton from "../../parts/IconButton.svelte";
   import { t } from "$lib/i18n";
 
   interface Props {
@@ -43,7 +44,7 @@
   async function loadActiveShelf() {
     try {
       activeShelfId = await shelvesApi.getActiveShelfId();
-      
+
       // AppViewModelにアクティブシェルフIDを設定
       if (appViewModel && activeShelfId) {
         appViewModel.switchShelf(activeShelfId);
@@ -220,28 +221,20 @@
             </div>
           </div>
           <div class="shelf-actions">
-            <button
-              class="edit-btn"
-              on:click={(e) => {
-                e.stopPropagation();
-                startEdit(shelf);
-              }}
-              disabled={loading}
+            <IconButton
+              icon={Edit}
               title="シェルフ名を編集"
-            >
-              <Edit size={14} />
-            </button>
-            <button
-              class="delete-btn"
-              on:click={(e) => {
-                e.stopPropagation();
-                deleteShelf(shelf.id);
-              }}
-              disabled={loading || shelves.length <= 1}
+              onClick={() => startEdit(shelf)}
+              disabled={loading}
+              class="green"
+            />
+            <IconButton
+              icon={Trash2}
               title="シェルフを削除"
-            >
-              <Trash2 size={14} />
-            </button>
+              onClick={() => deleteShelf(shelf.id)}
+              disabled={loading || shelves.length <= 1}
+              class="red"
+            />
           </div>
         {/if}
       </div>
@@ -267,7 +260,6 @@
     font-weight: 600;
     color: #374151;
   }
-
 
   .btn-save,
   .btn-cancel {
@@ -392,42 +384,6 @@
 
   .shelf-item:hover .shelf-actions {
     opacity: 1;
-  }
-
-  .edit-btn,
-  .delete-btn {
-    padding: 0.25rem;
-    border: none;
-    border-radius: 0.25rem;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background-color 0.2s;
-  }
-
-  .edit-btn {
-    background-color: #10b981;
-    color: white;
-  }
-
-  .edit-btn:hover:not(:disabled) {
-    background-color: #059669;
-  }
-
-  .delete-btn {
-    background-color: #ef4444;
-    color: white;
-  }
-
-  .delete-btn:hover:not(:disabled) {
-    background-color: #dc2626;
-  }
-
-  .edit-btn:disabled,
-  .delete-btn:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
   }
 
   .loading {

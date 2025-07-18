@@ -5,6 +5,7 @@
   import ShelfManager from "../modules/settings/ShelfManager.svelte";
   import type { AppViewModel } from "$lib/viewmodels/AppViewModel";
   import Button from "./Button.svelte";
+  import IconButton from "./IconButton.svelte";
 
   interface Props {
     directories: Directory[];
@@ -60,16 +61,12 @@
           </div>
         </div>
         <div class="directory-actions">
-          <button
-            class="rescan-directory-btn"
-            onclick={(e) => {
-              e.stopPropagation();
-              onRescanAll();
-            }}
+          <IconButton
+            icon={RefreshCw}
             title={$t("common.sidebar.rescanAll")}
-          >
-            <RefreshCw size={14} />
-          </button>
+            onClick={() => onRescanAll()}
+            class="green"
+          />
         </div>
       </div>
 
@@ -85,26 +82,18 @@
             <div class="directory-path">{dir.path}</div>
           </div>
           <div class="directory-actions">
-            <button
-              class="rescan-directory-btn"
-              onclick={(e) => {
-                e.stopPropagation();
-                onRescanDirectory(dir.id);
-              }}
+            <IconButton
+              icon={RefreshCw}
               title={$t("common.sidebar.rescan")}
-            >
-              <RefreshCw size={14} />
-            </button>
-            <button
-              class="remove-directory-btn"
-              onclick={(e) => {
-                e.stopPropagation();
-                onRemoveDirectory(dir.id, dir.name);
-              }}
+              onClick={() => onRescanDirectory(dir.id)}
+              class="green"
+            />
+            <IconButton
+              icon={X}
               title={$t("common.sidebar.remove")}
-            >
-              <X size={14} />
-            </button>
+              onClick={() => onRemoveDirectory(dir.id, dir.name)}
+              class="red"
+            />
           </div>
         </div>
       {/each}
