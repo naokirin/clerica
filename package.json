@@ -21,7 +21,9 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
-    "test:e2e:debug": "playwright test --debug"
+    "test:e2e:debug": "playwright test --debug",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.0.0",
@@ -34,6 +36,9 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.53.2",
+    "@storybook/addon-docs": "^9.0.17",
+    "@storybook/addon-svelte-csf": "^5.0.7",
+    "@storybook/sveltekit": "^9.0.17",
     "@sveltejs/adapter-static": "^3.0.0",
     "@sveltejs/kit": "^2.22.2",
     "@sveltejs/vite-plugin-svelte": "^5.0.0",
@@ -44,6 +49,7 @@
     "@vitest/ui": "^3.2.4",
     "biome": "^0.2.0",
     "jsdom": "^26.1.0",
+    "storybook": "^9.0.17",
     "svelte-check": "^4.0.0",
     "typescript": "^5.0.2",
     "vite": "^6.0.0",
