@@ -22,6 +22,10 @@
   let loading = $state(false);
   let error = $state<string | null>(null);
 
+  // アイコン定義
+  const plusIcon =
+    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+
   onMount(async () => {
     try {
       await loadShelves();
@@ -158,10 +162,9 @@
     <Button
       onclick={() => (showCreateForm = !showCreateForm)}
       disabled={loading}
-    >
-      <Plus size={16} slot="leading-icon" />
-      {$t("common.sidebar.createShelf")}
-    </Button>
+      icon={plusIcon}
+      text={$t("common.sidebar.createShelf")}
+    />
   </div>
 
   {#if showCreateForm}

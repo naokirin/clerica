@@ -1,24 +1,28 @@
 <script lang="ts">
-  type Variant = 'primary' | 'secondary' | 'danger';
-  type Size = 'small' | 'medium' | 'large';
+  type Variant = "primary" | "secondary" | "danger";
+  type Size = "small" | "medium" | "large";
 
   interface Props {
     variant?: Variant;
     size?: Size;
     disabled?: boolean;
     href?: string;
-    type?: 'button' | 'submit' | 'reset';
+    type?: "button" | "submit" | "reset";
     class?: string;
+    icon?: string; // SVGアイコン文字列
+    text?: string; // ボタンテキスト
     onclick?: (event: MouseEvent) => void;
   }
 
   let {
-    variant = 'primary',
-    size = 'medium', 
+    variant = "primary",
+    size = "medium",
     disabled = false,
     href,
-    type = 'button',
-    class: className = '',
+    type = "button",
+    class: className = "",
+    icon,
+    text,
     onclick,
     ...restProps
   }: Props = $props();
@@ -34,6 +38,12 @@
     {...restProps}
     on:click={onclick}
   >
+    {#if icon}
+      {@html icon}
+    {/if}
+    {#if text}
+      <span class="text-content">{text}</span>
+    {/if}
     <slot name="leading-icon" />
     <span class="text-content">
       <slot />
@@ -48,6 +58,12 @@
     {...restProps}
     on:click={onclick}
   >
+    {#if icon}
+      {@html icon}
+    {/if}
+    {#if text}
+      <span class="text-content">{text}</span>
+    {/if}
     <slot name="leading-icon" />
     <span class="text-content">
       <slot />
