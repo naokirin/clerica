@@ -11,6 +11,7 @@
     "metadata": "Metadata"
   },
   "sidebar": {
+    "createShelf": "Create",
     "directories": "Directories",
     "allFiles": "All Files",
     "allFilesDescription": "Show files from all directories",

@@ -4,6 +4,7 @@
   import { t } from "$lib/i18n";
   import ShelfManager from "./ShelfManager.svelte";
   import type { AppViewModel } from "$lib/viewmodels/AppViewModel";
+  import Button from "./Button.svelte";
 
   interface Props {
     directories: Directory[];
@@ -41,10 +42,10 @@
   <div class="sidebar-section">
     <div class="section-header">
       <h3>{$t("common.sidebar.directories")}</h3>
-      <button onclick={onAddDirectory} class="add-button" {disabled}>
-        <FolderPlus size={16} />
+      <Button onclick={onAddDirectory} {disabled}>
+        <FolderPlus size={16} slot="leading-icon" />
         {$t("common.sidebar.addDirectory")}
-      </button>
+      </Button>
     </div>
     <div class="directory-list">
       <!-- すべてのファイルオプション -->

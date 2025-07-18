@@ -11,6 +11,7 @@
     "metadata": "メタデータ"
   },
   "sidebar": {
+    "createShelf": "新規",
     "directories": "ディレクトリ",
     "allFiles": "すべてのファイル",
     "allFilesDescription": "全ファイルを表示",

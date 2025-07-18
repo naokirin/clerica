@@ -1,8 +1,10 @@
 <script lang="ts">
   import { shelvesApi, type Shelf } from "$lib/api/shelves";
   import { onMount } from "svelte";
-  import { Edit, Trash2 } from "lucide-svelte";
+  import { Edit, Trash2, Plus } from "lucide-svelte";
   import type { AppViewModel } from "$lib/viewmodels/AppViewModel";
+  import Button from "./Button.svelte";
+  import { t } from "$lib/i18n";
 
   interface Props {
     appViewModel?: AppViewModel;
@@ -152,13 +154,13 @@
 
   <div class="section-header">
     <h3>シェルフ</h3>
-    <button
-      class="add-button"
-      on:click={() => (showCreateForm = !showCreateForm)}
+    <Button
+      onclick={() => (showCreateForm = !showCreateForm)}
       disabled={loading}
     >
-      新規作成
-    </button>
+      <Plus size={16} slot="leading-icon" />
+      {$t("common.sidebar.createShelf")}
+    </Button>
   </div>
 
   {#if showCreateForm}
@@ -266,29 +268,6 @@
     color: #374151;
   }
 
-  .add-button {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 0.75rem;
-    background-color: #3b82f6;
-    color: white;
-    border: none;
-    border-radius: 0.375rem;
-    font-size: 0.875rem;
-    cursor: pointer;
-    transition: background-color 0.2s;
-  }
-
-  .add-button:hover:not(:disabled) {
-    background-color: #2563eb;
-  }
-
-  .add-button:disabled {
-    background-color: #9ca3af;
-    cursor: not-allowed;
-    opacity: 0.6;
-  }
 
   .btn-save,
   .btn-cancel {
