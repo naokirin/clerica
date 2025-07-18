@@ -18,6 +18,7 @@
     "addDirectory": "追加",
     "addTag": "タグを作成",
     "rescan": "再スキャン",
+    "rescanAll": "全て更新",
     "remove": "削除"
   },
   "dialog": {
@@ -33,6 +34,7 @@
   },
   "error": {
     "directoryRescanFailed": "ディレクトリの再スキャンに失敗しました。",
+    "allDirectoriesRescanFailed": "全ディレクトリの再スキャンに失敗しました。",
     "directoryRemoveFailed": "ディレクトリの削除に失敗しました。",
     "fileOpenFailed": "ファイルを開けませんでした",
     "fileRevealFailed": "Finderで表示できませんでした",

@@ -178,6 +178,24 @@ export class AppViewModel extends BaseViewModel {
     return result;
   }
 
+  // 全ディレクトリ再スキャン用のメソッド
+  public async rescanAllDirectories(): Promise<boolean> {
+    this.setLoading(true);
+    
+    try {
+      const result = await this.directoryViewModel.rescanAllDirectories(this.tagViewModel);
+      
+      // 再スキャンが成功した場合、ファイル読み込みも更新
+      if (result) {
+        await this.fileViewModel.loadFiles();
+      }
+      
+      return result;
+    } finally {
+      this.setLoading(false);
+    }
+  }
+
   // リソースクリーンアップ
   public dispose(): void {
     super.dispose();

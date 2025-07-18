@@ -22,35 +22,35 @@
   }
 
   let { file, tags = [], viewMode, onSelectFile }: Props = $props();
-  
+
   // 選択状態の管理
   let isSelected = $state(false);
   let lastSelectedId: number | null = null;
-  
+
   // 選択状態の同期
   $effect(() => {
     $selectedFileIds.has(file.id);
     isSelected = $selectedFileIds.has(file.id);
   });
-  
+
   // チェックボックスの変更ハンドラー
   const handleCheckboxChange = (event: Event) => {
     event.stopPropagation();
     const checked = (event.target as HTMLInputElement).checked;
-    
-    selectedFileIds.update(currentSelected => {
+
+    selectedFileIds.update((currentSelected) => {
       const newSelected = new Set(currentSelected);
-      
+
       if (checked) {
         newSelected.add(file.id);
       } else {
         newSelected.delete(file.id);
       }
-      
+
       return newSelected;
     });
   };
-  
+
   // Shift+Clickでの範囲選択ハンドラー
   const handleItemClick = (event: MouseEvent) => {
     if (event.shiftKey && lastSelectedId !== null) {
@@ -60,15 +60,18 @@
     } else if (event.ctrlKey || event.metaKey) {
       // Ctrl/Cmd+Clickの場合は単一選択切り替え
       event.preventDefault();
-      handleCheckboxChange({ target: { checked: !isSelected }, stopPropagation: () => {} } as any);
+      handleCheckboxChange({
+        target: { checked: !isSelected },
+        stopPropagation: () => {},
+      } as any);
     } else {
       // 通常クリックの場合は詳細表示
       onSelectFile(file);
     }
-    
+
     lastSelectedId = file.id;
   };
-  
+
   // 範囲選択の実装
   const selectFileRange = (startId: number, endId: number) => {
     // ここではシンプルにID順で範囲選択を実装
@@ -76,14 +79,14 @@
     // ファイルの順序情報を受け取る必要がある
     const minId = Math.min(startId, endId);
     const maxId = Math.max(startId, endId);
-    
-    selectedFileIds.update(currentSelected => {
+
+    selectedFileIds.update((currentSelected) => {
       const newSelected = new Set(currentSelected);
-      
+
       for (let id = minId; id <= maxId; id++) {
         newSelected.add(id);
       }
-      
+
       return newSelected;
     });
   };
@@ -159,7 +162,10 @@
   }
 </script>
 
-<div class="file-item {viewMode}-item {isSelected ? 'selected' : ''}" onclick={handleItemClick}>
+<div
+  class="file-item {viewMode}-item {isSelected ? 'selected' : ''}"
+  onclick={handleItemClick}
+>
   <div class="file-checkbox {viewMode}-checkbox">
     <input
       type="checkbox"
@@ -168,7 +174,7 @@
       onclick={(e) => e.stopPropagation()}
     />
   </div>
-  
+
   <div class="file-icon {viewMode}-icon">
     {#if file.is_directory}
       <span class="icon-emoji">📁</span>
@@ -252,7 +258,9 @@
             class="thumbnail archive-thumbnail"
             onerror={(e) => {
               console.error("Failed to load archive thumbnail:", thumbnailUrl);
-              errorStore.showWarning("アーカイブサムネイルの読み込みに失敗しました");
+              errorStore.showWarning(
+                "アーカイブサムネイルの読み込みに失敗しました",
+              );
               e.currentTarget.style.display = "none";
               e.currentTarget.nextElementSibling.style.display = "block";
             }}
@@ -272,7 +280,7 @@
 
   <div class="file-details {viewMode}-details">
     <div class="file-name">{file.name}</div>
-    {#if viewMode === 'list'}
+    {#if viewMode === "list"}
       <div class="file-info">
         {#if !file.is_directory}
           {formatFileSize(file.file_size || file.size)}
@@ -328,12 +336,12 @@
   .file-item:hover {
     background-color: #f8f9fa;
   }
-  
+
   .file-item.selected {
     background-color: #e3f2fd;
     border-color: #2196f3;
   }
-  
+
   .file-item.selected:hover {
     background-color: #bbdefb;
   }
@@ -345,7 +353,7 @@
     gap: 12px;
     padding: 8px;
   }
-  
+
   .list-checkbox {
     display: flex;
     align-items: center;
@@ -381,8 +389,8 @@
 
   .grid-checkbox {
     position: absolute;
-    top: 8px;
-    left: 8px;
+    top: 16px;
+    left: 14px;
     width: 18px;
     height: 18px;
     display: flex;
@@ -396,6 +404,9 @@
   .grid-checkbox input[type="checkbox"] {
     width: 14px;
     height: 14px;
+    -moz-transform: scale(1.4);
+    -webkit-transform: scale(1.4);
+    transform: scale(1.4);
   }
 
   .grid-icon {

@@ -109,4 +109,26 @@ export class DirectoryViewModel extends BaseViewModel {
   public selectDirectory(directoryId: string | "all"): void {
     this._selectedDirectoryId.set(directoryId);
   }
+
+  public async rescanAllDirectories(tagViewModel?: any): Promise<boolean> {
+    const result = await this.executeAsync(async () => {
+      const currentDirectories = await getDirectories();
+      
+      // 各ディレクトリを順番に再スキャン
+      for (const directory of currentDirectories) {
+        await rescanDirectory(directory.id);
+      }
+      
+      return true;
+    });
+
+    if (result) {
+      // 再スキャンによって新しいタグが作成された可能性があるため、タグ情報を更新
+      if (tagViewModel) {
+        await tagViewModel.refreshAllTags();
+      }
+      return true;
+    }
+    return false;
+  }
 }

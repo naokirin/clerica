@@ -162,6 +162,13 @@
     }
   };
 
+  const rescanAll = async () => {
+    const success = await appViewModel.rescanAllDirectories();
+    if (!success) {
+      errorStore.showError($t("common.error.allDirectoriesRescanFailed"));
+    }
+  };
+
   const removeDirectory = async (
     directoryId: string,
     directoryName: string,
@@ -305,6 +312,7 @@
       onRescanDirectory={rescanDirectory}
       onRemoveDirectory={removeDirectory}
       onCreateTag={createTag}
+      onRescanAll={rescanAll}
       disabled={$isLoading}
       {appViewModel}
     />

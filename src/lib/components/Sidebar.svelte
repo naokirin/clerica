@@ -14,6 +14,7 @@
     onRescanDirectory: (id: string) => void;
     onRemoveDirectory: (id: string, name: string) => void;
     onCreateTag: () => void;
+    onRescanAll: () => void;
     disabled?: boolean;
     appViewModel?: AppViewModel;
   }
@@ -27,6 +28,7 @@
     onRescanDirectory,
     onRemoveDirectory,
     onCreateTag,
+    onRescanAll,
     disabled = false,
     appViewModel,
   }: Props = $props();
@@ -55,6 +57,18 @@
           <div class="directory-path">
             {$t("common.sidebar.allFilesDescription")}
           </div>
+        </div>
+        <div class="directory-actions">
+          <button
+            class="rescan-directory-btn"
+            onclick={(e) => {
+              e.stopPropagation();
+              onRescanAll();
+            }}
+            title={$t("common.sidebar.rescanAll")}
+          >
+            <RefreshCw size={14} />
+          </button>
         </div>
       </div>
 

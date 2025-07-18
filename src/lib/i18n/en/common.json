@@ -18,6 +18,7 @@
     "addDirectory": "Add",
     "addTag": "Create Tag",
     "rescan": "Rescan",
+    "rescanAll": "Refresh All",
     "remove": "Remove"
   },
   "dialog": {
@@ -33,6 +34,7 @@
   },
   "error": {
     "directoryRescanFailed": "Failed to rescan directory.",
+    "allDirectoriesRescanFailed": "Failed to rescan all directories.",
     "directoryRemoveFailed": "Failed to remove directory.",
     "fileOpenFailed": "Failed to open file",
     "fileRevealFailed": "Failed to reveal in Finder",
