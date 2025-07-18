@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/svelte';
-import TagInput from '../lib/components/TagInput.svelte';
+import TagInput from '../lib/components/parts/TagInput.svelte';
 
 const meta = {
   title: 'Components/TagInput',

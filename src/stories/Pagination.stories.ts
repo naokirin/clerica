@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/svelte';
-import Pagination from '../lib/components/Pagination.svelte';
+import Pagination from '../lib/components/parts/Pagination.svelte';
 
 const meta = {
   title: 'Components/Pagination',
