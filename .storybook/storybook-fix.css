@@ -1,0 +1,12 @@
+/* Storybook用のスクロール修正CSS */
+html, body {
+  /* グローバルCSSのoverflow: hiddenを上書きしてスクロールを有効化 */
+  overflow-y: auto !important;
+  height: 100%;
+}
+
+/* Storybookのコンテンツが適切にスクロールできるように */
+body {
+  margin: 0;
+  padding: 0;
+}

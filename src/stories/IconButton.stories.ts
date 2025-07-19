@@ -6,7 +6,39 @@ const meta = {
   component: IconButtonWrapper,
   parameters: {
     layout: 'centered',
+    docs: {
+      description: {
+        component: `
+# IconButton Component
+
+アイコンのみを表示する小さなボタンコンポーネントです。UI要素の操作に使用されます。
+
+## 特徴
+- 複数のサイズ（small、medium、large）
+- カスタムアイコンSVG対応
+- ツールチップ表示可能
+- アクセシビリティ対応
+
+## 使用方法
+\`\`\`svelte
+<script>
+  import IconButton from '$lib/components/parts/IconButton.svelte';
+  
+  const icon = '<svg>...</svg>';
+</script>
+
+<IconButton
+  {icon}
+  size="medium"
+  tooltip="ボタンの説明"
+  on:click={handleClick}
+/>
+\`\`\`
+        `
+      }
+    }
   },
+  tags: ['autodocs'],
   argTypes: {
     iconName: {
       control: 'select',

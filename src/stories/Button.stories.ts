@@ -6,7 +6,38 @@ const meta = {
   component: Button,
   parameters: {
     layout: 'centered',
+    docs: {
+      description: {
+        component: `
+# Button Component
+
+再利用可能なボタンコンポーネントです。アイコン、テキスト、またはその両方を表示できます。
+
+## 特徴
+- 3つの異なるバリアント（primary、secondary、danger）
+- 3つのサイズ（small、medium、large）
+- アイコンとテキストの組み合わせ
+- リンクボタンとしても使用可能
+- アクセシビリティ対応
+
+## 使用方法
+\`\`\`svelte
+<script>
+  import Button from '$lib/components/parts/Button.svelte';
+</script>
+
+<Button
+  variant="primary"
+  size="medium"
+  text="クリック"
+  on:click={handleClick}
+/>
+\`\`\`
+        `
+      }
+    }
   },
+  tags: ['autodocs'],
   argTypes: {
     variant: {
       control: 'select',

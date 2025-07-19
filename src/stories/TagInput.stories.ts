@@ -6,7 +6,42 @@ const meta = {
   component: TagInput,
   parameters: {
     layout: 'centered',
+    docs: {
+      description: {
+        component: `
+# TagInput Component
+
+ファイルにタグを追加・削除するためのタグ入力コンポーネントです。オートコンプリート機能付きです。
+
+## 特徴
+- タグの追加・削除
+- オートコンプリート機能
+- タグの色表示
+- キーボードナビゲーション対応
+
+## 使用方法
+\`\`\`svelte
+<script>
+  import TagInput from '$lib/components/parts/TagInput.svelte';
+  
+  let selectedTags = [];
+  let availableTags = [
+    { id: '1', name: 'Important', color: '#FF6B6B' },
+    { id: '2', name: 'Work', color: '#4ECDC4' }
+  ];
+</script>
+
+<TagInput
+  bind:selectedTags
+  {availableTags}
+  placeholder="Add tags..."
+/>
+\`\`\`
+        `
+      }
+    }
   },
+  tags: ['autodocs'],
   argTypes: {
     selectedTags: {
       control: 'object',

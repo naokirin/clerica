@@ -7,7 +7,42 @@ const meta = {
   component: Dropdown,
   parameters: {
     layout: 'centered',
+    docs: {
+      description: {
+        component: `
+# Dropdown Component
+
+選択肢から一つの値を選択するためのドロップダウンコンポーネントです。
+
+## 特徴
+- カスタマイズ可能な選択肢
+- キーボードナビゲーション
+- アクセシビリティ対応
+- プレースホルダーテキスト
+
+## 使用方法
+\`\`\`svelte
+<script>
+  import Dropdown from '$lib/components/parts/Dropdown.svelte';
+  
+  let selectedValue = '';
+  let options = [
+    { value: 'option1', label: 'Option 1' },
+    { value: 'option2', label: 'Option 2' }
+  ];
+</script>
+
+<Dropdown
+  bind:value={selectedValue}
+  {options}
+  placeholder="Select an option"
+/>
+\`\`\`
+        `
+      }
+    }
   },
+  tags: ['autodocs'],
   argTypes: {
     disabled: {
       control: 'boolean',

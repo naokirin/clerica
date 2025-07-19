@@ -10,7 +10,8 @@ const config: StorybookConfig = {
     "../src/stories/**/*.stories.@(js|ts)"
   ],
   "addons": [
-    "@storybook/addon-essentials"
+    "@storybook/addon-essentials",
+    "@storybook/addon-docs"
   ],
   "framework": {
     "name": "@storybook/sveltekit",

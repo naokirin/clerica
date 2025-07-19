@@ -6,7 +6,42 @@ const meta = {
   component: Pagination,
   parameters: {
     layout: 'centered',
+    docs: {
+      description: {
+        component: `
+# Pagination Component
+
+大量のファイルリストを複数のページに分割して表示するためのページネーションコンポーネントです。
+
+## 特徴
+- 前へ・次へボタン
+- ページ番号の直接指定
+- 現在のページとアイテム情報の表示
+- レスポンシブデザイン
+
+## 使用方法
+\`\`\`svelte
+<script>
+  import Pagination from '$lib/components/parts/Pagination.svelte';
+  
+  let currentPage = 1;
+  let totalPages = 10;
+  let totalItems = 100;
+  let itemsPerPage = 10;
+</script>
+
+<Pagination
+  bind:currentPage
+  {totalPages}
+  {totalItems}
+  {itemsPerPage}
+/>
+\`\`\`
+        `
+      }
+    }
   },
+  tags: ['autodocs'],
   argTypes: {
     currentPage: {
       control: { type: 'number', min: 1 },
