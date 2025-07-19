@@ -3,24 +3,21 @@
   import { ChevronUp, ChevronDown } from "lucide-svelte";
   import { t } from "$lib/i18n";
 
+  interface SortFieldOption {
+    value: SortField;
+    label: string;
+  }
+
   interface Props {
     sortField: SortField;
     sortOrder: SortOrder;
+    sortOptions: SortFieldOption[];
     onSortChange: (options: SortOptions) => Promise<void>;
   }
 
-  let { sortField, sortOrder, onSortChange }: Props = $props();
+  let { sortField, sortOrder, sortOptions, onSortChange }: Props = $props();
 
-  const getSortFields = (): { value: SortField; label: string }[] => [
-    { value: "modified_at", label: $t("common.files.sort.modified") },
-    { value: "name", label: $t("common.files.sort.name") },
-    { value: "size", label: $t("common.files.sort.size") },
-    { value: "created_at", label: $t("common.files.sort.created") },
-    { value: "last_accessed", label: $t("common.files.sort.lastAccessed") },
-    { value: "file_type", label: $t("common.files.sort.fileType") },
-  ];
-
-  let sortFields = $derived(getSortFields());
+  let sortFields = $derived(sortOptions);
 
   async function handleFieldChange(event: Event) {
     const target = event.target as HTMLSelectElement;

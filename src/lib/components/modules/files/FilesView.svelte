@@ -7,7 +7,7 @@
     SortOptions,
   } from "../../../types";
   import FileList from "./FileList.svelte";
-  import SortControl from "../../parts/SortControl.svelte";
+  import FileSortControl from "../../modules/files/FileSortControl.svelte";
   import FileCategoryFilters from "./FileCategoryFilters.svelte";
   import Pagination from "../../parts/Pagination.svelte";
   import { t } from "$lib/i18n";
@@ -299,7 +299,7 @@
       on:goToLastPage={async () => await onGoToLastPage()}
     />
     <div class="sort-section">
-      <SortControl
+      <FileSortControl
         sortField={sortOptions.field}
         sortOrder={sortOptions.order}
         {onSortChange}
