@@ -15,6 +15,7 @@
   import { errorStore } from "../../../stores/error";
   import { t } from "$lib/i18n";
   import IconButton from "../../parts/IconButton.svelte";
+  import Button from "$lib/components/parts/Button.svelte";
 
   interface Props {
     keys: CustomMetadataKey[];
@@ -42,11 +43,31 @@
 
   // データ型の選択肢
   const dataTypes = $derived([
-    { value: "text" as CustomMetadataDataType, label: $t("common.metadata.dataTypes.text"), description: $t("common.metadata.dataTypeDescriptions.text") },
-    { value: "number" as CustomMetadataDataType, label: $t("common.metadata.dataTypes.number"), description: $t("common.metadata.dataTypeDescriptions.number") },
-    { value: "date" as CustomMetadataDataType, label: $t("common.metadata.dataTypes.date"), description: $t("common.metadata.dataTypeDescriptions.date") },
-    { value: "boolean" as CustomMetadataDataType, label: $t("common.metadata.dataTypes.boolean"), description: $t("common.metadata.dataTypeDescriptions.boolean") },
-    { value: "json" as CustomMetadataDataType, label: $t("common.metadata.dataTypes.json"), description: $t("common.metadata.dataTypeDescriptions.json") },
+    {
+      value: "text" as CustomMetadataDataType,
+      label: $t("common.metadata.dataTypes.text"),
+      description: $t("common.metadata.dataTypeDescriptions.text"),
+    },
+    {
+      value: "number" as CustomMetadataDataType,
+      label: $t("common.metadata.dataTypes.number"),
+      description: $t("common.metadata.dataTypeDescriptions.number"),
+    },
+    {
+      value: "date" as CustomMetadataDataType,
+      label: $t("common.metadata.dataTypes.date"),
+      description: $t("common.metadata.dataTypeDescriptions.date"),
+    },
+    {
+      value: "boolean" as CustomMetadataDataType,
+      label: $t("common.metadata.dataTypes.boolean"),
+      description: $t("common.metadata.dataTypeDescriptions.boolean"),
+    },
+    {
+      value: "json" as CustomMetadataDataType,
+      label: $t("common.metadata.dataTypes.json"),
+      description: $t("common.metadata.dataTypeDescriptions.json"),
+    },
   ]);
 
   // フォームリセット
@@ -130,10 +151,7 @@
       onKeysUpdated();
       cancelForm();
     } catch (e) {
-      error =
-        typeof e === "string"
-          ? e
-          : $t("common.error.createKeyFailed");
+      error = typeof e === "string" ? e : $t("common.error.createKeyFailed");
     } finally {
       isSubmitting = false;
     }
@@ -159,10 +177,7 @@
       onKeysUpdated();
       cancelForm();
     } catch (e) {
-      error =
-        typeof e === "string"
-          ? e
-          : $t("common.error.updateKeyFailed");
+      error = typeof e === "string" ? e : $t("common.error.updateKeyFailed");
     } finally {
       isSubmitting = false;
     }
@@ -188,9 +203,7 @@
     } catch (e) {
       console.error("削除処理でエラーが発生しました:", e);
       errorStore.showError(
-        typeof e === "string"
-          ? e
-          : $t("common.error.deleteKeyFailed"),
+        typeof e === "string" ? e : $t("common.error.deleteKeyFailed"),
       );
     }
   };
@@ -214,16 +227,22 @@
 <div class="custom-metadata-manager">
   <div class="header">
     <h3>{$t("common.metadata.keyManagement")}</h3>
-    <button class="create-button" onclick={startCreate}>
-      <Plus size={16} />
-      {$t("common.buttons.create")}
-    </button>
+    <Button
+      class="create-button"
+      onclick={startCreate}
+      iconName="Plus"
+      text={$t("common.buttons.create")}
+    />
   </div>
 
   <!-- 作成・編集フォーム -->
   {#if showCreateForm}
     <div class="form-section">
-      <h4>{editingKeyId ? $t("common.metadata.editKey") : $t("common.metadata.createNewKey")}</h4>
+      <h4>
+        {editingKeyId
+          ? $t("common.metadata.editKey")
+          : $t("common.metadata.createNewKey")}
+      </h4>
 
       {#if error}
         <div class="error-message">{error}</div>
@@ -245,7 +264,9 @@
           </div>
 
           <div class="form-group">
-            <label for="display_name">{$t("common.metadata.displayName")} *</label>
+            <label for="display_name"
+              >{$t("common.metadata.displayName")} *</label
+            >
             <input
               id="display_name"
               type="text"
@@ -283,7 +304,9 @@
           </div>
 
           <div class="form-group">
-            <label for="default_value">{$t("common.metadata.defaultValue")}</label>
+            <label for="default_value"
+              >{$t("common.metadata.defaultValue")}</label
+            >
             <input
               id="default_value"
               type="text"
@@ -294,7 +317,9 @@
           </div>
 
           <div class="form-group">
-            <label for="validation_pattern">{$t("common.metadata.validationPattern")}</label>
+            <label for="validation_pattern"
+              >{$t("common.metadata.validationPattern")}</label
+            >
             <input
               id="validation_pattern"
               type="text"
@@ -321,7 +346,11 @@
         <div class="form-actions">
           <button type="submit" class="save-button" disabled={isSubmitting}>
             <Save size={16} />
-            {isSubmitting ? $t("common.buttons.saving") : editingKeyId ? $t("common.buttons.update") : $t("common.buttons.create")}
+            {isSubmitting
+              ? $t("common.buttons.saving")
+              : editingKeyId
+                ? $t("common.buttons.update")
+                : $t("common.buttons.create")}
           </button>
           <button
             type="button"
@@ -374,20 +403,25 @@
                 <span class="label">{$t("common.metadata.dataType")}:</span>
                 <span class="value">
                   {getDataTypeInfo(key.data_type)?.label || key.data_type}
-                  {key.is_required ? ` (${$t("common.metadata.required")})` : ""}
+                  {key.is_required
+                    ? ` (${$t("common.metadata.required")})`
+                    : ""}
                 </span>
               </div>
 
               {#if key.description}
                 <div class="detail-row">
-                  <span class="label">{$t("common.metadata.description")}:</span>
+                  <span class="label">{$t("common.metadata.description")}:</span
+                  >
                   <span class="value">{key.description}</span>
                 </div>
               {/if}
 
               {#if key.default_value}
                 <div class="detail-row">
-                  <span class="label">{$t("common.metadata.defaultValue")}:</span>
+                  <span class="label"
+                    >{$t("common.metadata.defaultValue")}:</span
+                  >
                   <span class="value">{key.default_value}</span>
                 </div>
               {/if}
@@ -604,7 +638,6 @@
     display: flex;
     gap: 4px;
   }
-
 
   .key-details {
     display: flex;

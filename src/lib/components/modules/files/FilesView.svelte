@@ -18,6 +18,7 @@
   import { createEventDispatcher } from "svelte";
   import { viewMode, type ViewMode } from "../../../stores/common";
   import { List, Grid } from "@lucide/svelte";
+  import Button from "../../parts/Button.svelte";
 
   interface Props {
     files: File[];
@@ -282,9 +283,12 @@
     </div>
   {:else}
     <div class="bulk-actions">
-      <button class="select-all-btn" onclick={handleSelectAll}>
-        すべて選択
-      </button>
+      <Button
+        variant="neutral"
+        size="small"
+        text="すべて選択"
+        onclick={handleSelectAll}
+      />
     </div>
   {/if}
 
@@ -462,22 +466,6 @@
     display: flex;
     justify-content: flex-end;
     margin: 1rem 0;
-  }
-
-  .select-all-btn {
-    padding: 8px 16px;
-    background: #f5f5f5;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    cursor: pointer;
-    color: #333;
-    font-weight: 500;
-    transition: all 0.2s ease;
-  }
-
-  .select-all-btn:hover {
-    background: #e0e0e0;
-    border-color: #bbb;
   }
 
   /* 表示モード切り替えボタン */

@@ -2,7 +2,7 @@
   import type { Snippet } from "svelte";
   import * as icons from "@lucide/svelte";
 
-  type Variant = "primary" | "secondary" | "danger";
+  type Variant = "primary" | "secondary" | "danger" | "neutral";
   type Size = "small" | "medium" | "large";
 
   interface Props {
@@ -144,6 +144,17 @@
 
   .danger:hover:not(:disabled) {
     background-color: #dc2626;
+  }
+
+  .neutral {
+    background-color: #f5f5f5;
+    color: #333;
+    border: 1px solid #ddd;
+  }
+
+  .neutral:hover:not(:disabled) {
+    background-color: #e0e0e0;
+    border-color: #bbb;
   }
 
   /* Sizes */

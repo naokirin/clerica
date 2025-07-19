@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Search, Plus, X, Tag, List, Grid } from "@lucide/svelte";
+  import Button from "../../parts/Button.svelte";
   import type {
     SearchResult,
     FileCategory,
@@ -365,10 +366,12 @@
       bind:value={searchQuery}
       class="search-input"
     />
-    <button onclick={onSearch} class="search-button">
-      <Search size={16} />
-      {$t("common.buttons.search")}
-    </button>
+    <Button
+      onclick={onSearch}
+      class="search-button"
+      iconName="Search"
+      text={$t("common.buttons.search")}
+    />
   </div>
 
   <!-- タグフィルタ -->
@@ -451,10 +454,12 @@
   <div class="metadata-search-section">
     <div class="metadata-search-header">
       <h3>{$t("common.search.metadataSearch")}</h3>
-      <button onclick={addMetadataFilter} class="add-filter-btn">
-        <Plus size={16} />
-        {$t("common.search.addFilter")}
-      </button>
+      <Button
+        onclick={addMetadataFilter}
+        class="add-filter-btn"
+        iconName="Plus"
+        text={$t("common.search.addFilter")}
+      />
     </div>
 
     {#if metadataSearchFilters.length > 1}
@@ -632,9 +637,7 @@
     </div>
   {:else}
     <div class="bulk-actions">
-      <button class="select-all-btn" onclick={handleSelectAll}>
-        すべて選択
-      </button>
+      <Button variant="neutral" size="small" text="すべて選択" onclick={handleSelectAll} />
     </div>
   {/if}
 
@@ -878,23 +881,6 @@
     font-size: 1rem;
   }
 
-  .search-button {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1.5rem;
-    background-color: #3b82f6;
-    color: white;
-    border: none;
-    border-radius: 0.375rem;
-    cursor: pointer;
-    transition: background-color 0.2s;
-  }
-
-  .search-button:hover {
-    background-color: #2563eb;
-  }
-
   .pagination-controls {
     display: flex;
     justify-content: space-between;
@@ -1130,19 +1116,4 @@
     margin: 1rem 0;
   }
 
-  .select-all-btn {
-    padding: 8px 16px;
-    background: #f5f5f5;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    cursor: pointer;
-    color: #333;
-    font-weight: 500;
-    transition: all 0.2s ease;
-  }
-
-  .select-all-btn:hover {
-    background: #e0e0e0;
-    border-color: #bbb;
-  }
 </style>
