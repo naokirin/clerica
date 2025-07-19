@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { X, Trash2, Loader2, ExternalLink, Folder, Edit3 } from "lucide-svelte";
+  import { X, Trash2, Loader2, ExternalLink, Folder, Edit3 } from "@lucide/svelte";
   import type { File, CustomMetadataKey, Tag } from "../../../types";
   import { formatFileSize, formatDate } from "../../../utils";
   import CustomMetadataEditor from "../metadata/CustomMetadataEditor.svelte";

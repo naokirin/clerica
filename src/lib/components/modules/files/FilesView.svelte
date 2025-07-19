@@ -17,7 +17,7 @@
   import { deleteFiles, type DeleteResult } from "../../../api/files";
   import { createEventDispatcher } from "svelte";
   import { viewMode, type ViewMode } from "../../../stores/common";
-  import { List, Grid } from "lucide-svelte";
+  import { List, Grid } from "@lucide/svelte";
 
   interface Props {
     files: File[];

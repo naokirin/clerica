@@ -1,7 +1,7 @@
 <script lang="ts">
   import { shelvesApi, type Shelf } from "$lib/api/shelves";
   import { onMount } from "svelte";
-  import { Edit, Trash2, Plus } from "lucide-svelte";
+  import { Edit, Trash2, Plus, PlusIcon } from "@lucide/svelte";
   import type { AppViewModel } from "$lib/viewmodels/AppViewModel";
   import Button from "../../parts/Button.svelte";
   import IconButton from "../../parts/IconButton.svelte";
@@ -21,10 +21,6 @@
   let editingShelfName = $state("");
   let loading = $state(false);
   let error = $state<string | null>(null);
-
-  // アイコン定義
-  const plusIcon =
-    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
 
   onMount(async () => {
     try {
@@ -162,7 +158,7 @@
     <Button
       onclick={() => (showCreateForm = !showCreateForm)}
       disabled={loading}
-      icon={plusIcon}
+      iconName="Plus"
       text={$t("common.sidebar.createShelf")}
     />
   </div>

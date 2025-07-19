@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { X } from "lucide-svelte";
+  import { X } from "@lucide/svelte";
   import { onMount } from "svelte";
   import { getSettings, updateSettingBool, updateSettingInt, updateSettingString, getLanguageSetting } from "../../../api/settings";
   import { errorStore } from "../../../stores/error";

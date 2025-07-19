@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { MoreVertical } from 'lucide-svelte';
+  import { MoreVertical } from '@lucide/svelte';
 
   interface Props {
     disabled?: boolean;

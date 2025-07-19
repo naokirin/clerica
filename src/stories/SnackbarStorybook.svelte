@@ -76,7 +76,7 @@
 
   // Snackbar用のカスタムコンポーネント（Storybook用）
   import { fly } from 'svelte/transition';
-  import { X, AlertCircle, CheckCircle, Info, AlertTriangle } from 'lucide-svelte';
+  import { X, AlertCircle, CheckCircle, Info, AlertTriangle } from '@lucide/svelte';
 
   const getIcon = (type: any) => {
     switch (type) {

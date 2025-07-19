@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
   import { open, confirm } from "@tauri-apps/plugin-dialog";
-  import { FileText, Search, Tag, Settings } from "lucide-svelte";
+  import { FileText, Search, Tag, Settings } from "@lucide/svelte";
 
   // コンポーネントのインポート
   import LoadingScreen from "../lib/components/parts/LoadingScreen.svelte";

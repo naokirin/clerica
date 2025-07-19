@@ -1,4 +1,7 @@
 <script lang="ts">
+  import type { Snippet } from "svelte";
+  import * as icons from "@lucide/svelte";
+
   type Variant = "primary" | "secondary" | "danger";
   type Size = "small" | "medium" | "large";
 
@@ -9,9 +12,13 @@
     href?: string;
     type?: "button" | "submit" | "reset";
     class?: string;
-    icon?: string; // SVGアイコン文字列
+    iconName?: keyof typeof icons; // @lucide/svelteアイコンコンポーネント
+    iconSize?: number; // アイコンのサイズ
     text?: string; // ボタンテキスト
     onclick?: (event: MouseEvent) => void;
+    children?: Snippet;
+    leadingIcon?: Snippet;
+    trailingIcon?: Snippet;
   }
 
   let {
@@ -21,11 +28,19 @@
     href,
     type = "button",
     class: className = "",
-    icon,
+    iconName,
+    iconSize = 16, // デフォルトのアイコンサイズ
     text,
     onclick,
+    children,
+    leadingIcon,
+    trailingIcon,
     ...restProps
   }: Props = $props();
+
+  const Icon = $derived(iconName
+    ? (icons[iconName] as unknown as icons.Component)
+    : null);
 </script>
 
 {#if href}
@@ -38,17 +53,23 @@
     {...restProps}
     on:click={onclick}
   >
-    {#if icon}
-      {@html icon}
+    {#if Icon}
+      <svelte:component this={Icon} size={iconSize} />
     {/if}
     {#if text}
       <span class="text-content">{text}</span>
     {/if}
-    <slot name="leading-icon" />
-    <span class="text-content">
-      <slot />
-    </span>
-    <slot name="trailing-icon" />
+    {#if leadingIcon}
+      {@render leadingIcon()}
+    {/if}
+    {#if children}
+      <span class="text-content">
+        {@render children()}
+      </span>
+    {/if}
+    {#if trailingIcon}
+      {@render trailingIcon()}
+    {/if}
   </a>
 {:else}
   <button
@@ -58,17 +79,23 @@
     {...restProps}
     on:click={onclick}
   >
-    {#if icon}
-      {@html icon}
+    {#if Icon}
+      <svelte:component this={Icon} size={iconSize} />
     {/if}
     {#if text}
       <span class="text-content">{text}</span>
     {/if}
-    <slot name="leading-icon" />
-    <span class="text-content">
-      <slot />
-    </span>
-    <slot name="trailing-icon" />
+    {#if leadingIcon}
+      {@render leadingIcon()}
+    {/if}
+    {#if children}
+      <span class="text-content">
+        {@render children()}
+      </span>
+    {/if}
+    {#if trailingIcon}
+      {@render trailingIcon()}
+    {/if}
   </button>
 {/if}
 

@@ -26,11 +26,11 @@
     "build-storybook": "storybook build"
   },
   "dependencies": {
+    "@lucide/svelte": "^0.525.0",
     "@tauri-apps/api": "^2.0.0",
     "@tauri-apps/plugin-dialog": "^2.0.0",
     "@tauri-apps/plugin-sql": "^2.3.0",
     "fuse.js": "^7.0.0",
-    "lucide-svelte": "^0.525.0",
     "svelte": "^5.0.0",
     "sveltekit-i18n": "^2.4.2"
   },

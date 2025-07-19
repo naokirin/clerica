@@ -1,7 +1,7 @@
 <script lang="ts">
   import { errorStore, type ErrorInfo } from '../../stores/error';
   import { fly } from 'svelte/transition';
-  import { X, AlertCircle, CheckCircle, Info, AlertTriangle } from 'lucide-svelte';
+  import { X, AlertCircle, CheckCircle, Info, AlertTriangle } from '@lucide/svelte';
   import { t } from "$lib/i18n";
 
   let { errors } = errorStore;

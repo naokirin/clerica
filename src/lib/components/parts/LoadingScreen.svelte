@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Loader2 } from "lucide-svelte";
+  import { Loader2 } from "@lucide/svelte";
   import type { LoadingSteps } from "../../types";
   import { t } from "$lib/i18n";
 

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { confirm } from "@tauri-apps/plugin-dialog";
-  import { Plus, Edit, Trash2, Save, X } from "lucide-svelte";
+  import { Plus, Edit, Trash2, Save, X } from "@lucide/svelte";
   import {
     createCustomMetadataKey,
     updateCustomMetadataKey,

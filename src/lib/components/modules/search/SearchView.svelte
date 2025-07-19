@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Search, Plus, X, Tag, List, Grid } from "lucide-svelte";
+  import { Search, Plus, X, Tag, List, Grid } from "@lucide/svelte";
   import type {
     SearchResult,
     FileCategory,

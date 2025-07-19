@@ -1,5 +1,5 @@
 <script lang="ts">
-  import * as lucideIcons from 'lucide-svelte';
+  import * as lucideIcons from '@lucide/svelte';
   import type { SvelteComponent } from 'svelte';
 
   interface Props {
@@ -9,7 +9,7 @@
 
   let { size = 16, iconName = 'Circle' }: Props = $props();
 
-  // lucide-svelte のアイコン名をPascalCaseに変換
+  // @lucide/svelte のアイコン名をPascalCaseに変換
   const normalizeIconName = (name: string): string => {
     return name
       .split('-')

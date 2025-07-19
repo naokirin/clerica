@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { SortField, SortOrder, SortOptions } from "../../types";
-  import { ChevronUp, ChevronDown } from "lucide-svelte";
+  import { ChevronUp, ChevronDown } from "@lucide/svelte";
   import { t } from "$lib/i18n";
 
   interface SortFieldOption {

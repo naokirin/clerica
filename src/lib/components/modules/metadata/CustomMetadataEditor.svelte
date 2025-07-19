@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Save, X, Edit3, Trash2 } from "lucide-svelte";
+  import { Save, X, Edit3, Trash2 } from "@lucide/svelte";
   import {
     getCustomMetadataValuesByFile,
     setCustomMetadataValue,

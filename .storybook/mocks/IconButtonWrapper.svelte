@@ -1,6 +1,6 @@
 <script lang="ts">
   import IconButton from '../../src/lib/components/parts/IconButton.svelte';
-  import * as lucideIcons from 'lucide-svelte';
+  import * as lucideIcons from '@lucide/svelte';
 
   interface Props {
     iconName?: string;
@@ -20,7 +20,7 @@
     disabled = false,
   }: Props = $props();
 
-  // lucide-svelte のアイコン名をPascalCaseに変換
+  // @lucide/svelte のアイコン名をPascalCaseに変換
   const normalizeIconName = (name: string): string => {
     return name
       .split('-')

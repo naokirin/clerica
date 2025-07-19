@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { X, Loader2, Edit3 } from "lucide-svelte";
+  import { X, Loader2, Edit3 } from "@lucide/svelte";
   import type { File } from "../../../types";
   import * as filesApi from "../../../api/files";
   import { errorStore } from "../../../stores/error";
