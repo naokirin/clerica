@@ -624,18 +624,21 @@
         />
       </div>
       <div class="selection-actions">
-        <button
-          class="action-btn rename-btn"
+        <Button
+          variant="success"
+          size="small"
+          text="リネーム"
           onclick={handleRenameSelected}
           title={selectedCount === 1
             ? "選択したファイルをリネーム"
             : `${selectedCount}件のファイルをバッチリネーム`}
-        >
-          リネーム
-        </button>
-        <button class="action-btn delete-btn" onclick={handleDeleteSelected}>
-          削除
-        </button>
+        />
+        <Button
+          variant="danger"
+          size="small"
+          text="削除"
+          onclick={handleDeleteSelected}
+        />
       </div>
     </div>
   {:else}
@@ -1044,40 +1047,6 @@
     gap: 8px;
   }
 
-  .action-btn {
-    padding: 8px 16px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: 500;
-    transition: all 0.2s ease;
-  }
-
-  .rename-btn {
-    background: #4caf50;
-    color: white;
-  }
-
-  .rename-btn:hover:not(:disabled) {
-    background: #45a049;
-  }
-
-  .rename-btn:disabled {
-    background: #cccccc;
-    color: #666;
-    cursor: not-allowed;
-  }
-
-  /* 複数選択時のリネームボタンのスタイル調整は不要（無効化しないため） */
-
-  .delete-btn {
-    background: #f44336;
-    color: white;
-  }
-
-  .delete-btn:hover {
-    background: #da190b;
-  }
 
   .bulk-actions {
     display: flex;
