@@ -11,6 +11,7 @@
   } from "../../../api/files";
   import RenameHelp from "./RenameHelp.svelte";
   import TextInput from "../../parts/TextInput.svelte";
+  import Checkbox from "../../parts/Checkbox.svelte";
 
   interface Props {
     isOpen: boolean;
@@ -370,17 +371,13 @@
           {#if operation === "advanced"}
             <div class="advanced-options">
               <div class="option-group">
-                <label>
-                  <input type="checkbox" bind:checked={useRegex} />
-                  正規表現を使用
-                </label>
+                <Checkbox bind:checked={useRegex} label="正規表現を使用" />
               </div>
               <div class="option-group">
-                <label>
-                  <input type="checkbox" bind:checked={useTemplate} />
-                  テンプレート機能を使用（{`{{ file.name }}, {{ file.ext }}, {{ n }}`}
-                  など）
-                </label>
+                <Checkbox
+                  bind:checked={useTemplate}
+                  label={`テンプレート機能を使用（{{ file.name }}, {{ file.ext }}, {{ n }} など）`}
+                />
               </div>
               <div class="option-group">
                 <label>検索パターン:</label>
@@ -409,10 +406,7 @@
             </div>
           {:else if operation === "replace"}
             <div class="option-group">
-              <label>
-                <input type="checkbox" bind:checked={useRegex} />
-                正規表現を使用
-              </label>
+              <Checkbox bind:checked={useRegex} label="正規表現を使用" />
             </div>
             <div class="option-group">
               <label>検索する文字列:</label>

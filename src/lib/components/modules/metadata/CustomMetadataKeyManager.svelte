@@ -17,6 +17,7 @@
   import IconButton from "../../parts/IconButton.svelte";
   import Button from "$lib/components/parts/Button.svelte";
   import TextInput from "../../parts/TextInput.svelte";
+  import Checkbox from "../../parts/Checkbox.svelte";
 
   interface Props {
     keys: CustomMetadataKey[];
@@ -328,14 +329,11 @@
           </div>
 
           <div class="form-group checkbox-group">
-            <label class="checkbox-label">
-              <input
-                type="checkbox"
-                bind:checked={formData.is_required}
-                disabled={isSubmitting}
-              />
-              {$t("common.metadata.required")}
-            </label>
+            <Checkbox
+              bind:checked={formData.is_required}
+              disabled={isSubmitting}
+              label={$t("common.metadata.required")}
+            />
             <small>{$t("common.metadata.requiredDescription")}</small>
           </div>
         </div>
@@ -509,12 +507,6 @@
     grid-column: 1 / -1;
   }
 
-  .checkbox-label {
-    flex-direction: row;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 4px;
-  }
 
   .form-group label {
     margin-bottom: 4px;

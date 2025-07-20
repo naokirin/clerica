@@ -13,6 +13,7 @@
   import { onMount } from "svelte";
   import { errorStore } from "../../../stores/error";
   import { selectedFileIds } from "../../../stores/files";
+  import Checkbox from "../../parts/Checkbox.svelte";
 
   interface Props {
     file: File;
@@ -167,10 +168,13 @@
   onclick={handleItemClick}
 >
   <div class="file-checkbox {viewMode}-checkbox">
-    <input
-      type="checkbox"
+    <Checkbox
       checked={isSelected}
-      onchange={handleCheckboxChange}
+      size="large"
+      onchange={(checked, event) => {
+        event.stopPropagation();
+        handleCheckboxChange(event);
+      }}
       onclick={(e) => e.stopPropagation()}
     />
   </div>
@@ -401,13 +405,6 @@
     z-index: 1;
   }
 
-  .grid-checkbox input[type="checkbox"] {
-    width: 14px;
-    height: 14px;
-    -moz-transform: scale(1.4);
-    -webkit-transform: scale(1.4);
-    transform: scale(1.4);
-  }
 
   .grid-icon {
     width: 80px;
@@ -438,13 +435,10 @@
   }
 
   /* チェックボックス共通スタイル */
-  .file-checkbox input[type="checkbox"] {
-    cursor: pointer;
-  }
-
-  .list-checkbox input[type="checkbox"] {
-    width: 16px;
-    height: 16px;
+  .file-checkbox {
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   /* アイコン共通スタイル */

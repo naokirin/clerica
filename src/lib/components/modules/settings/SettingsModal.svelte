@@ -6,6 +6,7 @@
   import { t, locale } from "$lib/i18n";
   import LanguageSwitcher from "./LanguageSwitcher.svelte";
   import ExclusionPatternsManager from "./ExclusionPatternsManager.svelte";
+  import Checkbox from "../../parts/Checkbox.svelte";
 
   export let isOpen = false;
   export let onClose: () => void;
@@ -157,24 +158,16 @@
             </label>
           </div>
           <div class="setting-item">
-            <label class="setting-label">
-              <input
-                type="checkbox"
-                class="setting-checkbox"
-                bind:checked={showHiddenFiles}
-              />
-              {$t("common.settings.showHiddenFiles")}
-            </label>
+            <Checkbox
+              bind:checked={showHiddenFiles}
+              label={$t("common.settings.showHiddenFiles")}
+            />
           </div>
           <div class="setting-item">
-            <label class="setting-label">
-              <input
-                type="checkbox"
-                class="setting-checkbox"
-                bind:checked={showDirectories}
-              />
-              ディレクトリを表示
-            </label>
+            <Checkbox
+              bind:checked={showDirectories}
+              label="ディレクトリを表示"
+            />
           </div>
         </div>
 
@@ -231,11 +224,6 @@
     cursor: pointer;
   }
 
-  .setting-checkbox {
-    width: 16px;
-    height: 16px;
-    cursor: pointer;
-  }
 
   .setting-select {
     padding: 0.375rem 0.5rem;
