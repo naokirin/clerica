@@ -6,6 +6,7 @@
   import Button from "../../parts/Button.svelte";
   import IconButton from "../../parts/IconButton.svelte";
   import { t } from "$lib/i18n";
+  import TextInput from "../../parts/TextInput.svelte";
 
   interface Props {
     appViewModel?: AppViewModel;
@@ -165,11 +166,11 @@
 
   {#if showCreateForm}
     <div class="create-form">
-      <input
-        type="text"
+      <TextInput
+        id="new-shelf-name-input"
         placeholder="シェルフ名を入力"
         bind:value={newShelfName}
-        on:keydown={(e) => e.key === "Enter" && createShelf()}
+        onkeydown={(e) => e.key === "Enter" && createShelf()}
       />
       <div class="form-actions">
         <button class="btn-save" on:click={createShelf}>作成</button>
@@ -194,10 +195,10 @@
       >
         {#if editingShelfId === shelf.id}
           <div class="edit-form">
-            <input
-              type="text"
+            <TextInput
+              id="edit-shelf-name-input"
               bind:value={editingShelfName}
-              on:keydown={(e) => e.key === "Enter" && saveEdit()}
+              onkeydown={(e) => e.key === "Enter" && saveEdit()}
             />
             <div class="edit-actions">
               <button class="btn-save" on:click={saveEdit}>保存</button>

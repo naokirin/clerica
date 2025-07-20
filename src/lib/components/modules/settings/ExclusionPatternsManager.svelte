@@ -1,16 +1,17 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import { exclusionPatternsApi, type ExclusionPattern } from '$lib/api';
-  import { errorStore } from '$lib/stores/error';
-  import LoadingScreen from '../../parts/LoadingScreen.svelte';
+  import { onMount } from "svelte";
+  import { exclusionPatternsApi, type ExclusionPattern } from "$lib/api";
+  import { errorStore } from "$lib/stores/error";
+  import LoadingScreen from "../../parts/LoadingScreen.svelte";
+  import TextInput from "../../parts/TextInput.svelte";
 
   let patterns: ExclusionPattern[] = $state([]);
-  let newPattern = $state('');
+  let newPattern = $state("");
   let isLoading = $state(true);
   let isSaving = $state(false);
-  let testPath = $state('');
+  let testPath = $state("");
   let testResult: boolean | null = $state(null);
-  let validationError = $state('');
+  let validationError = $state("");
 
   onMount(async () => {
     await loadPatterns();
@@ -21,7 +22,7 @@
       isLoading = true;
       patterns = await exclusionPatternsApi.getExclusionPatterns();
     } catch (error) {
-      errorStore.setError('除外パターンの読み込みに失敗しました', error);
+      errorStore.setError("除外パターンの読み込みに失敗しました", error);
     } finally {
       isLoading = false;
     }
@@ -32,23 +33,23 @@
 
     try {
       isSaving = true;
-      validationError = '';
-      
+      validationError = "";
+
       // パターンの妥当性をチェック
       await exclusionPatternsApi.validateExclusionPattern(newPattern);
-      
+
       // パターンを追加
       await exclusionPatternsApi.addExclusionPattern(newPattern);
-      
+
       // リストを再読み込み
       await loadPatterns();
-      
+
       // 入力フィールドをクリア
-      newPattern = '';
+      newPattern = "";
       testResult = null;
     } catch (error) {
       validationError = error as string;
-      errorStore.setError('除外パターンの追加に失敗しました', error);
+      errorStore.setError("除外パターンの追加に失敗しました", error);
     } finally {
       isSaving = false;
     }
@@ -59,7 +60,7 @@
       await exclusionPatternsApi.deleteExclusionPattern(id);
       await loadPatterns();
     } catch (error) {
-      errorStore.setError('除外パターンの削除に失敗しました', error);
+      errorStore.setError("除外パターンの削除に失敗しました", error);
     }
   }
 
@@ -67,24 +68,27 @@
     if (!newPattern.trim() || !testPath.trim()) return;
 
     try {
-      testResult = await exclusionPatternsApi.testExclusionPattern(newPattern, testPath);
+      testResult = await exclusionPatternsApi.testExclusionPattern(
+        newPattern,
+        testPath,
+      );
     } catch (error) {
-      errorStore.setError('パターンテストに失敗しました', error);
+      errorStore.setError("パターンテストに失敗しました", error);
     }
   }
 
   function clearTest() {
-    testPath = '';
+    testPath = "";
     testResult = null;
   }
 
   const commonPatterns = [
-    { name: 'ログファイル', pattern: '\\.log$' },
-    { name: '一時ファイル', pattern: '\\.tmp$' },
-    { name: 'DSファイル', pattern: '\\.DS_Store$' },
-    { name: 'node_modules', pattern: '/node_modules/' },
-    { name: 'Git ディレクトリ', pattern: '/\\.git/' },
-    { name: 'ビルドディレクトリ', pattern: '/(build|dist|target)/' },
+    { name: "ログファイル", pattern: "\\.log$" },
+    { name: "一時ファイル", pattern: "\\.tmp$" },
+    { name: "DSファイル", pattern: "\\.DS_Store$" },
+    { name: "node_modules", pattern: "/node_modules/" },
+    { name: "Git ディレクトリ", pattern: "/\\.git/" },
+    { name: "ビルドディレクトリ", pattern: "/(build|dist|target)/" },
   ];
 </script>
 
@@ -100,17 +104,20 @@
     <!-- 新しいパターンの追加 -->
     <div class="add-pattern-section">
       <h4>新しいパターンを追加</h4>
-      
+
       <div class="input-group">
-        <input
-          type="text"
+        <TextInput
+          id="new-pattern-input"
           bind:value={newPattern}
           placeholder="正規表現パターンを入力 (例: \.log$)"
-          class="pattern-input"
           disabled={isSaving}
         />
-        <button onclick={addPattern} disabled={!newPattern.trim() || isSaving} class="add-button">
-          {isSaving ? '追加中...' : '追加'}
+        <button
+          onclick={addPattern}
+          disabled={!newPattern.trim() || isSaving}
+          class="add-button"
+        >
+          {isSaving ? "追加中..." : "追加"}
         </button>
       </div>
 
@@ -123,9 +130,9 @@
         <h5>よく使われるパターン</h5>
         <div class="pattern-examples">
           {#each commonPatterns as example}
-            <button 
+            <button
               class="pattern-example"
-              onclick={() => newPattern = example.pattern}
+              onclick={() => (newPattern = example.pattern)}
               disabled={isSaving}
             >
               <span class="pattern-name">{example.name}</span>
@@ -139,21 +146,25 @@
       <div class="pattern-test">
         <h5>パターンテスト</h5>
         <div class="test-inputs">
-          <input
-            type="text"
+          <TextInput
+            id="test-path-input"
             bind:value={testPath}
             placeholder="テストするファイルパスを入力"
-            class="test-path-input"
           />
-          <button onclick={testPattern} disabled={!newPattern.trim() || !testPath.trim()}>
+          <button
+            onclick={testPattern}
+            disabled={!newPattern.trim() || !testPath.trim()}
+          >
             テスト
           </button>
           <button onclick={clearTest}>クリア</button>
         </div>
-        
+
         {#if testResult !== null}
           <div class="test-result {testResult ? 'match' : 'no-match'}">
-            {testResult ? '✓ マッチしました（除外されます）' : '✗ マッチしません（除外されません）'}
+            {testResult
+              ? "✓ マッチしました（除外されます）"
+              : "✗ マッチしません（除外されません）"}
           </div>
         {/if}
       </div>
@@ -162,11 +173,9 @@
     <!-- 現在のパターン一覧 -->
     <div class="patterns-list">
       <h4>現在の除外パターン ({patterns.length}個)</h4>
-      
+
       {#if patterns.length === 0}
-        <div class="empty-state">
-          除外パターンが設定されていません
-        </div>
+        <div class="empty-state">除外パターンが設定されていません</div>
       {:else}
         <div class="patterns-grid">
           {#each patterns as pattern (pattern.id)}
@@ -174,7 +183,7 @@
               <code class="pattern-code">{pattern.pattern}</code>
               <div class="pattern-actions">
                 <small class="pattern-date">
-                  {new Date(pattern.created_at).toLocaleDateString('ja-JP')}
+                  {new Date(pattern.created_at).toLocaleDateString("ja-JP")}
                 </small>
                 <button
                   onclick={() => deletePattern(pattern.id)}
@@ -216,14 +225,6 @@
     display: flex;
     gap: 10px;
     margin-bottom: 16px;
-  }
-
-  .pattern-input {
-    flex: 1;
-    padding: 8px 12px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-family: 'Courier New', monospace;
   }
 
   .add-button {
@@ -282,7 +283,7 @@
   }
 
   .pattern-code {
-    font-family: 'Courier New', monospace;
+    font-family: "Courier New", monospace;
     background: #f5f5f5;
     padding: 2px 4px;
     border-radius: 2px;
@@ -298,15 +299,6 @@
     display: flex;
     gap: 8px;
     margin-bottom: 8px;
-  }
-
-  .test-path-input {
-    flex: 1;
-    padding: 6px 8px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-family: 'Courier New', monospace;
-    font-size: 12px;
   }
 
   .test-inputs button {

@@ -10,6 +10,7 @@
     type AdvancedBatchRenamePreview,
   } from "../../../api/files";
   import RenameHelp from "./RenameHelp.svelte";
+  import TextInput from "../../parts/TextInput.svelte";
 
   interface Props {
     isOpen: boolean;
@@ -383,8 +384,8 @@
               </div>
               <div class="option-group">
                 <label>検索パターン:</label>
-                <input
-                  type="text"
+                <TextInput
+                  id="find-pattern-input"
                   bind:value={findPattern}
                   placeholder={useRegex
                     ? "正規表現パターン (例: ^(.+)\\.(\\w+)$)"
@@ -393,8 +394,8 @@
               </div>
               <div class="option-group">
                 <label>置換パターン:</label>
-                <input
-                  type="text"
+                <TextInput
+                  id="replace-pattern-input"
                   bind:value={replacePattern}
                   placeholder={useTemplate
                     ? `テンプレート (例: {{ file.name }}_{{ n:padding=3 }}.{{ file.ext }})`
@@ -415,16 +416,16 @@
             </div>
             <div class="option-group">
               <label>検索する文字列:</label>
-              <input
-                type="text"
+              <TextInput
+                id="find-text-input"
                 bind:value={findText}
                 placeholder="検索文字列"
               />
             </div>
             <div class="option-group">
               <label>置換後の文字列:</label>
-              <input
-                type="text"
+              <TextInput
+                id="replace-text-input"
                 bind:value={replaceText}
                 placeholder="置換文字列"
               />
@@ -432,8 +433,8 @@
           {:else if operation === "prefix"}
             <div class="option-group">
               <label>先頭に追加する文字列:</label>
-              <input
-                type="text"
+              <TextInput
+                id="prefix-text-input"
                 bind:value={addText}
                 placeholder="プレフィックス"
               />
@@ -441,8 +442,8 @@
           {:else if operation === "suffix"}
             <div class="option-group">
               <label>末尾に追加する文字列:</label>
-              <input
-                type="text"
+              <TextInput
+                id="suffix-text-input"
                 bind:value={addText}
                 placeholder="サフィックス"
               />

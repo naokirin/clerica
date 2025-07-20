@@ -5,6 +5,7 @@
   import { errorStore } from "../../../stores/error";
   import { t } from "$lib/i18n";
   import RenameHelp from "./RenameHelp.svelte";
+  import TextInput from "../../parts/TextInput.svelte";
 
   interface Props {
     file: File | null;
@@ -205,9 +206,8 @@
           {#if renameMode === "simple"}
             <div class="rename-input-group">
               <label for="new-file-name">新しいファイル名:</label>
-              <input
+              <TextInput
                 id="new-file-name"
-                type="text"
                 bind:value={newFileName}
                 placeholder="新しいファイル名を入力"
                 disabled={isRenaming}
@@ -220,9 +220,8 @@
               <label for="regex-pattern"
                 >{$t("common.fileDetail.regexPattern")}:</label
               >
-              <input
+              <TextInput
                 id="regex-pattern"
-                type="text"
                 bind:value={regexPattern}
                 placeholder="例: ^(.+)\.(.+)$"
                 disabled={isRenaming}
@@ -233,9 +232,8 @@
               <label for="format-template"
                 >{$t("common.fileDetail.formatTemplate")}:</label
               >
-              <input
+              <TextInput
                 id="format-template"
-                type="text"
                 bind:value={formatTemplate}
                 placeholder="例: {`{{ file.name_stem }}_{{ tags | join(sep=\"_\") }}.$2`}"
                 disabled={isRenaming}

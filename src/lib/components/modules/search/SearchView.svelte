@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Search, Plus, X, Tag, List, Grid } from "@lucide/svelte";
   import Button from "../../parts/Button.svelte";
+  import TextInput from "../../parts/TextInput.svelte";
   import type {
     SearchResult,
     FileCategory,
@@ -360,11 +361,10 @@
   </div>
 
   <div class="search-controls">
-    <input
-      type="text"
+    <TextInput
+      id="search-query-input"
       placeholder={$t("common.search.inputPlaceholder")}
       bind:value={searchQuery}
-      class="search-input"
     />
     <Button
       onclick={onSearch}
@@ -425,8 +425,8 @@
     <!-- タグ検索 -->
     <div class="tag-search">
       <h4>{$t("common.search.searchTags")}:</h4>
-      <input
-        type="text"
+      <TextInput
+        id="tag-search-input"
         placeholder={$t("common.search.tagSearchPlaceholder")}
         oninput={(e) => onTagSearch(e.target.value)}
         class="tag-search-input"
@@ -580,8 +580,8 @@
                   class="metadata-value-input"
                 />
               {:else}
-                <input
-                  type="text"
+                <TextInput
+                  id="metadata-filter-{index}"
                   value={filter.value}
                   placeholder={$t("common.search.enterValue")}
                   oninput={(e) => {
@@ -637,7 +637,12 @@
     </div>
   {:else}
     <div class="bulk-actions">
-      <Button variant="neutral" size="small" text="すべて選択" onclick={handleSelectAll} />
+      <Button
+        variant="neutral"
+        size="small"
+        text="すべて選択"
+        onclick={handleSelectAll}
+      />
     </div>
   {/if}
 
@@ -769,12 +774,7 @@
   }
 
   .metadata-value-input {
-    flex: 1;
     min-width: 200px;
-    padding: 0.5rem;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 0.875rem;
   }
 
   .remove-filter-btn {
@@ -871,14 +871,6 @@
     display: flex;
     gap: 1rem;
     margin-bottom: 2rem;
-  }
-
-  .search-input {
-    flex: 1;
-    padding: 0.75rem;
-    border: 1px solid #d1d5db;
-    border-radius: 0.375rem;
-    font-size: 1rem;
   }
 
   .pagination-controls {
@@ -988,17 +980,6 @@
 
   .tag-search-input {
     width: 100%;
-    padding: 0.5rem;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
-    font-size: 0.875rem;
-    margin-bottom: 0.5rem;
-  }
-
-  .tag-search-input:focus {
-    outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
   }
 
   .tag-search-results {
@@ -1115,5 +1096,4 @@
     justify-content: flex-end;
     margin: 1rem 0;
   }
-
 </style>

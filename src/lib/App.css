@@ -630,8 +630,7 @@
 }
 
 .metadata-key-select,
-.metadata-operator-select,
-.metadata-value-input {
+.metadata-operator-select {
   padding: 0.375rem 0.5rem;
   border: 1px solid #d1d5db;
   border-radius: 0.25rem;
@@ -645,11 +644,6 @@
 
 .metadata-operator-select {
   min-width: 100px;
-}
-
-.metadata-value-input {
-  flex: 1;
-  min-width: 120px;
 }
 
 .remove-filter-btn {

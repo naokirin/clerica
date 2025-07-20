@@ -16,6 +16,7 @@
   import { t } from "$lib/i18n";
   import IconButton from "../../parts/IconButton.svelte";
   import Button from "$lib/components/parts/Button.svelte";
+  import TextInput from "../../parts/TextInput.svelte";
 
   interface Props {
     keys: CustomMetadataKey[];
@@ -252,9 +253,8 @@
         <div class="form-grid">
           <div class="form-group">
             <label for="name">{$t("common.metadata.name")} *</label>
-            <input
+            <TextInput
               id="name"
-              type="text"
               bind:value={formData.name}
               placeholder={$t("common.placeholder.keyName")}
               disabled={editingKeyId !== null || isSubmitting}
@@ -267,9 +267,8 @@
             <label for="display_name"
               >{$t("common.metadata.displayName")} *</label
             >
-            <input
+            <TextInput
               id="display_name"
-              type="text"
               bind:value={formData.display_name}
               placeholder={$t("common.placeholder.displayName")}
               disabled={isSubmitting}
@@ -307,9 +306,8 @@
             <label for="default_value"
               >{$t("common.metadata.defaultValue")}</label
             >
-            <input
+            <TextInput
               id="default_value"
-              type="text"
               bind:value={formData.default_value}
               placeholder={$t("common.placeholder.defaultValue")}
               disabled={isSubmitting}
@@ -320,9 +318,8 @@
             <label for="validation_pattern"
               >{$t("common.metadata.validationPattern")}</label
             >
-            <input
+            <TextInput
               id="validation_pattern"
-              type="text"
               bind:value={formData.validation_pattern}
               placeholder={$t("common.placeholder.validationPattern")}
               disabled={isSubmitting}
