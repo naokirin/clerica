@@ -3,7 +3,7 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   plugins: [sveltekit()],
-  
+
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   clearScreen: false,
   server: {
@@ -42,8 +42,12 @@ export default defineConfig({
         'src/test/',
         'src/routes/',
         '**/*.d.ts',
+        'src/stories/',
+        'storybook-static/',
+        '.storybook/',
         '**/*.config.{js,ts}',
         '**/*.test.{js,ts}',
+        'tests/',
         'dist/',
         'coverage/',
         '.svelte-kit/',
