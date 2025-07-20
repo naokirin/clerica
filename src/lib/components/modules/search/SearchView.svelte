@@ -2,6 +2,7 @@
   import { Search, Plus, X, Tag, List, Grid } from "@lucide/svelte";
   import Button from "../../parts/Button.svelte";
   import TextInput from "../../parts/TextInput.svelte";
+  import NumberInput from "../../parts/NumberInput.svelte";
   import RadioButtonGroup from "../../parts/RadioButtonGroup.svelte";
   import type {
     SearchResult,
@@ -553,9 +554,9 @@
                   class="metadata-value-input"
                 />
               {:else if filter.dataType === "number"}
-                <input
-                  type="number"
-                  value={filter.value}
+                <NumberInput
+                  id="metadata-filter-number-{index}"
+                  bind:value={filter.value}
                   placeholder={$t("common.search.enterNumber")}
                   oninput={(e) => {
                     updateMetadataFilter(index, {

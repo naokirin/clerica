@@ -11,6 +11,7 @@
   } from "../../../api/files";
   import RenameHelp from "./RenameHelp.svelte";
   import TextInput from "../../parts/TextInput.svelte";
+  import NumberInput from "../../parts/NumberInput.svelte";
   import Checkbox from "../../parts/Checkbox.svelte";
 
   interface Props {
@@ -446,19 +447,30 @@
             <div class="sequence-options">
               <div class="option-group">
                 <label>開始番号:</label>
-                <input type="number" bind:value={sequenceStart} min="0" />
+                <NumberInput
+                  id="sequence-start-input"
+                  bind:value={sequenceStart}
+                  min={0}
+                  step={1}
+                />
               </div>
               <div class="option-group">
                 <label>増分:</label>
-                <input type="number" bind:value={sequenceStep} min="1" />
+                <NumberInput
+                  id="sequence-step-input"
+                  bind:value={sequenceStep}
+                  min={1}
+                  step={1}
+                />
               </div>
               <div class="option-group">
                 <label>桁数:</label>
-                <input
-                  type="number"
+                <NumberInput
+                  id="sequence-padding-input"
                   bind:value={sequencePadding}
-                  min="1"
-                  max="10"
+                  min={1}
+                  max={10}
+                  step={1}
                 />
               </div>
               <div class="option-group">
