@@ -6,6 +6,7 @@
   import { t } from "$lib/i18n";
   import RenameHelp from "./RenameHelp.svelte";
   import TextInput from "../../parts/TextInput.svelte";
+  import RadioButtonGroup from "../../parts/RadioButtonGroup.svelte";
 
   interface Props {
     file: File | null;
@@ -24,6 +25,12 @@
   let isPreviewLoading = $state(false);
   let isRenaming = $state(false);
   let renameError = $state("");
+
+  // リネームモード選択のオプション
+  const renameModeOptions = [
+    { value: "simple", label: "シンプルリネーム" },
+    { value: "regex", label: "正規表現リネーム" }
+  ];
 
   // プレビュー更新関数
   async function updatePreview() {
@@ -178,29 +185,13 @@
 
         <div class="rename-form">
           <!-- リネームモード選択 -->
-          <div class="rename-mode-selection">
-            <h4>リネーム方法</h4>
-            <div class="radio-group">
-              <label class="radio-label">
-                <input
-                  type="radio"
-                  bind:group={renameMode}
-                  value="simple"
-                  disabled={isRenaming}
-                />
-                <span class="radio-text"> シンプルリネーム </span>
-              </label>
-              <label class="radio-label">
-                <input
-                  type="radio"
-                  bind:group={renameMode}
-                  value="regex"
-                  disabled={isRenaming}
-                />
-                <span class="radio-text"> 正規表現リネーム </span>
-              </label>
-            </div>
-          </div>
+          <RadioButtonGroup
+            title="リネーム方法"
+            options={renameModeOptions}
+            value={renameMode}
+            disabled={isRenaming}
+            onValueChange={(value) => renameMode = value}
+          />
 
           <!-- シンプルリネームモード -->
           {#if renameMode === "simple"}
@@ -384,38 +375,6 @@
     color: #007acc;
   }
 
-  .rename-mode-selection {
-    margin-bottom: 1.5rem;
-  }
-
-  .rename-mode-selection h4 {
-    margin: 0 0 1rem 0;
-    font-size: 1rem;
-    font-weight: 600;
-    color: #495057;
-  }
-
-  .radio-group {
-    display: flex;
-    gap: 1.5rem;
-  }
-
-  .radio-label {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    cursor: pointer;
-    font-size: 0.875rem;
-    color: #495057;
-  }
-
-  .radio-label input[type="radio"] {
-    margin: 0;
-  }
-
-  .radio-text {
-    font-weight: 500;
-  }
 
   .input-hint {
     color: #6c757d;

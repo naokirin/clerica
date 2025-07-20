@@ -2,6 +2,7 @@
   import { Search, Plus, X, Tag, List, Grid } from "@lucide/svelte";
   import Button from "../../parts/Button.svelte";
   import TextInput from "../../parts/TextInput.svelte";
+  import RadioButtonGroup from "../../parts/RadioButtonGroup.svelte";
   import type {
     SearchResult,
     FileCategory,
@@ -104,6 +105,12 @@
   // モーダルの状態
   let isDeleteDialogOpen = $state(false);
   let isBatchRenameModalOpen = $state(false);
+
+  // メタデータロジック選択のオプション
+  const metadataLogicOptions = [
+    { value: "AND", label: $t("common.search.metadataLogicAnd") },
+    { value: "OR", label: $t("common.search.metadataLogicOr") }
+  ];
 
   // 全選択・全解除
   const handleSelectAll = () => {
@@ -463,33 +470,12 @@
     </div>
 
     {#if metadataSearchFilters.length > 1}
-      <div class="metadata-logic-section">
-        <label class="metadata-logic-label"
-          >{$t("common.search.metadataLogicLabel")}:</label
-        >
-        <div class="metadata-logic-options">
-          <label class="metadata-logic-option">
-            <input
-              type="radio"
-              value="AND"
-              checked={metadataLogic === "AND"}
-              onchange={() => onMetadataLogicChange("AND")}
-              class="metadata-logic-radio"
-            />
-            {$t("common.search.metadataLogicAnd")}
-          </label>
-          <label class="metadata-logic-option">
-            <input
-              type="radio"
-              value="OR"
-              checked={metadataLogic === "OR"}
-              onchange={() => onMetadataLogicChange("OR")}
-              class="metadata-logic-radio"
-            />
-            {$t("common.search.metadataLogicOr")}
-          </label>
-        </div>
-      </div>
+      <RadioButtonGroup
+        title={$t("common.search.metadataLogicLabel")}
+        options={metadataLogicOptions}
+        value={metadataLogic}
+        onValueChange={onMetadataLogicChange}
+      />
     {/if}
 
     {#if metadataSearchFilters.length > 0}
