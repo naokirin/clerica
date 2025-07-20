@@ -262,9 +262,12 @@
     <div class="selection-action-bar">
       <div class="selection-info">
         <span class="selection-count">{selectedCount}件のファイルを選択中</span>
-        <button class="clear-selection-btn" onclick={handleClearSelection}>
-          選択を解除
-        </button>
+        <Button
+          variant="neutral"
+          size="small"
+          text="選択を解除"
+          onclick={handleClearSelection}
+        />
       </div>
       <div class="selection-actions">
         <button
@@ -408,21 +411,6 @@
     color: #1976d2;
   }
 
-  .clear-selection-btn {
-    padding: 4px 8px;
-    background: transparent;
-    border: 1px solid #2196f3;
-    border-radius: 4px;
-    color: #2196f3;
-    cursor: pointer;
-    font-size: 0.875rem;
-    transition: all 0.2s ease;
-  }
-
-  .clear-selection-btn:hover {
-    background: #2196f3;
-    color: white;
-  }
 
   .selection-actions {
     display: flex;
