@@ -6,6 +6,7 @@
   import { t, locale } from "$lib/i18n";
   import ExclusionPatternsManager from "./ExclusionPatternsManager.svelte";
   import Checkbox from "../../parts/Checkbox.svelte";
+  import Select from "../../parts/Select.svelte";
 
   export let isOpen = false;
   export let onClose: () => void;
@@ -134,29 +135,33 @@
         <div class="settings-section">
           <h4>{$t("common.settings.language")}</h4>
           <div class="setting-item">
-            <label class="setting-label">
-              {$t("common.settings.language")}:
-              <select class="setting-select" bind:value={language}>
-                <option value="ja">日本語</option>
-                <option value="en">English</option>
-              </select>
-            </label>
+            <Select
+              label={$t("common.settings.language")}
+              options={[
+                { value: "ja", label: "日本語" },
+                { value: "en", label: "English" }
+              ]}
+              bind:value={language}
+              className="setting-select"
+            />
           </div>
         </div>
 
         <div class="settings-section">
           <h4>{$t("common.settings.fileManagement")}</h4>
           <div class="setting-item">
-            <label class="setting-label">
-              {$t("common.pagination.itemsPerPage")}:
-              <select class="setting-select" bind:value={filesPerPage}>
-                <option value={10}>10</option>
-                <option value={20}>20</option>
-                <option value={50}>50</option>
-                <option value={100}>100</option>
-                <option value={200}>200</option>
-              </select>
-            </label>
+            <Select
+              label={$t("common.pagination.itemsPerPage")}
+              options={[
+                { value: 10, label: "10" },
+                { value: 20, label: "20" },
+                { value: 50, label: "50" },
+                { value: 100, label: "100" },
+                { value: 200, label: "200" }
+              ]}
+              bind:value={filesPerPage}
+              className="setting-select"
+            />
           </div>
           <div class="setting-item">
             <Checkbox
@@ -216,30 +221,6 @@
     margin-bottom: 0;
   }
 
-  .setting-label {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.875rem;
-    color: #374151;
-    cursor: pointer;
-  }
-
-
-  .setting-select {
-    padding: 0.375rem 0.5rem;
-    border: 1px solid #d1d5db;
-    border-radius: 0.25rem;
-    font-size: 0.875rem;
-    background-color: white;
-    cursor: pointer;
-  }
-
-  .setting-select:focus {
-    outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
-  }
 
   .settings-actions {
     display: flex;

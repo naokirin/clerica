@@ -5,6 +5,7 @@
   import NumberInput from "../../parts/NumberInput.svelte";
   import DateInput from "../../parts/DateInput.svelte";
   import RadioButtonGroup from "../../parts/RadioButtonGroup.svelte";
+  import Select from "../../parts/Select.svelte";
   import type {
     SearchResult,
     FileCategory,
@@ -484,10 +485,14 @@
       <div class="metadata-filters">
         {#each metadataSearchFilters as filter, index (index)}
           <div class="metadata-filter">
-            <select
+            <Select
+              options={[
+                { value: "", label: $t("common.search.selectMetadataKey") },
+                ...availableMetadataKeys.map(key => ({ value: key.id, label: key.display_name }))
+              ]}
               value={filter.keyId}
-              onchange={(e) => {
-                const keyId = (e.currentTarget as HTMLSelectElement)?.value || "";
+              on:change={(e) => {
+                const keyId = e.target.value || "";
                 const key = availableMetadataKeys.find((k) => k.id === keyId);
                 if (key) {
                   const operators = getOperatorsForDataType(key.data_type);
@@ -501,45 +506,41 @@
                   });
                 }
               }}
-              class="metadata-key-select"
-            >
-              <option value="">{$t("common.search.selectMetadataKey")}</option>
-              {#each availableMetadataKeys as key}
-                <option value={key.id}>{key.display_name}</option>
-              {/each}
-            </select>
+              className="metadata-key-select"
+            />
 
             {#if filter.keyId}
-              <select
+              <Select
+                options={getOperatorsForDataType(filter.dataType).map(op => ({
+                  value: op,
+                  label: getOperatorLabel(op)
+                }))}
                 value={filter.operator}
-                onchange={(e) => {
+                on:change={(e) => {
                   updateMetadataFilter(index, {
                     ...filter,
-                    operator: (e.currentTarget as HTMLSelectElement)?.value as any,
+                    operator: e.target.value as any,
                   });
                 }}
-                class="metadata-operator-select"
-              >
-                {#each getOperatorsForDataType(filter.dataType) as operator}
-                  <option value={operator}>{getOperatorLabel(operator)}</option>
-                {/each}
-              </select>
+                className="metadata-operator-select"
+              />
 
               {#if filter.dataType === "boolean"}
-                <select
+                <Select
+                  options={[
+                    { value: "", label: $t("common.search.selectValue") },
+                    { value: "true", label: $t("common.search.yes") },
+                    { value: "false", label: $t("common.search.no") }
+                  ]}
                   value={filter.value}
-                  onchange={(e) => {
+                  on:change={(e) => {
                     updateMetadataFilter(index, {
                       ...filter,
-                      value: (e.currentTarget as any)?.value || "",
+                      value: e.target.value || "",
                     });
                   }}
-                  class="metadata-value-input"
-                >
-                  <option value="">{$t("common.search.selectValue")}</option>
-                  <option value="true">{$t("common.search.yes")}</option>
-                  <option value="false">{$t("common.search.no")}</option>
-                </select>
+                  className="metadata-value-input"
+                />
               {:else if filter.dataType === "date"}
                 <DateInput
                   id="metadata-filter-date-{index}"
@@ -739,18 +740,7 @@
     border-radius: 6px;
   }
 
-  .metadata-key-select,
-  .metadata-operator-select {
-    min-width: 150px;
-    padding: 0.5rem;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 0.875rem;
-  }
 
-  .metadata-value-input {
-    min-width: 200px;
-  }
 
   .remove-filter-btn {
     display: flex;

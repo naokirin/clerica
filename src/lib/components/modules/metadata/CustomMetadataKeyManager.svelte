@@ -18,6 +18,7 @@
   import Button from "$lib/components/parts/Button.svelte";
   import TextInput from "../../parts/TextInput.svelte";
   import Checkbox from "../../parts/Checkbox.svelte";
+  import Select from "../../parts/Select.svelte";
 
   interface Props {
     keys: CustomMetadataKey[];
@@ -278,18 +279,16 @@
           </div>
 
           <div class="form-group">
-            <label for="data_type">{$t("common.metadata.dataType")} *</label>
-            <select
-              id="data_type"
+            <Select
+              label="{$t('common.metadata.dataType')} *"
+              options={dataTypes.map(dt => ({
+                value: dt.value,
+                label: `${dt.label} - ${dt.description}`
+              }))}
               bind:value={formData.data_type}
               disabled={isSubmitting}
-            >
-              {#each dataTypes as dataType}
-                <option value={dataType.value}>
-                  {dataType.label} - {dataType.description}
-                </option>
-              {/each}
-            </select>
+              id="data_type"
+            />
           </div>
 
           <div class="form-group">
@@ -498,7 +497,6 @@
     color: #333;
   }
 
-  .form-group select,
   .form-group textarea {
     padding: 8px 12px;
     border: 1px solid #ddd;
@@ -506,7 +504,6 @@
     font-size: 14px;
   }
 
-  .form-group select:focus,
   .form-group textarea:focus {
     outline: none;
     border-color: #007acc;

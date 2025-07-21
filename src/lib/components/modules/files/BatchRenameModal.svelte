@@ -13,6 +13,7 @@
   import TextInput from "../../parts/TextInput.svelte";
   import NumberInput from "../../parts/NumberInput.svelte";
   import Checkbox from "../../parts/Checkbox.svelte";
+  import Select from "../../parts/Select.svelte";
 
   interface Props {
     isOpen: boolean;
@@ -360,17 +361,20 @@
       <div class="modal-body">
         <!-- 操作選択 -->
         <div class="operation-section">
-          <label class="operation-label" for="operation-select">リネーム方法:</label>
-          <select bind:value={operation} class="operation-select" id="operation-select">
-            <option value="advanced"
-              >高度なリネーム（正規表現・テンプレート）</option
-            >
-            <option value="replace">文字列の置換</option>
-            <option value="prefix">プレフィックスの追加</option>
-            <option value="suffix">サフィックスの追加</option>
-            <option value="sequence">連番の追加</option>
-            <option value="case">大文字・小文字の変換</option>
-          </select>
+          <Select
+            label="リネーム方法"
+            options={[
+              { value: "advanced", label: "高度なリネーム（正規表現・テンプレート）" },
+              { value: "replace", label: "文字列の置換" },
+              { value: "prefix", label: "プレフィックスの追加" },
+              { value: "suffix", label: "サフィックスの追加" },
+              { value: "sequence", label: "連番の追加" },
+              { value: "case", label: "大文字・小文字の変換" }
+            ]}
+            bind:value={operation}
+            className="operation-select"
+            id="operation-select"
+          />
         </div>
 
         <!-- 操作オプション -->
@@ -480,21 +484,29 @@
                 />
               </div>
               <div class="option-group">
-                <label for="sequence-position-select">位置:</label>
-                <select id="sequence-position-select" bind:value={sequencePosition}>
-                  <option value="prefix">先頭</option>
-                  <option value="suffix">末尾</option>
-                </select>
+                <Select
+                  label="位置"
+                  options={[
+                    { value: "prefix", label: "先頭" },
+                    { value: "suffix", label: "末尾" }
+                  ]}
+                  bind:value={sequencePosition}
+                  id="sequence-position-select"
+                />
               </div>
             </div>
           {:else if operation === "case"}
             <div class="option-group">
-              <label for="case-type-select">変換方法:</label>
-              <select id="case-type-select" bind:value={caseType}>
-                <option value="upper">すべて大文字</option>
-                <option value="lower">すべて小文字</option>
-                <option value="title">単語の先頭を大文字</option>
-              </select>
+              <Select
+                label="変換方法"
+                options={[
+                  { value: "upper", label: "すべて大文字" },
+                  { value: "lower", label: "すべて小文字" },
+                  { value: "title", label: "単語の先頭を大文字" }
+                ]}
+                bind:value={caseType}
+                id="case-type-select"
+              />
             </div>
           {/if}
         </div>
@@ -640,17 +652,6 @@
     margin-bottom: 20px;
   }
 
-  .operation-label {
-    font-weight: 500;
-    color: #333;
-  }
-
-  .operation-select {
-    padding: 8px 12px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 0.9rem;
-  }
 
   .options-section {
     margin-bottom: 20px;
@@ -674,13 +675,6 @@
     color: #555;
   }
 
-  .option-group select {
-    width: 100%;
-    padding: 8px 12px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 0.9rem;
-  }
 
   .sequence-options {
     display: grid;

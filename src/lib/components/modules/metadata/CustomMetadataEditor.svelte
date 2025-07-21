@@ -11,6 +11,7 @@
   } from "../../../types";
   import { errorStore } from "../../../stores/error";
   import { t } from "$lib/i18n";
+  import Select from "../../parts/Select.svelte";
 
   interface Props {
     fileId: string;
@@ -283,16 +284,16 @@
           </span>
           <span class="detail-value">
             {#if key.data_type === "boolean"}
-              <select
+              <Select
+                options={[
+                  { value: "", label: $t("common.buttons.selectValue") },
+                  { value: "true", label: $t("common.buttons.yes") },
+                  { value: "false", label: $t("common.buttons.no") }
+                ]}
                 value={displayValue}
-                onchange={(e) =>
-                  handleValueChange(key, (e.target as HTMLSelectElement).value)}
-                class="inline-select"
-              >
-                <option value="">{$t("common.buttons.selectValue")}</option>
-                <option value="true">{$t("common.buttons.yes")}</option>
-                <option value="false">{$t("common.buttons.no")}</option>
-              </select>
+                on:change={(e) => handleValueChange(key, e.target.value)}
+                className="inline-select"
+              />
             {:else if key.data_type === "json"}
               <textarea
                 value={displayValue}
@@ -393,7 +394,6 @@
   }
 
   .inline-input,
-  .inline-select,
   .inline-textarea {
     border: 1px solid #ddd;
     border-radius: 4px;
@@ -406,7 +406,6 @@
   }
 
   .inline-input:focus,
-  .inline-select:focus,
   .inline-textarea:focus {
     outline: none;
     border-color: #007acc;
@@ -419,10 +418,6 @@
     min-height: 60px;
   }
 
-  .inline-select {
-    background: white;
-    cursor: pointer;
-  }
 
   .label-text {
     cursor: help;

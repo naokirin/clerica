@@ -2,6 +2,7 @@
   import type { SortField, SortOrder, SortOptions } from "../../types";
   import { ChevronUp, ChevronDown } from "@lucide/svelte";
   import { t } from "$lib/i18n";
+  import Select from "./Select.svelte";
 
   interface SortFieldOption {
     value: SortField;
@@ -32,15 +33,15 @@
 </script>
 
 <div class="sort-control">
-  <select 
-    value={sortField} 
-    onchange={handleFieldChange} 
-    class="sort-field-select"
-  >
-    {#each sortFields as field}
-      <option value={field.value}>{field.label}</option>
-    {/each}
-  </select>
+  <Select
+    options={sortFields.map(field => ({
+      value: field.value,
+      label: field.label
+    }))}
+    value={sortField}
+    on:change={handleFieldChange}
+    className="sort-field-select"
+  />
   <button 
     type="button"
     onclick={toggleSortOrder} 
@@ -63,27 +64,6 @@
   }
 
 
-  .sort-field-select {
-    padding: 0.5rem 0.75rem;
-    border: 1px solid #d1d5db;
-    border-radius: 0.375rem;
-    background-color: white;
-    font-size: 0.875rem;
-    color: #374151;
-    min-width: 140px;
-    cursor: pointer;
-    transition: border-color 0.2s, box-shadow 0.2s;
-  }
-
-  .sort-field-select:focus {
-    outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-  }
-
-  .sort-field-select:hover {
-    border-color: #9ca3af;
-  }
 
   .sort-order-btn {
     display: flex;

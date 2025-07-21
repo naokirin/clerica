@@ -2,6 +2,7 @@
 <script lang="ts">
   import { locale, locales } from '$lib/i18n';
   import { t } from '$lib/i18n';
+  import Select from '../../parts/Select.svelte';
 
   const languages = [
     { code: 'ja', name: '日本語' },
@@ -15,18 +16,16 @@
 </script>
 
 <div class="language-switcher">
-  <label for="language-select">{$t('common.settings.language')}</label>
-  <select 
-    id="language-select"
+  <Select
+    label={$t('common.settings.language')}
+    options={languages.map(lang => ({
+      value: lang.code,
+      label: lang.name
+    }))}
     value={$locale}
-    onchange={(e) => switchLanguage((e.target as HTMLSelectElement).value)}
-  >
-    {#each languages as language}
-      <option value={language.code}>
-        {language.name}
-      </option>
-    {/each}
-  </select>
+    on:change={(e) => switchLanguage(e.target.value)}
+    id="language-select"
+  />
 </div>
 
 <style>
@@ -36,24 +35,4 @@
     gap: 8px;
   }
 
-  label {
-    font-weight: 500;
-    color: #374151;
-    font-size: 14px;
-  }
-
-  select {
-    padding: 8px 12px;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
-    background: white;
-    font-size: 14px;
-    color: #374151;
-  }
-
-  select:focus {
-    outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-  }
 </style>
