@@ -39,7 +39,7 @@
   }: Props = $props();
 
   const Icon = $derived(iconName
-    ? (icons[iconName] as unknown as icons.Component)
+    ? (icons[iconName] as any)
     : null);
 </script>
 
@@ -51,10 +51,10 @@
     role="button"
     aria-disabled={disabled}
     {...restProps}
-    on:click={onclick}
+    onclick={onclick}
   >
     {#if Icon}
-      <svelte:component this={Icon} size={iconSize} />
+      <Icon size={iconSize} />
     {/if}
     {#if text}
       <span class="text-content">{text}</span>
@@ -77,10 +77,10 @@
     {disabled}
     class="btn {variant} {size} {className}"
     {...restProps}
-    on:click={onclick}
+    onclick={onclick}
   >
     {#if Icon}
-      <svelte:component this={Icon} size={iconSize} />
+      <Icon size={iconSize} />
     {/if}
     {#if text}
       <span class="text-content">{text}</span>

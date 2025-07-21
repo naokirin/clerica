@@ -345,7 +345,13 @@
     aria-modal="true"
     tabindex="-1"
   >
-    <div class="modal-content" onclick={(e) => e.stopPropagation()}>
+    <div 
+      class="modal-content" 
+      onclick={(e) => e.stopPropagation()} 
+      onkeydown={(e) => e.stopPropagation()}
+      role="dialog"
+      tabindex="-1"
+    >
       <div class="modal-header">
         <h3>バッチリネーム - {files.length}件のファイル</h3>
         <button class="close-btn" onclick={onClose}>×</button>
@@ -354,8 +360,8 @@
       <div class="modal-body">
         <!-- 操作選択 -->
         <div class="operation-section">
-          <label class="operation-label">リネーム方法:</label>
-          <select bind:value={operation} class="operation-select">
+          <label class="operation-label" for="operation-select">リネーム方法:</label>
+          <select bind:value={operation} class="operation-select" id="operation-select">
             <option value="advanced"
               >高度なリネーム（正規表現・テンプレート）</option
             >
@@ -381,7 +387,7 @@
                 />
               </div>
               <div class="option-group">
-                <label>検索パターン:</label>
+                <label for="find-pattern-input">検索パターン:</label>
                 <TextInput
                   id="find-pattern-input"
                   bind:value={findPattern}
@@ -391,7 +397,7 @@
                 />
               </div>
               <div class="option-group">
-                <label>置換パターン:</label>
+                <label for="replace-pattern-input">置換パターン:</label>
                 <TextInput
                   id="replace-pattern-input"
                   bind:value={replacePattern}
@@ -410,7 +416,7 @@
               <Checkbox bind:checked={useRegex} label="正規表現を使用" />
             </div>
             <div class="option-group">
-              <label>検索する文字列:</label>
+              <label for="find-text-input">検索する文字列:</label>
               <TextInput
                 id="find-text-input"
                 bind:value={findText}
@@ -418,7 +424,7 @@
               />
             </div>
             <div class="option-group">
-              <label>置換後の文字列:</label>
+              <label for="replace-text-input">置換後の文字列:</label>
               <TextInput
                 id="replace-text-input"
                 bind:value={replaceText}
@@ -427,7 +433,7 @@
             </div>
           {:else if operation === "prefix"}
             <div class="option-group">
-              <label>先頭に追加する文字列:</label>
+              <label for="prefix-text-input">先頭に追加する文字列:</label>
               <TextInput
                 id="prefix-text-input"
                 bind:value={addText}
@@ -436,7 +442,7 @@
             </div>
           {:else if operation === "suffix"}
             <div class="option-group">
-              <label>末尾に追加する文字列:</label>
+              <label for="suffix-text-input">末尾に追加する文字列:</label>
               <TextInput
                 id="suffix-text-input"
                 bind:value={addText}
@@ -446,7 +452,7 @@
           {:else if operation === "sequence"}
             <div class="sequence-options">
               <div class="option-group">
-                <label>開始番号:</label>
+                <label for="sequence-start-input">開始番号:</label>
                 <NumberInput
                   id="sequence-start-input"
                   bind:value={sequenceStart}
@@ -455,7 +461,7 @@
                 />
               </div>
               <div class="option-group">
-                <label>増分:</label>
+                <label for="sequence-step-input">増分:</label>
                 <NumberInput
                   id="sequence-step-input"
                   bind:value={sequenceStep}
@@ -464,7 +470,7 @@
                 />
               </div>
               <div class="option-group">
-                <label>桁数:</label>
+                <label for="sequence-padding-input">桁数:</label>
                 <NumberInput
                   id="sequence-padding-input"
                   bind:value={sequencePadding}
@@ -474,8 +480,8 @@
                 />
               </div>
               <div class="option-group">
-                <label>位置:</label>
-                <select bind:value={sequencePosition}>
+                <label for="sequence-position-select">位置:</label>
+                <select id="sequence-position-select" bind:value={sequencePosition}>
                   <option value="prefix">先頭</option>
                   <option value="suffix">末尾</option>
                 </select>
@@ -483,8 +489,8 @@
             </div>
           {:else if operation === "case"}
             <div class="option-group">
-              <label>変換方法:</label>
-              <select bind:value={caseType}>
+              <label for="case-type-select">変換方法:</label>
+              <select id="case-type-select" bind:value={caseType}>
                 <option value="upper">すべて大文字</option>
                 <option value="lower">すべて小文字</option>
                 <option value="title">単語の先頭を大文字</option>
@@ -668,7 +674,6 @@
     color: #555;
   }
 
-  .option-group input,
   .option-group select {
     width: 100%;
     padding: 8px 12px;

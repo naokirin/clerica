@@ -88,7 +88,7 @@ export const Default: Story = {
     menuItem1Text: "編集",
     menuItem2Text: "コピー",
     menuItem3Text: "削除"
-  },
+  } as any,
   render: (args: any) => ({
     Component: Dropdown,
     props: {
@@ -137,7 +137,7 @@ export const Disabled: Story = {
     menuItem1Text: "編集",
     menuItem2Text: "コピー",
     menuItem3Text: "削除"
-  },
+  } as any,
   render: (args: any) => ({
     Component: Dropdown,
     props: {
@@ -186,7 +186,7 @@ export const LeftPosition: Story = {
     menuItem1Text: "詳細表示",
     menuItem2Text: "エクスポート",
     menuItem3Text: "アーカイブ"
-  },
+  } as any,
   render: (args: any) => ({
     Component: Dropdown,
     props: {
@@ -237,7 +237,7 @@ export const RightPosition: Story = {
     menuItem1Text: "共有",
     menuItem2Text: "印刷",
     menuItem3Text: "設定"
-  },
+  } as any,
   render: (args: any) => ({
     Component: Dropdown,
     props: {

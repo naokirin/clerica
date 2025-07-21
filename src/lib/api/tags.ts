@@ -17,6 +17,14 @@ export async function createTag(name: string, color: string): Promise<Tag> {
   return await invoke("create_tag", { name, color });
 }
 
+export async function updateTag(id: string, name: string, color: string): Promise<Tag> {
+  return await invoke("update_tag", { id, name, color });
+}
+
+export async function deleteTag(id: string): Promise<void> {
+  return await invoke("delete_tag", { id });
+}
+
 export async function getCustomMetadataKeys(): Promise<CustomMetadataKey[]> {
   return await invoke("get_custom_metadata_keys");
 }

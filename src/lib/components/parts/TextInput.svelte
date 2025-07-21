@@ -29,7 +29,7 @@
   {disabled}
   {required}
   class="base-input {className}"
-  on:input={oninput}
+  oninput={oninput}
   {...restProps}
 />
 

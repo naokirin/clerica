@@ -22,7 +22,7 @@
       isLoading = true;
       patterns = await exclusionPatternsApi.getExclusionPatterns();
     } catch (error) {
-      errorStore.setError("除外パターンの読み込みに失敗しました", error);
+      errorStore.showError("除外パターンの読み込みに失敗しました");
     } finally {
       isLoading = false;
     }
@@ -49,7 +49,7 @@
       testResult = null;
     } catch (error) {
       validationError = error as string;
-      errorStore.setError("除外パターンの追加に失敗しました", error);
+      errorStore.showError("除外パターンの追加に失敗しました");
     } finally {
       isSaving = false;
     }
@@ -60,7 +60,7 @@
       await exclusionPatternsApi.deleteExclusionPattern(id);
       await loadPatterns();
     } catch (error) {
-      errorStore.setError("除外パターンの削除に失敗しました", error);
+      errorStore.showError("除外パターンの削除に失敗しました");
     }
   }
 
@@ -73,7 +73,7 @@
         testPath,
       );
     } catch (error) {
-      errorStore.setError("パターンテストに失敗しました", error);
+      errorStore.showError("パターンテストに失敗しました");
     }
   }
 
@@ -99,7 +99,7 @@
   </p>
 
   {#if isLoading}
-    <LoadingScreen />
+    <LoadingScreen isVisible={true} progress={0} steps={{directories: true, tags: false, files: false}} />
   {:else}
     <!-- 新しいパターンの追加 -->
     <div class="add-pattern-section">

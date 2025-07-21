@@ -328,7 +328,7 @@ describe('Integration Tests', () => {
       mockInvoke.mockResolvedValueOnce(updatedFiles);
       files = await MockClericaAPI.getAllFiles();
       expect(files).toHaveLength(2);
-      expect(files.map(f => f.name)).toContain('new_file.txt');
+      expect(files.map((f: any) => f.name)).toContain('new_file.txt');
       
       expect(mockInvoke).toHaveBeenCalledWith('rescan_directory', { directoryId });
     });
@@ -387,14 +387,14 @@ describe('Integration Tests', () => {
       
       expect(files).toHaveLength(3);
       
-      const regularFiles = files.filter(f => !f.is_directory);
-      const directories = files.filter(f => f.is_directory);
+      const regularFiles = files.filter((f: any) => !f.is_directory);
+      const directories = files.filter((f: any) => f.is_directory);
       
       expect(regularFiles).toHaveLength(2);
       expect(directories).toHaveLength(1);
       expect(directories[0].name).toBe('subdir');
       
-      const fileTypes = regularFiles.map(f => f.file_type);
+      const fileTypes = regularFiles.map((f: any) => f.file_type);
       expect(fileTypes).toContain('pdf');
       expect(fileTypes).toContain('jpg');
     });

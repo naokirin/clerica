@@ -40,6 +40,7 @@ export async function getAppSettings(): Promise<Settings> {
       defaultSortKey: 'name',
       defaultSortOrder: 'asc',
       showHiddenFiles: settings.show_hidden_files,
+      showDirectories: true,
       autoSave: true,
       language
     };
@@ -51,6 +52,7 @@ export async function getAppSettings(): Promise<Settings> {
       defaultSortKey: 'name',
       defaultSortOrder: 'asc',
       showHiddenFiles: false,
+      showDirectories: true,
       autoSave: true,
       language: 'ja'
     };

@@ -73,7 +73,7 @@
   // 全選択・全解除
   const handleSelectAll = () => {
     selectedFileIds.update(() => {
-      const newSelected = new Set<number>();
+      const newSelected = new Set<string>();
       filesWithTags.forEach((fileWithTags) => {
         newSelected.add(fileWithTags.file.id);
       });
@@ -99,7 +99,7 @@
   const confirmDelete = async () => {
     if (!hasSelection) return;
 
-    const selectedIds = Array.from($selectedFileIds);
+    const selectedIds = Array.from($selectedFileIds).map(id => Number(id));
 
     try {
       const result: DeleteResult = await deleteFiles(selectedIds);
@@ -217,13 +217,13 @@
             : $t(`common.files.category.${selectedCategory}`)}:
           {$t("common.files.totalFiles", {
             count: totalFiles.toLocaleString(),
-          })}
+          } as any)}
         </span>
         {#if totalPages > 1}
           <span class="page-info">
             {$t("common.pagination.page")}
             {currentPage}
-            {$t("common.pagination.of", { total: totalPages })}
+            {$t("common.pagination.of", { total: totalPages } as any)}
             ({$t("common.pagination.showing", {
               start: ((currentPage - 1) * itemsPerPage + 1).toLocaleString(),
               end: Math.min(
@@ -231,7 +231,7 @@
                 totalFiles,
               ).toLocaleString(),
               total: totalFiles.toLocaleString(),
-            })})
+            } as any)})
           </span>
         {/if}
       </div>
@@ -275,9 +275,9 @@
           size="small"
           text="リネーム"
           onclick={handleRenameSelected}
-          title={selectedCount === 1
+          {...({ title: selectedCount === 1
             ? "選択したファイルをリネーム"
-            : `${selectedCount}件のファイルをバッチリネーム`}
+            : `${selectedCount}件のファイルをバッチリネーム` } as any)}
         />
         <Button
           variant="danger"
@@ -387,9 +387,6 @@
     margin: 1rem 0;
   }
 
-  .sort-section {
-    /* Sort control positioned on the right of pagination */
-  }
 
   .selection-action-bar {
     display: flex;

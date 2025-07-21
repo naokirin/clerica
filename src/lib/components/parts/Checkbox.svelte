@@ -12,7 +12,7 @@
   }
 
   let {
-    checked = false,
+    checked = $bindable(false),
     disabled = false,
     label,
     id,
@@ -39,7 +39,7 @@
     bind:checked
     id={uniqueId}
     class="checkbox-input {size}"
-    on:change={handleChange}
+    onchange={handleChange}
     {...restProps}
   />
   {#if label}

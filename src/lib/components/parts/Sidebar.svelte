@@ -52,6 +52,8 @@
     </div>
     <div class="directory-list">
       <!-- すべてのファイルオプション -->
+      <!-- svelte-ignore a11y_click_events_have_key_events -->
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
       <div
         class="directory-item {selectedDirectoryId === 'all' ? 'selected' : ''}"
         onclick={() => onSelectDirectory("all")}
@@ -73,6 +75,8 @@
       </div>
 
       {#each directories as dir (dir.id)}
+        <!-- svelte-ignore a11y_click_events_have_key_events -->
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div
           class="directory-item {selectedDirectoryId === dir.id
             ? 'selected'

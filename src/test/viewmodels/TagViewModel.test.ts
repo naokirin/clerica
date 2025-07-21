@@ -32,13 +32,13 @@ describe('TagViewModel', () => {
       id: '1',
       name: 'Important',
       color: '#ff0000',
-      createdAt: '2024-01-01'
+      created_at: '2024-01-01'
     },
     {
       id: '2',
       name: 'Work',
       color: '#00ff00',
-      createdAt: '2024-01-02'
+      created_at: '2024-01-02'
     }
   ];
 
@@ -46,14 +46,26 @@ describe('TagViewModel', () => {
     {
       id: '1',
       name: 'priority',
-      dataType: 'string',
-      createdAt: '2024-01-01'
+      display_name: 'Priority',
+      data_type: 'text',
+      description: null,
+      is_required: false,
+      default_value: null,
+      validation_pattern: null,
+      created_at: '2024-01-01',
+      updated_at: '2024-01-01'
     },
     {
       id: '2',
       name: 'rating',
-      dataType: 'number',
-      createdAt: '2024-01-02'
+      display_name: 'Rating',
+      data_type: 'number',
+      description: null,
+      is_required: false,
+      default_value: null,
+      validation_pattern: null,
+      created_at: '2024-01-02',
+      updated_at: '2024-01-02'
     }
   ];
 
@@ -129,7 +141,8 @@ describe('TagViewModel', () => {
     });
 
     it('should create tag with default color', async () => {
-      mockCreateTag.mockResolvedValue(undefined);
+      const newTag = { id: '3', name: 'New Tag', color: '#3B82F6', created_at: '2024-01-03' };
+      mockCreateTag.mockResolvedValue(newTag);
       
       const result = await tagViewModel.createNewTag('New Tag');
       
@@ -139,7 +152,8 @@ describe('TagViewModel', () => {
     });
 
     it('should create tag with custom color', async () => {
-      mockCreateTag.mockResolvedValue(undefined);
+      const newTag = { id: '3', name: 'New Tag', color: '#3B82F6', created_at: '2024-01-03' };
+      mockCreateTag.mockResolvedValue(newTag);
       
       const result = await tagViewModel.createNewTag('Colored Tag', '#ff6600');
       
@@ -168,7 +182,12 @@ describe('TagViewModel', () => {
       
       const request: CreateCustomMetadataKeyRequest = {
         name: 'priority',
-        dataType: 'string'
+        display_name: 'Priority',
+        data_type: 'text',
+        description: null,
+        is_required: false,
+        default_value: null,
+        validation_pattern: null
       };
       
       const result = await tagViewModel.createNewCustomMetadataKey(request);
@@ -182,10 +201,10 @@ describe('TagViewModel', () => {
       mockCreateCustomMetadataKey.mockResolvedValue(undefined);
       
       const requests: CreateCustomMetadataKeyRequest[] = [
-        { name: 'text_field', dataType: 'string' },
-        { name: 'number_field', dataType: 'number' },
-        { name: 'date_field', dataType: 'date' },
-        { name: 'boolean_field', dataType: 'boolean' }
+        { name: 'text_field', display_name: 'Text Field', data_type: 'text', description: null, is_required: false, default_value: null, validation_pattern: null },
+        { name: 'number_field', display_name: 'Number Field', data_type: 'number', description: null, is_required: false, default_value: null, validation_pattern: null },
+        { name: 'date_field', display_name: 'Date Field', data_type: 'date', description: null, is_required: false, default_value: null, validation_pattern: null },
+        { name: 'boolean_field', display_name: 'Boolean Field', data_type: 'boolean', description: null, is_required: false, default_value: null, validation_pattern: null }
       ];
       
       for (const request of requests) {
@@ -201,7 +220,12 @@ describe('TagViewModel', () => {
       
       const request: CreateCustomMetadataKeyRequest = {
         name: 'failed_key',
-        dataType: 'string'
+        display_name: 'Failed Key',
+        data_type: 'text',
+        description: null,
+        is_required: false,
+        default_value: null,
+        validation_pattern: null
       };
       
       const result = await tagViewModel.createNewCustomMetadataKey(request);
@@ -220,7 +244,13 @@ describe('TagViewModel', () => {
       mockUpdateCustomMetadataKey.mockResolvedValue(undefined);
       
       const request: UpdateCustomMetadataKeyRequest = {
-        name: 'updated_priority'
+        id: '1',
+        display_name: 'Updated Priority',
+        data_type: 'text',
+        description: null,
+        is_required: false,
+        default_value: null,
+        validation_pattern: null
       };
       
       const result = await tagViewModel.updateExistingCustomMetadataKey(request);
@@ -235,7 +265,13 @@ describe('TagViewModel', () => {
       mockUpdateCustomMetadataKey.mockRejectedValue(error);
       
       const request: UpdateCustomMetadataKeyRequest = {
-        name: 'failed_update'
+        id: '1',
+        display_name: 'Failed Update',
+        data_type: 'text',
+        description: null,
+        is_required: false,
+        default_value: null,
+        validation_pattern: null
       };
       
       const result = await tagViewModel.updateExistingCustomMetadataKey(request);
@@ -303,13 +339,19 @@ describe('TagViewModel', () => {
     });
 
     it('should handle concurrent operations', async () => {
-      mockCreateTag.mockResolvedValue(undefined);
+      const newTag = { id: '3', name: 'New Tag', color: '#3B82F6', created_at: '2024-01-03' };
+      mockCreateTag.mockResolvedValue(newTag);
       mockCreateCustomMetadataKey.mockResolvedValue(undefined);
       
       const tagPromise = tagViewModel.createNewTag('Concurrent Tag');
       const metadataPromise = tagViewModel.createNewCustomMetadataKey({
         name: 'concurrent_key',
-        dataType: 'string'
+        display_name: 'Concurrent Key',
+        data_type: 'text',
+        description: null,
+        is_required: false,
+        default_value: null,
+        validation_pattern: null
       });
       
       const [tagResult, metadataResult] = await Promise.all([tagPromise, metadataPromise]);
@@ -319,8 +361,9 @@ describe('TagViewModel', () => {
     });
 
     it('should maintain state consistency after operations', async () => {
-      mockCreateTag.mockResolvedValue(undefined);
-      const updatedTags = [...mockTags, { id: '3', name: 'New Tag', color: '#3B82F6', createdAt: '2024-01-03' }];
+      const newTag = { id: '3', name: 'New Tag', color: '#3B82F6', created_at: '2024-01-03' };
+      mockCreateTag.mockResolvedValue(newTag);
+      const updatedTags = [...mockTags, { id: '3', name: 'New Tag', color: '#3B82F6', created_at: '2024-01-03' }];
       mockGetTags.mockResolvedValue(updatedTags);
       
       await tagViewModel.createNewTag('New Tag');

@@ -216,10 +216,25 @@ describe('getFileCategory', () => {
       id: '1',
       name: 'folder',
       path: '/test/folder',
+      directory_id: 'dir1',
       size: 0,
+      file_type: null,
       created_at: '2024-01-01',
       modified_at: '2024-01-01',
-      is_directory: true
+      birth_time: null,
+      inode: null,
+      is_directory: true,
+      created_at_db: '2024-01-01T00:00:00Z',
+      updated_at_db: '2024-01-01T00:00:00Z',
+      file_size: null,
+      mime_type: null,
+      permissions: null,
+      owner_uid: null,
+      group_gid: null,
+      hard_links: null,
+      device_id: null,
+      last_accessed: null,
+      metadata: null
     };
     expect(getFileCategory(dirFile)).toBe('other');
   });
@@ -229,10 +244,25 @@ describe('getFileCategory', () => {
       id: '1',
       name: 'photo.jpg',
       path: '/test/photo.jpg',
+      directory_id: 'dir1',
       size: 1024,
+      file_type: null,
       created_at: '2024-01-01',
       modified_at: '2024-01-01',
-      mime_type: 'image/jpeg'
+      birth_time: null,
+      inode: null,
+      is_directory: false,
+      created_at_db: '2024-01-01T00:00:00Z',
+      updated_at_db: '2024-01-01T00:00:00Z',
+      file_size: 1024,
+      mime_type: 'image/jpeg',
+      permissions: null,
+      owner_uid: null,
+      group_gid: null,
+      hard_links: null,
+      device_id: null,
+      last_accessed: null,
+      metadata: null
     };
     expect(getFileCategory(imageFile)).toBe('image');
   });
@@ -242,10 +272,25 @@ describe('getFileCategory', () => {
       id: '1',
       name: 'photo.png',
       path: '/test/photo.png',
+      directory_id: 'dir1',
       size: 1024,
+      file_type: 'png',
       created_at: '2024-01-01',
       modified_at: '2024-01-01',
-      file_type: 'png'
+      birth_time: null,
+      inode: null,
+      is_directory: false,
+      created_at_db: '2024-01-01T00:00:00Z',
+      updated_at_db: '2024-01-01T00:00:00Z',
+      file_size: 1024,
+      mime_type: null,
+      permissions: null,
+      owner_uid: null,
+      group_gid: null,
+      hard_links: null,
+      device_id: null,
+      last_accessed: null,
+      metadata: null
     };
     expect(getFileCategory(imageFile)).toBe('image');
   });
@@ -255,11 +300,25 @@ describe('getFileCategory', () => {
       id: '1',
       name: 'song.mp3',
       path: '/test/song.mp3',
+      directory_id: 'dir1',
       size: 2048,
+      file_type: 'mp3',
       created_at: '2024-01-01',
       modified_at: '2024-01-01',
+      birth_time: null,
+      inode: null,
+      is_directory: false,
+      created_at_db: '2024-01-01T00:00:00Z',
+      updated_at_db: '2024-01-01T00:00:00Z',
+      file_size: 2048,
       mime_type: 'audio/mpeg',
-      file_type: 'mp3'
+      permissions: null,
+      owner_uid: null,
+      group_gid: null,
+      hard_links: null,
+      device_id: null,
+      last_accessed: null,
+      metadata: null
     };
     expect(getFileCategory(audioFile)).toBe('audio');
   });
@@ -269,11 +328,25 @@ describe('getFileCategory', () => {
       id: '1',
       name: 'movie.mp4',
       path: '/test/movie.mp4',
+      directory_id: 'dir1',
       size: 10240,
+      file_type: 'mp4',
       created_at: '2024-01-01',
       modified_at: '2024-01-01',
+      birth_time: null,
+      inode: null,
+      is_directory: false,
+      created_at_db: '2024-01-01T00:00:00Z',
+      updated_at_db: '2024-01-01T00:00:00Z',
+      file_size: 10240,
       mime_type: 'video/mp4',
-      file_type: 'mp4'
+      permissions: null,
+      owner_uid: null,
+      group_gid: null,
+      hard_links: null,
+      device_id: null,
+      last_accessed: null,
+      metadata: null
     };
     expect(getFileCategory(videoFile)).toBe('video');
   });
@@ -283,11 +356,25 @@ describe('getFileCategory', () => {
       id: '1',
       name: 'document.pdf',
       path: '/test/document.pdf',
+      directory_id: 'dir1',
       size: 5120,
+      file_type: 'pdf',
       created_at: '2024-01-01',
       modified_at: '2024-01-01',
+      birth_time: null,
+      inode: null,
+      is_directory: false,
+      created_at_db: '2024-01-01T00:00:00Z',
+      updated_at_db: '2024-01-01T00:00:00Z',
+      file_size: 5120,
       mime_type: 'application/pdf',
-      file_type: 'pdf'
+      permissions: null,
+      owner_uid: null,
+      group_gid: null,
+      hard_links: null,
+      device_id: null,
+      last_accessed: null,
+      metadata: null
     };
     expect(getFileCategory(docFile)).toBe('document');
   });
@@ -297,11 +384,25 @@ describe('getFileCategory', () => {
       id: '1',
       name: 'archive.zip',
       path: '/test/archive.zip',
+      directory_id: 'dir1',
       size: 15360,
+      file_type: 'zip',
       created_at: '2024-01-01',
       modified_at: '2024-01-01',
+      birth_time: null,
+      inode: null,
+      is_directory: false,
+      created_at_db: '2024-01-01T00:00:00Z',
+      updated_at_db: '2024-01-01T00:00:00Z',
+      file_size: 15360,
       mime_type: 'application/zip',
-      file_type: 'zip'
+      permissions: null,
+      owner_uid: null,
+      group_gid: null,
+      hard_links: null,
+      device_id: null,
+      last_accessed: null,
+      metadata: null
     };
     expect(getFileCategory(archiveFile)).toBe('archive');
   });
@@ -311,11 +412,25 @@ describe('getFileCategory', () => {
       id: '1',
       name: 'unknown.xyz',
       path: '/test/unknown.xyz',
+      directory_id: 'dir1',
       size: 1024,
+      file_type: 'xyz',
       created_at: '2024-01-01',
       modified_at: '2024-01-01',
+      birth_time: null,
+      inode: null,
+      is_directory: false,
+      created_at_db: '2024-01-01T00:00:00Z',
+      updated_at_db: '2024-01-01T00:00:00Z',
+      file_size: 1024,
       mime_type: 'application/unknown',
-      file_type: 'xyz'
+      permissions: null,
+      owner_uid: null,
+      group_gid: null,
+      hard_links: null,
+      device_id: null,
+      last_accessed: null,
+      metadata: null
     };
     expect(getFileCategory(unknownFile)).toBe('other');
   });
@@ -325,9 +440,25 @@ describe('getFileCategory', () => {
       id: '1',
       name: 'noextension',
       path: '/test/noextension',
+      directory_id: 'dir1',
       size: 512,
+      file_type: null,
       created_at: '2024-01-01',
-      modified_at: '2024-01-01'
+      modified_at: '2024-01-01',
+      birth_time: null,
+      inode: null,
+      is_directory: false,
+      created_at_db: '2024-01-01T00:00:00Z',
+      updated_at_db: '2024-01-01T00:00:00Z',
+      file_size: 512,
+      mime_type: null,
+      permissions: null,
+      owner_uid: null,
+      group_gid: null,
+      hard_links: null,
+      device_id: null,
+      last_accessed: null,
+      metadata: null
     };
     expect(getFileCategory(fileWithoutType)).toBe('other');
   });
@@ -337,11 +468,25 @@ describe('getFileCategory', () => {
       id: '1',
       name: 'IMAGE.JPG',
       path: '/test/IMAGE.JPG',
+      directory_id: 'dir1',
       size: 1024,
+      file_type: 'JPG',
       created_at: '2024-01-01',
       modified_at: '2024-01-01',
+      birth_time: null,
+      inode: null,
+      is_directory: false,
+      created_at_db: '2024-01-01T00:00:00Z',
+      updated_at_db: '2024-01-01T00:00:00Z',
+      file_size: 1024,
       mime_type: 'IMAGE/JPEG',
-      file_type: 'JPG'
+      permissions: null,
+      owner_uid: null,
+      group_gid: null,
+      hard_links: null,
+      device_id: null,
+      last_accessed: null,
+      metadata: null
     };
     expect(getFileCategory(upperCaseFile)).toBe('image');
   });
@@ -351,11 +496,25 @@ describe('getFileCategory', () => {
       id: '1',
       name: 'file.txt',
       path: '/test/file.txt',
+      directory_id: 'dir1',
       size: 1024,
+      file_type: 'txt',
       created_at: '2024-01-01',
       modified_at: '2024-01-01',
+      birth_time: null,
+      inode: null,
+      is_directory: false,
+      created_at_db: '2024-01-01T00:00:00Z',
+      updated_at_db: '2024-01-01T00:00:00Z',
+      file_size: 1024,
       mime_type: 'image/png',
-      file_type: 'txt'
+      permissions: null,
+      owner_uid: null,
+      group_gid: null,
+      hard_links: null,
+      device_id: null,
+      last_accessed: null,
+      metadata: null
     };
     expect(getFileCategory(conflictFile)).toBe('image');
   });

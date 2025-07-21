@@ -1,9 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/svelte';
 import SortControl from '../lib/components/parts/SortControl.svelte';
 
-const meta = {
+const meta: Meta<any> = {
   title: 'Components/SortControl',
-  component: SortControl,
+  component: SortControl as any,
   parameters: {
     layout: 'centered',
     docs: {
@@ -65,7 +65,7 @@ const meta = {
       control: 'object',
       description: 'ソート可能な項目のリスト'
     }
-  }
+  } as any
 } satisfies Meta<SortControl>;
 
 export default meta;
@@ -84,10 +84,10 @@ export const Default: Story = {
       { value: 'last_accessed', label: '最終アクセス' },
       { value: 'file_type', label: 'ファイル種別' }
     ],
-    onSortChange: async (options) => {
+    onSortChange: async (options: any) => {
       console.log('Sort changed:', options);
     }
-  }
+  } as any
 };
 
 // 昇順ソート
@@ -100,10 +100,10 @@ export const Ascending: Story = {
       { value: 'size', label: 'サイズ' },
       { value: 'modified_at', label: '更新日時' }
     ],
-    onSortChange: async (options) => {
+    onSortChange: async (options: any) => {
       console.log('Sort changed:', options);
     }
-  }
+  } as any
 };
 
 // 降順ソート
@@ -116,10 +116,10 @@ export const Descending: Story = {
       { value: 'size', label: 'サイズ' },
       { value: 'modified_at', label: '更新日時' }
     ],
-    onSortChange: async (options) => {
+    onSortChange: async (options: any) => {
       console.log('Sort changed:', options);
     }
-  }
+  } as any
 };
 
 // 最小限のソート項目
@@ -131,10 +131,10 @@ export const MinimalOptions: Story = {
       { value: 'name', label: 'ファイル名' },
       { value: 'size', label: 'サイズ' }
     ],
-    onSortChange: async (options) => {
+    onSortChange: async (options: any) => {
       console.log('Sort changed:', options);
     }
-  }
+  } as any
 };
 
 // 写真用ソート項目
@@ -148,10 +148,10 @@ export const PhotoSort: Story = {
       { value: 'size', label: 'ファイルサイズ' },
       { value: 'file_type', label: 'ファイル形式' }
     ],
-    onSortChange: async (options) => {
+    onSortChange: async (options: any) => {
       console.log('Sort changed:', options);
     }
-  }
+  } as any
 };
 
 // ドキュメント用ソート項目
@@ -166,8 +166,8 @@ export const DocumentSort: Story = {
       { value: 'size', label: 'ファイルサイズ' },
       { value: 'file_type', label: 'ドキュメント種別' }
     ],
-    onSortChange: async (options) => {
+    onSortChange: async (options: any) => {
       console.log('Sort changed:', options);
     }
-  }
+  } as any
 };

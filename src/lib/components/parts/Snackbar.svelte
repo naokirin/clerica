@@ -4,7 +4,9 @@
   import { X, AlertCircle, CheckCircle, Info, AlertTriangle } from '@lucide/svelte';
   import { t } from "$lib/i18n";
 
-  let { errors } = errorStore;
+  import { derived } from 'svelte/store';
+  
+  const errors = derived(errorStore, ($errorStore) => $errorStore.errors);
 
   const getIcon = (type: ErrorInfo['type']) => {
     switch (type) {

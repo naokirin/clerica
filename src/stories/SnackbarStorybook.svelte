@@ -128,25 +128,25 @@
     <Button 
       variant="primary" 
       text="Success Message" 
-      icon={successIcon}
+      iconName="CheckCircle"
       onclick={showSuccess}
     />
     <Button 
       variant="secondary" 
       text="Info Message" 
-      icon={infoIcon}
+      iconName="Info"
       onclick={showInfo}
     />
     <Button 
       variant="danger" 
       text="Warning Message" 
-      icon={warningIcon}
+      iconName="AlertTriangle"
       onclick={showWarning}
     />
     <Button 
       variant="danger" 
       text="Error Message" 
-      icon={errorIcon}
+      iconName="AlertCircle"
       onclick={showError}
     />
   </div>

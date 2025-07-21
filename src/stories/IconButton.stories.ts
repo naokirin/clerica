@@ -1,9 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/svelte';
 import IconButtonWrapper from '../../.storybook/mocks/IconButtonWrapper.svelte';
 
-const meta = {
+const meta: Meta<any> = {
   title: 'Components/IconButton',
-  component: IconButtonWrapper,
+  component: IconButtonWrapper as any,
   parameters: {
     layout: 'centered',
     docs: {
@@ -73,7 +73,7 @@ const meta = {
       control: 'boolean',
       description: 'Whether the button is disabled'
     }
-  }
+  } as any
 } satisfies Meta<IconButtonWrapper>;
 
 export default meta;
@@ -86,7 +86,7 @@ export const Default: Story = {
     title: 'デフォルトアイコン',
     size: 14,
     disabled: false
-  }
+  } as any
 };
 
 // フォルダ追加ボタン
@@ -96,7 +96,7 @@ export const FolderPlus: Story = {
     title: 'ディレクトリを追加',
     size: 16,
     disabled: false
-  }
+  } as any
 };
 
 // 設定ボタン
@@ -106,7 +106,7 @@ export const Settings: Story = {
     title: '設定',
     size: 16,
     disabled: false
-  }
+  } as any
 };
 
 // 削除ボタン（赤色）
@@ -117,7 +117,7 @@ export const Delete: Story = {
     size: 16,
     class: 'red',
     disabled: false
-  }
+  } as any
 };
 
 // 保存ボタン（緑色）
@@ -128,7 +128,7 @@ export const Save: Story = {
     size: 16,
     class: 'green',
     disabled: false
-  }
+  } as any
 };
 
 // 検索ボタン
@@ -138,7 +138,7 @@ export const Search: Story = {
     title: '検索',
     size: 16,
     disabled: false
-  }
+  } as any
 };
 
 // 編集ボタン
@@ -148,7 +148,7 @@ export const Edit: Story = {
     title: '編集',
     size: 16,
     disabled: false
-  }
+  } as any
 };
 
 // 更新ボタン
@@ -158,7 +158,7 @@ export const Refresh: Story = {
     title: '更新',
     size: 16,
     disabled: false
-  }
+  } as any
 };
 
 // 閉じるボタン
@@ -168,7 +168,7 @@ export const Close: Story = {
     title: '閉じる',
     size: 16,
     disabled: false
-  }
+  } as any
 };
 
 // チェックボタン
@@ -179,7 +179,7 @@ export const Check: Story = {
     size: 16,
     class: 'green',
     disabled: false
-  }
+  } as any
 };
 
 // 無効化されたボタン
@@ -189,7 +189,7 @@ export const Disabled: Story = {
     title: '無効化されたボタン',
     size: 16,
     disabled: true
-  }
+  } as any
 };
 
 // 小さいサイズ
@@ -199,7 +199,7 @@ export const Small: Story = {
     title: '小さいアイコン',
     size: 12,
     disabled: false
-  }
+  } as any
 };
 
 // 大きいサイズ
@@ -209,7 +209,7 @@ export const Large: Story = {
     title: '大きいアイコン',
     size: 24,
     disabled: false
-  }
+  } as any
 };
 
 // アイコン一覧（Storybookでアイコン選択のテスト用）
@@ -219,5 +219,5 @@ export const IconShowcase: Story = {
     title: 'アイコンを選択してテスト',
     size: 20,
     disabled: false
-  }
+  } as any
 };

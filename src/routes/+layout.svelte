@@ -11,17 +11,25 @@
   // load関数から渡されたlocaleをストアに設定
   $locale = data.locale;
 
-  onMount(async () => {
+  onMount(() => {
     // 中断されたディレクトリスキャンの監視
-    const { listen } = await import('@tauri-apps/api/event');
-    const unlisten = await listen('scan-interrupted', (event) => {
-      if (event.payload) {
-        errorStore.showWarning(event.payload as string, 10000);
-      }
-    });
+    let unlisten: (() => void) | undefined;
+    
+    const setupListener = async () => {
+      const { listen } = await import('@tauri-apps/api/event');
+      unlisten = await listen('scan-interrupted', (event) => {
+        if (event.payload) {
+          errorStore.showWarning(event.payload as string, 10000);
+        }
+      });
+    };
+
+    setupListener();
 
     return () => {
-      unlisten();
+      if (unlisten) {
+        unlisten();
+      }
     };
   });
 </script>

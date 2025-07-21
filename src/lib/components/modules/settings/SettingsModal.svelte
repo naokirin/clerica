@@ -31,7 +31,6 @@
         getLanguageSetting()
       ]);
       showHiddenFiles = settings.show_hidden_files;
-      showDirectories = settings.show_directories;
       filesPerPage = settings.files_per_page;
       language = lang;
     } catch (error) {
@@ -52,7 +51,6 @@
         getLanguageSetting()
       ]);
       showHiddenFiles = settings.show_hidden_files;
-      showDirectories = settings.show_directories;
       filesPerPage = settings.files_per_page;
       language = lang;
     } catch (error) {
@@ -111,19 +109,23 @@
 </script>
 
 {#if isOpen}
+  <!-- svelte-ignore a11y_interactive_supports_focus -->
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
   <div
     class="modal-overlay"
-    on:click={handleOverlayClick}
+    onclick={handleOverlayClick}
     role="dialog"
     aria-modal="true"
     aria-labelledby="settings-title"
+    tabindex="-1"
   >
-    <div class="modal-content" on:click={(e) => e.stopPropagation()}>
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div class="modal-content" onclick={(e) => e.stopPropagation()}>
       <div class="modal-header">
         <h3 id="settings-title">{$t("common.settings.title")}</h3>
         <button
           class="close-button"
-          on:click={handleClose}
+          onclick={handleClose}
           aria-label={$t("common.buttons.close")}
         >
           <X size={20} />
@@ -176,10 +178,10 @@
         </div>
 
         <div class="settings-actions">
-          <button class="save-button" on:click={handleSave} disabled={isLoading}>
+          <button class="save-button" onclick={handleSave} disabled={isLoading}>
             {isLoading ? $t("common.buttons.saving") : $t("common.buttons.save")}
           </button>
-          <button class="cancel-button" on:click={handleClose} disabled={isLoading}>
+          <button class="cancel-button" onclick={handleClose} disabled={isLoading}>
             {$t("common.buttons.cancel")}
           </button>
         </div>

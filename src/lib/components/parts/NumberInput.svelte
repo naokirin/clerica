@@ -42,9 +42,9 @@
   {disabled}
   {required}
   class="base-input {className}"
-  on:input={oninput}
-  on:change={onchange}
-  on:blur={onblur}
+  oninput={oninput}
+  onchange={onchange}
+  onblur={onblur}
   {...restProps}
 />
 

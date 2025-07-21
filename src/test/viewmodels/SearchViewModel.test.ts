@@ -36,30 +36,62 @@ describe('SearchViewModel', () => {
     id: '1',
     name: 'test.jpg',
     path: '/test/test.jpg',
+    directory_id: 'dir1',
     size: 1024,
+    file_type: 'jpg',
     created_at: '2024-01-01',
-    modified_at: '2024-01-01'
+    modified_at: '2024-01-01',
+    birth_time: null,
+    inode: 12345,
+    is_directory: false,
+    created_at_db: '2024-01-01T00:00:00Z',
+    updated_at_db: '2024-01-01T00:00:00Z',
+    file_size: 1024,
+    mime_type: 'image/jpeg',
+    permissions: 'rw-r--r--',
+    owner_uid: 1000,
+    group_gid: 1000,
+    hard_links: 1,
+    device_id: 123,
+    last_accessed: '2024-01-01',
+    metadata: null
   };
 
   const mockFile2: File = {
     id: '2',
     name: 'document.pdf',
     path: '/test/document.pdf',
+    directory_id: 'dir1',
     size: 2048,
+    file_type: 'pdf',
     created_at: '2024-01-02',
-    modified_at: '2024-01-02'
+    modified_at: '2024-01-02',
+    birth_time: null,
+    inode: 54321,
+    is_directory: false,
+    created_at_db: '2024-01-02T00:00:00Z',
+    updated_at_db: '2024-01-02T00:00:00Z',
+    file_size: 2048,
+    mime_type: 'application/pdf',
+    permissions: 'rw-r--r--',
+    owner_uid: 1000,
+    group_gid: 1000,
+    hard_links: 1,
+    device_id: 123,
+    last_accessed: '2024-01-02',
+    metadata: null
   };
 
   const mockSearchResults: SearchResult[] = [
     {
       file: mockFile1,
-      score: 0.9,
-      matches: ['test']
+      tags: [],
+      score: 0.9
     },
     {
       file: mockFile2,
-      score: 0.8,
-      matches: ['document']
+      tags: [],
+      score: 0.8
     }
   ];
 
@@ -134,7 +166,7 @@ describe('SearchViewModel', () => {
 
     it('should set metadata search filters', () => {
       const filters: MetadataSearchFilter[] = [
-        { field: 'size', operator: 'greater_than', value: '1000' }
+        { keyId: 'size', keyName: 'size', displayName: 'Size', dataType: 'number', operator: 'greater_than', value: '1000' }
       ];
       searchViewModel.setMetadataSearchFilters(filters);
       expect(get(searchViewModel.metadataSearchFilters)).toEqual(filters);
@@ -244,7 +276,7 @@ describe('SearchViewModel', () => {
       searchViewModel.setSearchQuery('test');
       searchViewModel.setSelectedTags(['tag1']);
       searchViewModel.setMetadataSearchFilters([
-        { field: 'size', operator: 'greater_than', value: '1000' }
+        { keyId: 'size', keyName: 'size', displayName: 'Size', dataType: 'number', operator: 'greater_than', value: '1000' }
       ]);
 
       await searchViewModel.performSearch();
@@ -287,7 +319,7 @@ describe('SearchViewModel', () => {
       searchViewModel.setSearchQuery('test');
       searchViewModel.setSelectedTags(['tag1']);
       searchViewModel.setMetadataSearchFilters([
-        { field: 'size', operator: 'greater_than', value: '1000' }
+        { keyId: 'size', keyName: 'size', displayName: 'Size', dataType: 'number', operator: 'greater_than', value: '1000' }
       ]);
       searchViewModel.setMetadataLogic('OR');
       searchViewModel.selectCategory('image');

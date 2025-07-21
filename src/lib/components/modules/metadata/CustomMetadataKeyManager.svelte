@@ -189,7 +189,7 @@
   const deleteKey = async (keyId: string, keyName: string) => {
     try {
       const confirmed = await confirm(
-        $t("common.dialog.confirmDeleteKey", { name: keyName }),
+        $t("common.dialog.confirmDeleteKey", { name: keyName } as any),
         {
           title: $t("common.dialog.confirm"),
           kind: "warning",
@@ -452,22 +452,6 @@
     color: #333;
   }
 
-  .create-button {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 16px;
-    background: #007acc;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 14px;
-  }
-
-  .create-button:hover {
-    background: #005a9e;
-  }
 
   .form-section {
     background: #f8f9fa;
@@ -514,7 +498,6 @@
     color: #333;
   }
 
-  .form-group input,
   .form-group select,
   .form-group textarea {
     padding: 8px 12px;
@@ -523,7 +506,6 @@
     font-size: 14px;
   }
 
-  .form-group input:focus,
   .form-group select:focus,
   .form-group textarea:focus {
     outline: none;

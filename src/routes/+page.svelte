@@ -174,7 +174,7 @@
     directoryName: string,
   ) => {
     const confirmed = await confirm(
-      $t("common.dialog.confirmRemoveDirectory", { name: directoryName }),
+      $t("common.dialog.confirmRemoveDirectory", { name: directoryName } as any),
       { title: $t("common.dialog.confirm"), kind: "warning" } as any,
     );
     if (confirmed) {
@@ -232,7 +232,7 @@
 
   const deleteFile = async (filePath: string, fileName: string) => {
     const confirmed = await confirm(
-      $t("common.dialog.confirmDeleteFile", { name: fileName }),
+      $t("common.dialog.confirmDeleteFile", { name: fileName } as any),
       {
         title: $t("common.dialog.confirm"),
         kind: "warning",

@@ -1,9 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/svelte';
 import TagInput from '../lib/components/parts/TagInput.svelte';
 
-const meta = {
+const meta: Meta<any> = {
   title: 'Components/TagInput',
-  component: TagInput,
+  component: TagInput as any,
   parameters: {
     layout: 'centered',
     docs: {
@@ -43,13 +43,9 @@ const meta = {
   },
   tags: ['autodocs'],
   argTypes: {
-    selectedTags: {
+    tags: {
       control: 'object',
       description: 'Array of currently selected tags'
-    },
-    availableTags: {
-      control: 'object',
-      description: 'Array of available tags for autocomplete'
     },
     placeholder: {
       control: 'text',
@@ -58,8 +54,12 @@ const meta = {
     disabled: {
       control: 'boolean',
       description: 'Whether the input is disabled'
+    },
+    onchange: {
+      action: 'tags changed',
+      description: 'Callback when tags are changed'
     }
-  }
+  } as any
 } satisfies Meta<TagInput>;
 
 export default meta;
@@ -73,27 +73,27 @@ const mockTags = [
 
 export const Default: Story = {
   args: {
-    selectedTags: [],
-    availableTags: mockTags,
+    tags: [],
     placeholder: 'Add tags...',
-    disabled: false
-  }
+    disabled: false,
+    onchange: (tags: any) => console.log('Tags changed:', tags)
+  } as any
 };
 
 export const WithSelectedTags: Story = {
   args: {
-    selectedTags: mockTags.slice(0, 2),
-    availableTags: mockTags,
+    tags: mockTags.slice(0, 2),
     placeholder: 'Add more tags...',
-    disabled: false
-  }
+    disabled: false,
+    onchange: (tags: any) => console.log('Tags changed:', tags)
+  } as any
 };
 
 export const Disabled: Story = {
   args: {
-    selectedTags: mockTags.slice(0, 1),
-    availableTags: mockTags,
+    tags: mockTags.slice(0, 1),
     placeholder: 'Add tags...',
-    disabled: true
-  }
+    disabled: true,
+    onchange: (tags: any) => console.log('Tags changed:', tags)
+  } as any
 };

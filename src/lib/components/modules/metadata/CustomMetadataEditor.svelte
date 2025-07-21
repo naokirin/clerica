@@ -65,7 +65,7 @@
   const validateValue = (key: CustomMetadataKey, value: string): boolean => {
     // 必須チェック
     if (key.is_required && !value.trim()) {
-      error = $t("common.error.requiredField", { field: key.display_name });
+      error = $t("common.error.requiredField", { field: key.display_name } as any);
       return false;
     }
 
@@ -74,20 +74,20 @@
       switch (key.data_type) {
         case "number":
           if (isNaN(Number(value))) {
-            error = $t("common.error.invalidNumber", { field: key.display_name });
+            error = $t("common.error.invalidNumber", { field: key.display_name } as any);
             return false;
           }
           break;
         case "date":
           if (isNaN(Date.parse(value))) {
-            error = $t("common.error.invalidDate", { field: key.display_name });
+            error = $t("common.error.invalidDate", { field: key.display_name } as any);
             return false;
           }
           break;
         case "boolean":
           const lowerValue = value.toLowerCase();
           if (!["true", "false", "1", "0", "yes", "no"].includes(lowerValue)) {
-            error = $t("common.error.invalidBoolean", { field: key.display_name });
+            error = $t("common.error.invalidBoolean", { field: key.display_name } as any);
             return false;
           }
           break;
@@ -95,7 +95,7 @@
           try {
             JSON.parse(value);
           } catch {
-            error = $t("common.error.invalidJson", { field: key.display_name });
+            error = $t("common.error.invalidJson", { field: key.display_name } as any);
             return false;
           }
           break;
@@ -107,7 +107,7 @@
       try {
         const regex = new RegExp(key.validation_pattern);
         if (!regex.test(value)) {
-          error = $t("common.error.invalidFormat", { field: key.display_name });
+          error = $t("common.error.invalidFormat", { field: key.display_name } as any);
           return false;
         }
       } catch {
@@ -246,7 +246,7 @@
       case "number":
         return $t("common.placeholder.number");
       default:
-        return $t("common.placeholder.input", { field: key.display_name });
+        return $t("common.placeholder.input", { field: key.display_name } as any);
     }
   };
 </script>

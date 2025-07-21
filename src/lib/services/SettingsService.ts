@@ -14,6 +14,7 @@ export interface SettingsService {
   loadSettings(): Promise<void>;
   updateItemsPerPage(itemsPerPage: number): Promise<void>;
   updateSetting<K extends keyof Settings>(key: K, value: Settings[K]): Promise<void>;
+  getSetting<K extends keyof Settings>(key: K): Settings[K];
 }
 
 class SettingsServiceImpl implements SettingsService {
@@ -22,7 +23,9 @@ class SettingsServiceImpl implements SettingsService {
     defaultSortKey: 'name',
     defaultSortOrder: 'asc',
     showHiddenFiles: false,
-    autoSave: true
+    showDirectories: true,
+    autoSave: true,
+    language: 'ja'
   });
   
   private _isLoading = writable<boolean>(false);
@@ -84,7 +87,9 @@ class SettingsServiceImpl implements SettingsService {
       defaultSortKey: 'name',
       defaultSortOrder: 'asc',
       showHiddenFiles: false,
-      autoSave: true
+      showDirectories: true,
+      autoSave: true,
+      language: 'ja'
     };
     
     const unsubscribe = this._settings.subscribe(settings => {

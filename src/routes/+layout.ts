@@ -12,7 +12,7 @@ export const load: LayoutLoad = async ({ url }) => {
   
   try {
     // Tauriでデータベースから言語設定を取得
-    const language = await invoke('get_language_setting');
+    const language = await invoke<string>('get_language_setting');
     if (language && ['ja', 'en'].includes(language)) {
       initLocale = language;
     }

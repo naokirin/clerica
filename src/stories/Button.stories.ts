@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/svelte';
 import Button from '../lib/components/parts/Button.svelte';
 
-const meta = {
+const meta: Meta<typeof Button> = {
   title: 'Components/Button',
   component: Button,
   parameters: {
@@ -30,7 +30,7 @@ const meta = {
   variant="primary"
   size="medium"
   text="クリック"
-  on:click={handleClick}
+  onclick={handleClick}
 />
 \`\`\`
         `
@@ -76,7 +76,7 @@ const meta = {
       description: 'Button text'
     }
   }
-} satisfies Meta<Button>;
+};
 
 export default meta;
 type Story = StoryObj<typeof meta>;
@@ -91,7 +91,7 @@ export const Primary: Story = {
     iconName: "FolderPlus",
     iconSize: 16,
     text: 'ディレクトリを追加'
-  }
+  } as any
 };
 
 // セカンダリボタン（アイコン + テキスト）
@@ -103,7 +103,7 @@ export const Secondary: Story = {
     iconName: 'Settings',
     iconSize: 16,
     text: '設定'
-  }
+  } as any
 };
 
 // 危険なボタン（アイコン + テキスト）
@@ -115,7 +115,7 @@ export const Danger: Story = {
     iconName: 'Trash2',
     iconSize: 16,
     text: '削除'
-  }
+  } as any
 };
 
 // 無効化されたボタン
@@ -127,7 +127,7 @@ export const Disabled: Story = {
     iconName: 'FolderPlus',
     iconSize: 16,
     text: '無効化されたボタン'
-  }
+  } as any
 };
 
 // テキストのみのボタン
@@ -137,7 +137,7 @@ export const TextOnly: Story = {
     size: 'medium',
     disabled: false,
     text: 'テキストのみのボタン'
-  }
+  } as any
 };
 
 // アイコンのみのボタン
@@ -148,7 +148,7 @@ export const IconOnly: Story = {
     disabled: false,
     iconName: 'X',
     iconSize: 16
-  }
+  } as any
 };
 
 // 小さいボタン
@@ -160,7 +160,7 @@ export const Small: Story = {
     iconName: 'FolderPlus',
     iconSize: 14,
     text: '小さいボタン'
-  }
+  } as any
 };
 
 // 大きいボタン
@@ -172,7 +172,7 @@ export const Large: Story = {
     iconName: 'RotateCcw',
     iconSize: 18,
     text: '再スキャン'
-  }
+  } as any
 };
 
 // リンクボタン
@@ -185,5 +185,5 @@ export const LinkButton: Story = {
     iconName: 'Search',
     iconSize: 16,
     text: '検索'
-  }
+  } as any
 };

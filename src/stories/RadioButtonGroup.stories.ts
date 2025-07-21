@@ -1,9 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/svelte';
 import RadioButtonGroupWrapper from './RadioButtonGroupWrapper.svelte';
 
-const meta = {
+const meta: Meta<any> = {
   title: 'Components/RadioButtonGroup',
-  component: RadioButtonGroupWrapper,
+  component: RadioButtonGroupWrapper as any,
   parameters: {
     layout: 'centered',
     docs: {
@@ -69,7 +69,7 @@ const meta = {
       action: 'value changed',
       description: '値が変更されたときのコールバック関数'
     }
-  }
+  } as any
 } satisfies Meta<RadioButtonGroupWrapper>;
 
 export default meta;
@@ -85,7 +85,7 @@ export const Default: Story = {
     ],
     initialValue: "simple",
     disabled: false
-  }
+  } as any
 };
 
 // メタデータロジック選択の例
@@ -98,7 +98,7 @@ export const MetadataLogic: Story = {
     ],
     initialValue: "AND",
     disabled: false
-  }
+  } as any
 };
 
 // 3つ以上の選択肢の例
@@ -112,7 +112,7 @@ export const MultipleOptions: Story = {
     ],
     initialValue: "list",
     disabled: false
-  }
+  } as any
 };
 
 // 無効化された状態
@@ -125,7 +125,7 @@ export const Disabled: Story = {
     ],
     initialValue: "option1",
     disabled: true
-  }
+  } as any
 };
 
 // ファイル操作の例
@@ -139,7 +139,7 @@ export const FileOperation: Story = {
     ],
     initialValue: "copy",
     disabled: false
-  }
+  } as any
 };
 
 // ソート順の例
@@ -152,5 +152,5 @@ export const SortOrder: Story = {
     ],
     initialValue: "asc",
     disabled: false
-  }
+  } as any
 };

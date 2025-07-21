@@ -169,11 +169,6 @@
     border-color: #2563eb;
   }
 
-  .pagination-bottom {
-    margin-top: 1.5rem;
-    border-top: 1px solid #e5e7eb;
-    padding-top: 1.5rem;
-  }
 
   /* レスポンシブ対応 */
   @media (max-width: 768px) {

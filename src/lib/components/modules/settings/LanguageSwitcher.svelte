@@ -19,7 +19,7 @@
   <select 
     id="language-select"
     value={$locale}
-    onchange={(e) => switchLanguage(e.target.value)}
+    onchange={(e) => switchLanguage((e.target as HTMLSelectElement).value)}
   >
     {#each languages as language}
       <option value={language.code}>

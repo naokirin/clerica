@@ -116,7 +116,7 @@
   // 全選択・全解除
   const handleSelectAll = () => {
     selectedFileIds.update(() => {
-      const newSelected = new Set<number>();
+      const newSelected = new Set<string>();
       filteredResults.forEach((result) => {
         newSelected.add(result.file.id);
       });
@@ -138,7 +138,7 @@
   const confirmDelete = async () => {
     if (!hasSelection) return;
 
-    const selectedIds = Array.from($selectedFileIds);
+    const selectedIds = Array.from($selectedFileIds).map(id => Number(id));
 
     try {
       const result: DeleteResult = await deleteFiles(selectedIds);
@@ -403,7 +403,7 @@
               ></span>
               <span class="tag-name"
                 >{selectedTag?.name ||
-                  $t("common.search.tagId", { id: tagId })}</span
+                  $t("common.search.tagId", { id: tagId } as any)}</span
               >
               <button onclick={() => onTagRemove(tagId)} class="tag-remove-btn">
                 <X size={12} />
@@ -435,8 +435,9 @@
       <h4>{$t("common.search.searchTags")}:</h4>
       <TextInput
         id="tag-search-input"
+        value=""
         placeholder={$t("common.search.tagSearchPlaceholder")}
-        oninput={(e) => onTagSearch(e.target.value)}
+        oninput={(e) => onTagSearch((e.target as HTMLInputElement)?.value || "")}
         class="tag-search-input"
       />
       {#if tagSearchResults.length > 0}
@@ -475,7 +476,7 @@
         title={$t("common.search.metadataLogicLabel")}
         options={metadataLogicOptions}
         value={metadataLogic}
-        onValueChange={onMetadataLogicChange}
+        onValueChange={onMetadataLogicChange as any}
       />
     {/if}
 
@@ -486,7 +487,7 @@
             <select
               value={filter.keyId}
               onchange={(e) => {
-                const keyId = e.currentTarget.value;
+                const keyId = (e.currentTarget as HTMLSelectElement)?.value || "";
                 const key = availableMetadataKeys.find((k) => k.id === keyId);
                 if (key) {
                   const operators = getOperatorsForDataType(key.data_type);
@@ -496,9 +497,7 @@
                     keyName: key.name,
                     displayName: key.display_name,
                     dataType: key.data_type,
-                    operator: operators.includes(filter.operator)
-                      ? filter.operator
-                      : operators[0],
+                    operator: operators[0] as "equals" | "contains" | "greater_than" | "less_than" | "not_equals",
                   });
                 }
               }}
@@ -516,7 +515,7 @@
                 onchange={(e) => {
                   updateMetadataFilter(index, {
                     ...filter,
-                    operator: e.currentTarget.value,
+                    operator: (e.currentTarget as HTMLSelectElement)?.value as any,
                   });
                 }}
                 class="metadata-operator-select"
@@ -532,7 +531,7 @@
                   onchange={(e) => {
                     updateMetadataFilter(index, {
                       ...filter,
-                      value: e.currentTarget.value,
+                      value: (e.currentTarget as any)?.value || "",
                     });
                   }}
                   class="metadata-value-input"
@@ -548,7 +547,7 @@
                   oninput={(e) => {
                     updateMetadataFilter(index, {
                       ...filter,
-                      value: e.currentTarget.value,
+                      value: (e.currentTarget as any)?.value || "",
                     });
                   }}
                   class="metadata-value-input"
@@ -556,12 +555,12 @@
               {:else if filter.dataType === "number"}
                 <NumberInput
                   id="metadata-filter-number-{index}"
-                  bind:value={filter.value}
+                  value={filter.value ? Number(filter.value) : undefined}
                   placeholder={$t("common.search.enterNumber")}
                   oninput={(e) => {
                     updateMetadataFilter(index, {
                       ...filter,
-                      value: e.currentTarget.value,
+                      value: (e.currentTarget as any)?.value || "",
                     });
                   }}
                   class="metadata-value-input"
@@ -574,7 +573,7 @@
                   oninput={(e) => {
                     updateMetadataFilter(index, {
                       ...filter,
-                      value: e.currentTarget.value,
+                      value: (e.currentTarget as any)?.value || "",
                     });
                   }}
                   class="metadata-value-input"
@@ -596,7 +595,7 @@
   </div>
 
   <!-- 検索結果のファイル種別フィルター -->
-  <FileCategoryFilters {selectedCategory} {categoryCounts} {onSelectCategory} />
+  <FileCategoryFilters {selectedCategory} {categoryCounts} onSelectCategory={onSelectCategory as any} />
 
   <!-- コンテキストアクションバー -->
   {#if hasSelection}
@@ -616,9 +615,9 @@
           size="small"
           text="リネーム"
           onclick={handleRenameSelected}
-          title={selectedCount === 1
+          {...({ title: selectedCount === 1
             ? "選択したファイルをリネーム"
-            : `${selectedCount}件のファイルをバッチリネーム`}
+            : `${selectedCount}件のファイルをバッチリネーム` } as any)}
         />
         <Button
           variant="danger"
@@ -669,7 +668,7 @@
       <FileSortControl
         sortField={sortOptions.field}
         sortOrder={sortOptions.order}
-        {onSortChange}
+        onSortChange={onSortChange as any}
       />
     </div>
   </div>
@@ -688,11 +687,11 @@
       : ""}
     showEmptyState={false}
     {onSelectFile}
-    {onGoToPage}
-    {onGoToPreviousPage}
-    {onGoToNextPage}
-    {onGoToFirstPage}
-    {onGoToLastPage}
+    onGoToPage={onGoToPage as any}
+    onGoToPreviousPage={onGoToPreviousPage as any}
+    onGoToNextPage={onGoToNextPage as any}
+    onGoToFirstPage={onGoToFirstPage as any}
+    onGoToLastPage={onGoToLastPage as any}
   />
 </div>
 
@@ -723,23 +722,6 @@
     color: #333;
   }
 
-  .add-filter-btn {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 0.875rem;
-    transition: background-color 0.2s;
-  }
-
-  .add-filter-btn:hover {
-    background-color: #0056b3;
-  }
 
   .metadata-filters {
     display: flex;
@@ -873,9 +855,6 @@
     margin: 1rem 0;
   }
 
-  .sort-section {
-    /* Sort control positioned on the right of pagination */
-  }
 
   /* タグフィルタスタイル */
   .tag-filter-section {
@@ -971,9 +950,6 @@
     color: #ef4444;
   }
 
-  .tag-search-input {
-    width: 100%;
-  }
 
   .tag-search-results {
     background: #ffffff;

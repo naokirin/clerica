@@ -145,7 +145,7 @@
     <div class="error-message">
       エラー: {error}
       <button
-        on:click={() => {
+        onclick={() => {
           error = null;
           loadShelves();
           loadActiveShelf();
@@ -170,13 +170,13 @@
         id="new-shelf-name-input"
         placeholder="シェルフ名を入力"
         bind:value={newShelfName}
-        onkeydown={(e) => e.key === "Enter" && createShelf()}
+        {...({ onkeydown: (e: KeyboardEvent) => e.key === "Enter" && createShelf() } as any)}
       />
       <div class="form-actions">
-        <button class="btn-save" on:click={createShelf}>作成</button>
+        <button class="btn-save" onclick={createShelf}>作成</button>
         <button
           class="btn-cancel"
-          on:click={() => {
+          onclick={() => {
             showCreateForm = false;
             newShelfName = "";
           }}
@@ -189,20 +189,24 @@
 
   <div class="shelf-list">
     {#each shelves as shelf (shelf.id)}
+      <!-- svelte-ignore a11y_click_events_have_key_events -->
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
       <div
         class="shelf-item {shelf.id === activeShelfId ? 'selected' : ''}"
-        on:click={() => switchShelf(shelf.id)}
+        onclick={() => switchShelf(shelf.id)}
+        role="button"
+        tabindex="0"
       >
         {#if editingShelfId === shelf.id}
           <div class="edit-form">
             <TextInput
               id="edit-shelf-name-input"
               bind:value={editingShelfName}
-              onkeydown={(e) => e.key === "Enter" && saveEdit()}
+              {...({ onkeydown: (e: KeyboardEvent) => e.key === "Enter" && saveEdit() } as any)}
             />
             <div class="edit-actions">
-              <button class="btn-save" on:click={saveEdit}>保存</button>
-              <button class="btn-cancel" on:click={cancelEdit}
+              <button class="btn-save" onclick={saveEdit}>保存</button>
+              <button class="btn-cancel" onclick={cancelEdit}
                 >キャンセル</button
               >
             </div>
@@ -297,16 +301,6 @@
     margin-bottom: 0.75rem;
   }
 
-  .create-form input,
-  .edit-form input {
-    width: 100%;
-    padding: 0.5rem;
-    border: 1px solid #d1d5db;
-    border-radius: 0.25rem;
-    margin-bottom: 0.5rem;
-    background: white;
-    color: #111827;
-  }
 
   .form-actions,
   .edit-actions {

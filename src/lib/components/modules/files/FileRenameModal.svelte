@@ -127,7 +127,7 @@
       }
 
       errorStore.showError(
-        $t("common.fileDetail.renameSuccess", { name: newName }),
+        $t("common.fileDetail.renameSuccess", { name: newName } as any),
       );
 
       // モーダルを閉じる
@@ -167,6 +167,8 @@
 </script>
 
 {#if file}
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div class="modal-overlay" onclick={isRenaming ? undefined : onClose}>
     <div class="modal-content" onclick={(e) => e.stopPropagation()}>
       <div class="modal-header">
@@ -190,7 +192,7 @@
             options={renameModeOptions}
             value={renameMode}
             disabled={isRenaming}
-            onValueChange={(value) => renameMode = value}
+            onValueChange={(value) => renameMode = value as "simple" | "regex"}
           />
 
           <!-- シンプルリネームモード -->
@@ -371,9 +373,6 @@
     color: #495057;
   }
 
-  .file-name .icon {
-    color: #007acc;
-  }
 
 
   .input-hint {
@@ -401,24 +400,8 @@
     font-size: 0.875rem;
   }
 
-  .rename-input-group input {
-    padding: 0.75rem;
-    border: 1px solid #ced4da;
-    border-radius: 4px;
-    font-size: 0.875rem;
-    font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
-  }
 
-  .rename-input-group input:focus {
-    outline: none;
-    border-color: #007acc;
-    box-shadow: 0 0 0 2px rgba(0, 122, 204, 0.2);
-  }
 
-  .rename-input-group input:disabled {
-    background-color: #e9ecef;
-    cursor: not-allowed;
-  }
 
   .rename-preview {
     padding: 1rem;

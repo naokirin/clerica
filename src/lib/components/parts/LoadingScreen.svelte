@@ -173,7 +173,6 @@
 
   .loading-steps {
     text-align: left;
-    space-y: 1rem;
   }
 
   .loading-step {

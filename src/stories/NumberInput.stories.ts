@@ -1,9 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/svelte';
 import NumberInput from '../lib/components/parts/NumberInput.svelte';
 
-const meta = {
+const meta: Meta<any> = {
   title: 'Components/NumberInput',
-  component: NumberInput,
+  component: NumberInput as any,
   parameters: {
     layout: 'centered',
     docs: {
@@ -94,7 +94,7 @@ const meta = {
       control: 'text',
       description: 'Additional CSS classes to apply'
     }
-  }
+  } as any
 } satisfies Meta<NumberInput>;
 
 export default meta;
@@ -106,7 +106,7 @@ export const Default: Story = {
     id: 'default-number',
     value: undefined,
     placeholder: '数値を入力してください'
-  }
+  } as any
 };
 
 // 初期値ありの数値入力
@@ -115,7 +115,7 @@ export const WithValue: Story = {
     id: 'with-value-number',
     value: 42,
     placeholder: '数値を入力してください'
-  }
+  } as any
 };
 
 // 最小値・最大値制約付き
@@ -126,7 +126,7 @@ export const MinMaxConstraints: Story = {
     min: 0,
     max: 100,
     placeholder: '0-100の範囲で入力'
-  }
+  } as any
 };
 
 // ステップ値指定（整数のみ）
@@ -138,7 +138,7 @@ export const IntegerStep: Story = {
     max: 100,
     step: 5,
     placeholder: '5刻みで入力'
-  }
+  } as any
 };
 
 // 小数点入力対応
@@ -149,7 +149,7 @@ export const DecimalInput: Story = {
     min: 0,
     step: 0.01,
     placeholder: '小数点を入力'
-  }
+  } as any
 };
 
 // 必須項目の数値入力
@@ -160,7 +160,7 @@ export const Required: Story = {
     placeholder: '必須項目です',
     required: true,
     min: 1
-  }
+  } as any
 };
 
 // 無効化された数値入力
@@ -170,7 +170,7 @@ export const Disabled: Story = {
     value: 123,
     placeholder: '数値を入力してください',
     disabled: true
-  }
+  } as any
 };
 
 // 年齢入力フィールド
@@ -183,7 +183,7 @@ export const AgeField: Story = {
     step: 1,
     placeholder: '年齢を入力',
     required: true
-  }
+  } as any
 };
 
 // 価格入力フィールド
@@ -194,7 +194,7 @@ export const PriceField: Story = {
     min: 0,
     step: 0.01,
     placeholder: '価格を入力（例: 1500.00）'
-  }
+  } as any
 };
 
 // ファイルサイズ入力（MB単位）
@@ -205,7 +205,7 @@ export const FileSizeField: Story = {
     min: 0.1,
     step: 0.1,
     placeholder: 'ファイルサイズ（MB）'
-  }
+  } as any
 };
 
 // 連番開始番号（BatchRename用途）
@@ -216,7 +216,7 @@ export const SequenceStart: Story = {
     min: 0,
     step: 1,
     placeholder: '開始番号'
-  }
+  } as any
 };
 
 // 連番増分（BatchRename用途）
@@ -227,7 +227,7 @@ export const SequenceStep: Story = {
     min: 1,
     step: 1,
     placeholder: '増分'
-  }
+  } as any
 };
 
 // 連番桁数（BatchRename用途）
@@ -239,7 +239,7 @@ export const SequencePadding: Story = {
     max: 10,
     step: 1,
     placeholder: '桁数'
-  }
+  } as any
 };
 
 // カスタムスタイル付き数値入力
@@ -249,7 +249,7 @@ export const CustomStyled: Story = {
     value: undefined,
     placeholder: 'カスタムスタイル',
     class: 'custom-border'
-  },
+  } as any,
   parameters: {
     docs: {
       description: {

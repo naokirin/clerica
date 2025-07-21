@@ -60,8 +60,8 @@ describe('metadata API', () => {
       mockInvoke.mockResolvedValue(undefined);
 
       const request: SetCustomMetadataValueRequest = {
-        fileId: 'file1',
-        keyId: 'key1',
+        file_id: 'file1',
+        key_id: 'key1',
         value: 'new value'
       };
 
@@ -74,10 +74,10 @@ describe('metadata API', () => {
       mockInvoke.mockResolvedValue(undefined);
 
       const requests = [
-        { fileId: 'file1', keyId: 'text_key', value: 'string value' },
-        { fileId: 'file1', keyId: 'number_key', value: '42' },
-        { fileId: 'file1', keyId: 'date_key', value: '2024-01-01' },
-        { fileId: 'file1', keyId: 'boolean_key', value: 'true' }
+        { file_id: 'file1', key_id: 'text_key', value: 'string value' },
+        { file_id: 'file1', key_id: 'number_key', value: '42' },
+        { file_id: 'file1', key_id: 'date_key', value: '2024-01-01' },
+        { file_id: 'file1', key_id: 'boolean_key', value: 'true' }
       ];
 
       for (const request of requests) {
@@ -91,8 +91,8 @@ describe('metadata API', () => {
       mockInvoke.mockRejectedValue(error);
 
       const request: SetCustomMetadataValueRequest = {
-        fileId: 'file1',
-        keyId: 'key1',
+        file_id: 'file1',
+        key_id: 'key1',
         value: 'value'
       };
 
@@ -126,7 +126,12 @@ describe('metadata API', () => {
 
       const request: CreateCustomMetadataKeyRequest = {
         name: 'priority',
-        dataType: 'string'
+        display_name: 'Priority',
+        data_type: 'text',
+        description: null,
+        is_required: false,
+        default_value: null,
+        validation_pattern: null
       };
 
       await createCustomMetadataKey(request);
@@ -138,10 +143,10 @@ describe('metadata API', () => {
       mockInvoke.mockResolvedValue(undefined);
 
       const requests: CreateCustomMetadataKeyRequest[] = [
-        { name: 'text_field', dataType: 'string' },
-        { name: 'number_field', dataType: 'number' },
-        { name: 'date_field', dataType: 'date' },
-        { name: 'boolean_field', dataType: 'boolean' }
+        { name: 'text_field', display_name: 'Text Field', data_type: 'text', description: null, is_required: false, default_value: null, validation_pattern: null },
+        { name: 'number_field', display_name: 'Number Field', data_type: 'number', description: null, is_required: false, default_value: null, validation_pattern: null },
+        { name: 'date_field', display_name: 'Date Field', data_type: 'date', description: null, is_required: false, default_value: null, validation_pattern: null },
+        { name: 'boolean_field', display_name: 'Boolean Field', data_type: 'boolean', description: null, is_required: false, default_value: null, validation_pattern: null }
       ];
 
       for (const request of requests) {
@@ -156,7 +161,12 @@ describe('metadata API', () => {
 
       const request: CreateCustomMetadataKeyRequest = {
         name: 'test_key',
-        dataType: 'string'
+        display_name: 'Test Key',
+        data_type: 'text',
+        description: null,
+        is_required: false,
+        default_value: null,
+        validation_pattern: null
       };
 
       await expect(createCustomMetadataKey(request)).rejects.toThrow('Failed to create metadata key');
@@ -168,7 +178,13 @@ describe('metadata API', () => {
       mockInvoke.mockResolvedValue(undefined);
 
       const request: UpdateCustomMetadataKeyRequest = {
-        name: 'updated_priority'
+        id: 'key1',
+        display_name: 'Updated Priority',
+        data_type: 'text',
+        description: null,
+        is_required: false,
+        default_value: null,
+        validation_pattern: null
       };
 
       await updateCustomMetadataKey(request);
@@ -180,7 +196,13 @@ describe('metadata API', () => {
       mockInvoke.mockResolvedValue(undefined);
 
       const request: UpdateCustomMetadataKeyRequest = {
-        display_name: 'new_name'
+        id: 'key1',
+        display_name: 'new_name',
+        data_type: 'text',
+        description: null,
+        is_required: false,
+        default_value: null,
+        validation_pattern: null
       };
 
       await updateCustomMetadataKey(request);
@@ -193,7 +215,13 @@ describe('metadata API', () => {
       mockInvoke.mockRejectedValue(error);
 
       const request: UpdateCustomMetadataKeyRequest = {
-        display_name: 'updated_name'
+        id: 'key1',
+        display_name: 'updated_name',
+        data_type: 'text',
+        description: null,
+        is_required: false,
+        default_value: null,
+        validation_pattern: null
       };
 
       await expect(updateCustomMetadataKey(request)).rejects.toThrow('Failed to update metadata key');

@@ -1,8 +1,6 @@
 <script lang="ts">
-  import type { SvelteComponent } from "svelte";
-
   interface Props {
-    icon: typeof SvelteComponent;
+    icon: any;
     title: string;
     onClick: (event: MouseEvent) => void;
     size?: number;

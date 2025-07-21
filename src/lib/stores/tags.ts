@@ -5,7 +5,7 @@
 
 import { writable, derived, type Readable } from 'svelte/store';
 import { createCollectionStore, type CollectionStore, type FilterState } from './common';
-import { getTags, createTag } from '../api/tags';
+import { getTags, createTag, updateTag, deleteTag } from '../api/tags';
 import type { Tag } from '../types';
 
 export interface TagFilter extends FilterState {
@@ -170,7 +170,7 @@ function createTagsStore(): TagsStore {
       try {
         internalStore.update(store => ({ ...store, _isLoading: true, _error: null }));
         
-        const newTag = await createTag({ name, color });
+        const newTag = await createTag(name, color);
         if (newTag) {
           // 楽観的更新：新しいタグをストアに追加
           let currentTags: Tag[] = [];
@@ -196,7 +196,7 @@ function createTagsStore(): TagsStore {
       try {
         internalStore.update(store => ({ ...store, _isLoading: true, _error: null }));
         
-        await updateTag(id, { name, color });
+        await updateTag(id, name, color);
         
         // 楽観的更新：タグを更新
         let currentTags: Tag[] = [];
@@ -287,8 +287,18 @@ function createTagsStore(): TagsStore {
       return mostUsed;
     },
 
-    refresh: () => {
-      return this.loadTags();
+    refresh: async () => {
+      try {
+        internalStore.update(store => ({ ...store, _isLoading: true, _error: null }));
+        
+        const tags = await getTags();
+        baseCollection.setItems(tags);
+        
+        internalStore.update(store => ({ ...store, _isLoading: false }));
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        internalStore.update(store => ({ ...store, _error: errorMessage, _isLoading: false }));
+      }
     }
   };
 }

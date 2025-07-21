@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/svelte';
 import Pagination from '../lib/components/parts/Pagination.svelte';
 
-const meta = {
+const meta: Meta<typeof Pagination> = {
   title: 'Components/Pagination',
   component: Pagination,
   parameters: {
@@ -63,7 +63,7 @@ const meta = {
       control: 'boolean',
       description: 'Whether pagination is disabled'
     }
-  }
+  } as any
 } satisfies Meta<Pagination>;
 
 export default meta;
@@ -76,7 +76,7 @@ export const Default: Story = {
     maxVisiblePages: 5,
     showFirstLast: true,
     disabled: false
-  }
+  } as any
 };
 
 export const MiddlePage: Story = {
@@ -86,7 +86,7 @@ export const MiddlePage: Story = {
     maxVisiblePages: 5,
     showFirstLast: true,
     disabled: false
-  }
+  } as any
 };
 
 export const LastPage: Story = {
@@ -96,7 +96,7 @@ export const LastPage: Story = {
     maxVisiblePages: 5,
     showFirstLast: true,
     disabled: false
-  }
+  } as any
 };
 
 export const Disabled: Story = {
@@ -106,5 +106,5 @@ export const Disabled: Story = {
     maxVisiblePages: 5,
     showFirstLast: true,
     disabled: true
-  }
+  } as any
 };

@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/svelte';
 import Checkbox from '../lib/components/parts/Checkbox.svelte';
 
-const meta: Meta<Checkbox> = {
+const meta: Meta<typeof Checkbox> = {
   title: 'Components/Checkbox',
   component: Checkbox,
   parameters: {
@@ -45,7 +45,7 @@ export const Default: Story = {
     label: 'デフォルトのチェックボックス',
     checked: false,
     disabled: false,
-  },
+  } as any,
 };
 
 export const Checked: Story = {
@@ -53,7 +53,7 @@ export const Checked: Story = {
     label: 'チェック済みのチェックボックス',
     checked: true,
     disabled: false,
-  },
+  } as any,
 };
 
 export const Disabled: Story = {
@@ -61,7 +61,7 @@ export const Disabled: Story = {
     label: '無効なチェックボックス',
     checked: false,
     disabled: true,
-  },
+  } as any,
 };
 
 export const CheckedDisabled: Story = {
@@ -69,14 +69,14 @@ export const CheckedDisabled: Story = {
     label: 'チェック済み且つ無効なチェックボックス',
     checked: true,
     disabled: true,
-  },
+  } as any,
 };
 
 export const WithoutLabel: Story = {
   args: {
     checked: false,
     disabled: false,
-  },
+  } as any,
 };
 
 export const LongLabel: Story = {
@@ -84,7 +84,7 @@ export const LongLabel: Story = {
     label: '非常に長いラベルテキストを持つチェックボックスです。このようなケースでもレイアウトが適切に表示されることを確認します。',
     checked: false,
     disabled: false,
-  },
+  } as any,
 };
 
 export const Small: Story = {
@@ -93,7 +93,7 @@ export const Small: Story = {
     checked: false,
     disabled: false,
     size: 'small',
-  },
+  } as any,
 };
 
 export const Large: Story = {
@@ -102,7 +102,7 @@ export const Large: Story = {
     checked: false,
     disabled: false,
     size: 'large',
-  },
+  } as any,
 };
 
 export const MultipleCheckboxes: Story = {

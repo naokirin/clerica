@@ -6,11 +6,11 @@
 import { writable, derived, type Readable } from 'svelte/store';
 import { createCollectionStore, type CollectionStore, type FilterState } from './common';
 import { settingsService } from '../services/SettingsService';
-import { getFiles } from '../api/files';
+import { getFiles, getFilesByDirectory } from '../api/files';
 import type { File, FileWithTags, Tag, FileCategory } from '../types';
 
 // 複数ファイル選択機能の状態管理ストア
-export const selectedFileIds = writable<Set<number>>(new Set());
+export const selectedFileIds = writable<Set<string>>(new Set());
 
 export interface FileFilter extends FilterState {
   selectedDirectory: string | null;
@@ -176,11 +176,14 @@ function createFilesStore(): FilesStore {
       try {
         internalStore.update(store => ({ ...store, _isLoading: true, _error: null }));
         
-        const files = await getFiles(directoryId);
-        baseCollection.setItems(files);
+        const files = directoryId 
+          ? await getFilesByDirectory(directoryId)
+          : await getFiles();
+        const filesWithTags = files.map(file => ({ file, tags: [] as Tag[] }));
+        baseCollection.setItems(filesWithTags);
         
         // ディレクトリ一覧を更新
-        const uniqueDirectories = [...new Set(files.map(f => f.file.directory_id))];
+        const uniqueDirectories = [...new Set(files.map(f => f.directory_id))];
         internalStore.update(store => ({ ...store, _directories: uniqueDirectories }));
         
       } catch (error) {

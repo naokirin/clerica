@@ -1,9 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/svelte';
 import TextInput from '../lib/components/parts/TextInput.svelte';
 
-const meta = {
+const meta: Meta<any> = {
   title: 'Components/TextInput',
-  component: TextInput,
+  component: TextInput as any,
   parameters: {
     layout: 'centered',
     docs: {
@@ -72,7 +72,7 @@ const meta = {
       control: 'text',
       description: 'Additional CSS classes to apply'
     }
-  }
+  } as any
 } satisfies Meta<TextInput>;
 
 export default meta;
@@ -84,7 +84,7 @@ export const Default: Story = {
     id: 'default-input',
     value: '',
     placeholder: 'テキストを入力してください'
-  }
+  } as any
 };
 
 // 初期値ありのテキスト入力
@@ -93,7 +93,7 @@ export const WithValue: Story = {
     id: 'with-value-input',
     value: 'デフォルト値',
     placeholder: 'テキストを入力してください'
-  }
+  } as any
 };
 
 // 必須項目のテキスト入力
@@ -103,7 +103,7 @@ export const Required: Story = {
     value: '',
     placeholder: '必須項目です',
     required: true
-  }
+  } as any
 };
 
 // 無効化されたテキスト入力
@@ -113,7 +113,7 @@ export const Disabled: Story = {
     value: '編集できません',
     placeholder: 'テキストを入力してください',
     disabled: true
-  }
+  } as any
 };
 
 // 検索フィールド
@@ -123,7 +123,7 @@ export const SearchField: Story = {
     value: '',
     placeholder: 'ファイルやフォルダを検索...',
     class: 'search-input'
-  }
+  } as any
 };
 
 // ユーザー名入力
@@ -133,7 +133,7 @@ export const UsernameField: Story = {
     value: '',
     placeholder: 'ユーザー名を入力',
     required: true
-  }
+  } as any
 };
 
 // メール入力
@@ -142,7 +142,7 @@ export const EmailField: Story = {
     id: 'email-input',
     value: '',
     placeholder: 'example@domain.com'
-  }
+  } as any
 };
 
 // パスワード入力（テキストタイプだが用途例として）
@@ -152,7 +152,7 @@ export const PasswordField: Story = {
     value: '',
     placeholder: 'パスワードを入力',
     required: true
-  }
+  } as any
 };
 
 // ファイル名入力
@@ -161,7 +161,7 @@ export const FilenameField: Story = {
     id: 'filename-input',
     value: 'document.txt',
     placeholder: 'ファイル名を入力'
-  }
+  } as any
 };
 
 // カスタムスタイル付きテキスト入力
@@ -171,7 +171,7 @@ export const CustomStyled: Story = {
     value: '',
     placeholder: 'カスタムスタイル',
     class: 'custom-border'
-  },
+  } as any,
   parameters: {
     docs: {
       description: {

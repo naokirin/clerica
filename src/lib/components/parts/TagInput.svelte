@@ -91,7 +91,7 @@
           class="tag-remove"
           on:click={() => removeTag(tag)}
           {disabled}
-          aria-label={$t("common.tags.removeAriaLabel", { name: tag.name })}
+          aria-label={$t("common.tags.removeAriaLabel", { name: tag.name } as any)}
         >
           ✕
         </button>

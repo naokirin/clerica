@@ -34,7 +34,7 @@ describe('search API', () => {
       const query = 'test query';
       const tagIds = ['tag1', 'tag2'];
       const metadataFilters: MetadataSearchFilter[] = [
-        { field: 'size', operator: 'greater_than', value: '1000' }
+        { keyId: 'size', keyName: 'size', displayName: 'Size', dataType: 'number', operator: 'greater_than', value: '1000' }
       ];
 
       const result = await searchFiles(query, tagIds, metadataFilters);
@@ -103,8 +103,8 @@ describe('search API', () => {
       mockInvoke.mockResolvedValue([]);
       
       const metadataFilters: MetadataSearchFilter[] = [
-        { field: 'created_at', operator: 'after', value: '2024-01-01' },
-        { field: 'size', operator: 'less_than', value: '5000' }
+        { keyId: 'created_at', keyName: 'created_at', displayName: 'Created At', dataType: 'date', operator: 'greater_than', value: '2024-01-01' },
+        { keyId: 'size', keyName: 'size', displayName: 'Size', dataType: 'number', operator: 'less_than', value: '5000' }
       ];
 
       await searchFiles('', [], metadataFilters);
@@ -140,8 +140,8 @@ describe('search API', () => {
       const query = 'complex document';
       const tagIds = ['documents', 'important'];
       const metadataFilters: MetadataSearchFilter[] = [
-        { field: 'size', operator: 'greater_than', value: '10000' },
-        { field: 'created_at', operator: 'after', value: '2024-01-01' }
+        { keyId: 'size', keyName: 'size', displayName: 'Size', dataType: 'number', operator: 'greater_than', value: '10000' },
+        { keyId: 'created_at', keyName: 'created_at', displayName: 'Created At', dataType: 'date', operator: 'greater_than', value: '2024-01-01' }
       ];
 
       const result = await searchFiles(query, tagIds, metadataFilters);

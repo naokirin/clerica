@@ -53,84 +53,84 @@
     switch (key) {
       case "Orientation":
         const orientationName = await exifApi.getOrientationName(value);
-        return orientationName || $t("common.exif.unknownValue", { value });
+        return orientationName || $t("common.exif.unknownValue", { value } as any);
 
       case "ColorSpace":
         const colorSpaceName = await exifApi.getColorSpaceName(value);
-        return colorSpaceName || $t("common.exif.unknownValue", { value });
+        return colorSpaceName || $t("common.exif.unknownValue", { value } as any);
 
       case "MeteringMode":
         const meteringModeName = await exifApi.getMeteringModeName(value);
-        return meteringModeName || $t("common.exif.unknownValue", { value });
+        return meteringModeName || $t("common.exif.unknownValue", { value } as any);
 
       case "LightSource":
         const lightSourceName = await exifApi.getLightSourceName(value);
-        return lightSourceName || $t("common.exif.unknownValue", { value });
+        return lightSourceName || $t("common.exif.unknownValue", { value } as any);
 
       case "WhiteBalance":
         const whiteBalanceName = await exifApi.getWhiteBalanceName(value);
-        return whiteBalanceName || $t("common.exif.unknownValue", { value });
+        return whiteBalanceName || $t("common.exif.unknownValue", { value } as any);
 
       case "SceneCaptureType":
         const sceneCaptureTypeName =
           await exifApi.getSceneCaptureTypeName(value);
         return (
-          sceneCaptureTypeName || $t("common.exif.unknownValue", { value })
+          sceneCaptureTypeName || $t("common.exif.unknownValue", { value } as any)
         );
 
       case "Contrast":
       case "Saturation":
       case "Sharpness":
         const enhancementName = await exifApi.getEnhancementName(value);
-        return enhancementName || $t("common.exif.unknownValue", { value });
+        return enhancementName || $t("common.exif.unknownValue", { value } as any);
 
       case "SubjectDistanceRange":
         const subjectDistanceRangeName =
           await exifApi.getSubjectDistanceRangeName(value);
         return (
-          subjectDistanceRangeName || $t("common.exif.unknownValue", { value })
+          subjectDistanceRangeName || $t("common.exif.unknownValue", { value } as any)
         );
 
       case "Flash":
         return (
           $t(`exif.flashModes.${value}`) ||
-          $t("common.exif.unknownValue", { value })
+          $t("common.exif.unknownValue", { value } as any)
         );
 
       case "WhiteBalance":
         return (
           $t(`exif.whiteBalanceModes.${value}`) ||
-          $t("common.exif.unknownValue", { value })
+          $t("common.exif.unknownValue", { value } as any)
         );
 
       case "ColorSpace":
         return (
           $t(`exif.colorSpaces.${value}`) ||
-          $t("common.exif.unknownValue", { value })
+          $t("common.exif.unknownValue", { value } as any)
         );
 
       case "MeteringMode":
         return (
           $t(`exif.meteringModes.${value}`) ||
-          $t("common.exif.unknownValue", { value })
+          $t("common.exif.unknownValue", { value } as any)
         );
 
       case "ExposureMode":
         return (
           $t(`exif.exposureModes.${value}`) ||
-          $t("common.exif.unknownValue", { value })
+          $t("common.exif.unknownValue", { value } as any)
         );
 
       case "SceneCaptureType":
         return (
           $t(`exif.sceneTypes.${value}`) ||
-          $t("common.exif.unknownValue", { value })
+          $t("common.exif.unknownValue", { value } as any)
         );
 
       case "ExposureProgram":
         return (
           $t(`exif.exposurePrograms.${value}`) ||
-          $t("common.exif.unknownValue", { value })
+          $t("common.exif.unknownValue", { value } as any)
         );
 
       case "FocalLength":
@@ -147,7 +147,7 @@
           } else {
             return $t("common.exif.units.secondsShort", {
               value: Math.round(1 / seconds),
-            });
+            } as any);
           }
         }
         return `${value}`;
@@ -162,24 +162,24 @@
         if (Array.isArray(value)) {
           return value.join(", ");
         }
-        return $t("common.exif.units.iso", { value });
+        return $t("common.exif.units.iso", { value } as any);
 
       case "LightSource":
         return (
           $t(`exif.lightSources.${value}`) ||
-          $t("common.exif.unknownValue", { value })
+          $t("common.exif.unknownValue", { value } as any)
         );
 
       case "ResolutionUnit":
         return (
           $t(`exif.resolutionUnits.${value}`) ||
-          $t("common.exif.unknownValue", { value })
+          $t("common.exif.unknownValue", { value } as any)
         );
 
       case "YCbCrPositioning":
         return (
           $t(`exif.yCbCrPositions.${value}`) ||
-          $t("common.exif.unknownValue", { value })
+          $t("common.exif.unknownValue", { value } as any)
         );
 
       case "XResolution":
@@ -242,7 +242,7 @@
   // EXIFタグ番号から名前を取得する関数
   async function getExifTagName(tagNumber: number): Promise<string> {
     const tagName = await exifApi.getTagName(tagNumber);
-    return tagName || $t("common.fileDetail.tagNumber", { number: tagNumber });
+    return tagName || $t("common.fileDetail.tagNumber", { number: tagNumber } as any);
   }
 
   // ファイルのタグを読み込む関数
@@ -407,6 +407,13 @@
     }
   }
 
+  // キーボードイベントハンドラ
+  function handleKeydown(event: KeyboardEvent) {
+    if (event.key === "Escape") {
+      onClose();
+    }
+  }
+
   // ファイルが変更されたときにタグを読み込む
   $effect(() => {
     if (file) {
@@ -416,7 +423,9 @@
 </script>
 
 {#if file}
-  <div class="modal-overlay" onclick={isDeleting ? undefined : onClose}>
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div class="modal-overlay" onclick={isDeleting ? undefined : onClose} onkeydown={handleKeydown} role="dialog" aria-modal="true" tabindex="-1">
     <div class="modal-content" onclick={(e) => e.stopPropagation()}>
       <div class="modal-header">
         <h3>{$t("common.fileDetail.title")}</h3>
@@ -651,7 +660,7 @@
                           default:
                             return $t("common.fileDetail.categoryInfo", {
                               category: category.toUpperCase(),
-                            });
+                            } as any);
                         }
                       })()}
                     </h5>
@@ -660,112 +669,112 @@
                       <!-- 音声ファイル専用の表示 -->
                       <div class="detail-grid">
                         <!-- 基本情報 -->
-                        {#if data.duration !== undefined}
+                        {#if (data as any).duration !== undefined}
                           <div class="detail-item">
                             <span class="detail-label"
                               >{$t("common.fileDetail.duration")}:</span
                             >
                             <span class="detail-value"
-                              >{Math.floor(data.duration / 60)}:{(
-                                data.duration % 60
+                              >{Math.floor((data as any).duration / 60)}:{(
+                                (data as any).duration % 60
                               )
                                 .toString()
                                 .padStart(2, "0")}</span
                             >
                           </div>
                         {/if}
-                        {#if data.bitrate !== undefined && data.bitrate > 0}
+                        {#if (data as any).bitrate !== undefined && (data as any).bitrate > 0}
                           <div class="detail-item">
                             <span class="detail-label"
                               >{$t("common.fileDetail.bitrate")}:</span
                             >
                             <span class="detail-value"
-                              >{data.bitrate}
+                              >{(data as any).bitrate}
                               {$t("common.exif.units.kbps")}</span
                             >
                           </div>
                         {/if}
-                        {#if data.sample_rate !== undefined && data.sample_rate > 0}
+                        {#if (data as any).sample_rate !== undefined && (data as any).sample_rate > 0}
                           <div class="detail-item">
                             <span class="detail-label"
                               >{$t("common.fileDetail.sampleRate")}:</span
                             >
                             <span class="detail-value"
-                              >{data.sample_rate}
+                              >{(data as any).sample_rate}
                               {$t("common.exif.units.hz")}</span
                             >
                           </div>
                         {/if}
-                        {#if data.channels !== undefined && data.channels > 0}
+                        {#if (data as any).channels !== undefined && (data as any).channels > 0}
                           <div class="detail-item">
                             <span class="detail-label"
                               >{$t("common.fileDetail.channels")}:</span
                             >
                             <span class="detail-value"
-                              >{data.channels === 1
+                              >{(data as any).channels === 1
                                 ? $t("common.fileDetail.mono")
-                                : data.channels === 2
+                                : (data as any).channels === 2
                                   ? $t("common.fileDetail.stereo")
                                   : $t("common.fileDetail.channels_count", {
-                                      count: data.channels,
-                                    })}</span
+                                      count: (data as any).channels,
+                                    } as any)}</span
                             >
                           </div>
                         {/if}
 
                         <!-- タグ情報 -->
-                        {#if data.tags && typeof data.tags === "object"}
-                          {#if data.tags.title}
+                        {#if (data as any).tags && typeof (data as any).tags === "object"}
+                          {#if (data as any).tags.title}
                             <div class="detail-item">
                               <span class="detail-label"
                                 >{$t("common.fileDetail.title")}:</span
                               >
-                              <span class="detail-value">{data.tags.title}</span
+                              <span class="detail-value">{(data as any).tags.title}</span
                               >
                             </div>
                           {/if}
-                          {#if data.tags.artist}
+                          {#if (data as any).tags.artist}
                             <div class="detail-item">
                               <span class="detail-label"
                                 >{$t("common.fileDetail.artist")}:</span
                               >
                               <span class="detail-value"
-                                >{data.tags.artist}</span
+                                >{(data as any).tags.artist}</span
                               >
                             </div>
                           {/if}
-                          {#if data.tags.album}
+                          {#if (data as any).tags.album}
                             <div class="detail-item">
                               <span class="detail-label"
                                 >{$t("common.fileDetail.album")}:</span
                               >
-                              <span class="detail-value">{data.tags.album}</span
+                              <span class="detail-value">{(data as any).tags.album}</span
                               >
                             </div>
                           {/if}
-                          {#if data.tags.year}
+                          {#if (data as any).tags.year}
                             <div class="detail-item">
                               <span class="detail-label"
                                 >{$t("common.fileDetail.year")}:</span
                               >
-                              <span class="detail-value">{data.tags.year}</span>
+                              <span class="detail-value">{(data as any).tags.year}</span>
                             </div>
                           {/if}
-                          {#if data.tags.genre}
+                          {#if (data as any).tags.genre}
                             <div class="detail-item">
                               <span class="detail-label"
                                 >{$t("common.fileDetail.genre")}:</span
                               >
-                              <span class="detail-value">{data.tags.genre}</span
+                              <span class="detail-value">{(data as any).tags.genre}</span
                               >
                             </div>
                           {/if}
-                          {#if data.tags.track}
+                          {#if (data as any).tags.track}
                             <div class="detail-item">
                               <span class="detail-label"
                                 >{$t("common.fileDetail.track")}:</span
                               >
-                              <span class="detail-value">{data.tags.track}</span
+                              <span class="detail-value">{(data as any).tags.track}</span
                               >
                             </div>
                           {/if}
@@ -774,7 +783,7 @@
                     {:else}
                       <!-- その他のメタデータ（EXIF等）の表示 -->
                       <div class="detail-grid">
-                        {#each Object.entries(data) as [key, value]}
+                        {#each Object.entries(data as Record<string, unknown>) as [key, value]}
                           {#snippet metadataItem()}
                             {#await Promise.all([(async () => {
                                 // Tag(Exif, 数値)形式のキーを処理
@@ -812,7 +821,7 @@
                                 <span class="detail-value"
                                   >{$t("common.fileDetail.errorMessage", {
                                     message: error.message,
-                                  })}</span
+                                  } as any)}</span
                                 >
                               </div>
                             {/await}
