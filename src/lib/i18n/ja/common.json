@@ -286,6 +286,7 @@
     "filenameWithoutExtension": "拡張子なしのファイル名",
     "fileExtension": "ファイル拡張子",
     "tagsJoined": "指定された区切り文字で連結されたタグ",
+    "customerMetadata": "カスタムメタデータ",
     "regexBackreferences": "正規表現の後方参照",
     "regexBackreferencesDesc": "正規表現パターンでキャプチャされたグループ",
     "renameSuccess": "ファイル名を '{{name}}' に変更しました",

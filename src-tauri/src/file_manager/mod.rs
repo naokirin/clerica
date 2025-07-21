@@ -1680,18 +1680,13 @@ fn create_template_context(file: &File, tags: &[String], metadata: &serde_json::
     
     // タグ情報
     context.insert("tags", tags);
-    context.insert("tags_joined", &tags.join(", "));
     context.insert("tags_underscore", &tags.join("_"));
     context.insert("tags_dash", &tags.join("-"));
     
     // ファイルメタデータ（EXIF、オーディオタグなど）
-    #[cfg(debug_assertions)]
-    println!("File Metadata: {metadata:?}");
     context.insert("metadata", metadata);
     
     // カスタムメタデータ（ユーザー設定）
-    #[cfg(debug_assertions)]
-    println!("Custom Metadata: {custom_metadata:?}");
     context.insert("custom_metadata", custom_metadata);
     
     // カスタムメタデータの個別設定（直接アクセス用）

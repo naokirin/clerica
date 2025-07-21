@@ -18,11 +18,11 @@
         description: $t("common.fileDetail.fullFilename"),
       },
       {
-        name: `{{ file.name_stem() }}`,
+        name: `{{ name_without_ext }}`,
         description: $t("common.fileDetail.filenameWithoutExtension"),
       },
       {
-        name: `{{ file.extension() }}`,
+        name: `{{ extension }}`,
         description: $t("common.fileDetail.fileExtension"),
       },
       {
@@ -32,6 +32,10 @@
       {
         name: `{{ metadata | join(sep="_") }}`,
         description: $t("common.fileDetail.metadata"),
+      },
+      {
+        name: `{{ customer_metadata | get(key="keyname") }}`,
+        description: $t("common.fileDetail.customerMetadata"),
       },
       {
         name: `{{ file.created_at | date(format="%Y-%m-%d") }}`,
@@ -58,7 +62,7 @@
 
       {#if showRegexHelp}
         <h5>{$t("common.fileDetail.regexBackreferences")}:</h5>
-        <p>$1, $2, $3... - {$t("common.fileDetail.regexBackreferencesDesc")}</p>
+        <p>{@html "${1}, ${2}, ${3}"}.. - {$t("common.fileDetail.regexBackreferencesDesc")}</p>
       {/if}
     </div>
   </details>

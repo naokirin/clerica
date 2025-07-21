@@ -408,7 +408,7 @@
                   placeholder={useTemplate
                     ? `テンプレート (例: {{ file.name }}_{{ n:padding=3 }}.{{ file.ext }})`
                     : useRegex
-                      ? "置換文字列 (後方参照: $1, $2)"
+                      ? "置換文字列 (後方参照: ${1}, ${2})"
                       : "置換文字列"}
                 />
               </div>
