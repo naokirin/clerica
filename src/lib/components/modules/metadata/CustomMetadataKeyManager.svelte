@@ -19,6 +19,7 @@
   import TextInput from "../../parts/TextInput.svelte";
   import Checkbox from "../../parts/Checkbox.svelte";
   import Select from "../../parts/Select.svelte";
+  import Textarea from "../../parts/Textarea.svelte";
 
   interface Props {
     keys: CustomMetadataKey[];
@@ -293,13 +294,13 @@
 
           <div class="form-group">
             <label for="description">{$t("common.metadata.description")}</label>
-            <textarea
+            <Textarea
               id="description"
               bind:value={formData.description}
               placeholder={$t("common.placeholder.description")}
               disabled={isSubmitting}
-              rows="3"
-            ></textarea>
+              rows={3}
+            />
           </div>
 
           <div class="form-group">
@@ -495,19 +496,6 @@
     margin-bottom: 4px;
     font-weight: 500;
     color: #333;
-  }
-
-  .form-group textarea {
-    padding: 8px 12px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 14px;
-  }
-
-  .form-group textarea:focus {
-    outline: none;
-    border-color: #007acc;
-    box-shadow: 0 0 0 2px rgba(0, 122, 204, 0.2);
   }
 
   .form-group small {

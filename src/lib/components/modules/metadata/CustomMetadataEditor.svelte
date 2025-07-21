@@ -12,6 +12,7 @@
   import { errorStore } from "../../../stores/error";
   import { t } from "$lib/i18n";
   import Select from "../../parts/Select.svelte";
+  import Textarea from "../../parts/Textarea.svelte";
 
   interface Props {
     fileId: string;
@@ -295,7 +296,8 @@
                 className="inline-select"
               />
             {:else if key.data_type === "json"}
-              <textarea
+              <Textarea
+                id="json-{key.id}"
                 value={displayValue}
                 oninput={(e) =>
                   handleValueChange(
@@ -303,9 +305,11 @@
                     (e.target as HTMLTextAreaElement).value,
                   )}
                 placeholder={getPlaceholder(key)}
-                rows="3"
+                rows={3}
                 class="inline-textarea"
-              ></textarea>
+                monospace={true}
+                resize="vertical"
+              />
             {:else}
               <input
                 type={getInputType(key.data_type)}
@@ -393,8 +397,7 @@
     gap: 4px;
   }
 
-  .inline-input,
-  .inline-textarea {
+  .inline-input {
     border: 1px solid #ddd;
     border-radius: 4px;
     padding: 6px 8px;
@@ -405,17 +408,10 @@
       box-shadow 0.2s;
   }
 
-  .inline-input:focus,
-  .inline-textarea:focus {
+  .inline-input:focus {
     outline: none;
     border-color: #007acc;
     box-shadow: 0 0 0 2px rgba(0, 122, 204, 0.2);
-  }
-
-  .inline-textarea {
-    resize: vertical;
-    font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
-    min-height: 60px;
   }
 
 
