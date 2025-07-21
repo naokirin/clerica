@@ -1,45 +1,54 @@
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
+  interface Props {
+    currentPage: number;
+    totalPages: number;
+    maxVisiblePages?: number;
+    disabled?: boolean;
+    onGoToPage: (page: number) => void;
+    onGoToPreviousPage: () => void;
+    onGoToNextPage: () => void;
+    onGoToFirstPage: () => void;
+    onGoToLastPage: () => void;
+  }
 
-  export let currentPage: number;
-  export let totalPages: number;
-  export let maxVisiblePages = 7;
-  export let disabled = false;
-
-  const dispatch = createEventDispatcher<{
-    goToPage: { page: number };
-    goToPreviousPage: {};
-    goToNextPage: {};
-    goToFirstPage: {};
-    goToLastPage: {};
-  }>();
+  let {
+    currentPage,
+    totalPages,
+    maxVisiblePages = 7,
+    disabled = false,
+    onGoToPage,
+    onGoToPreviousPage,
+    onGoToNextPage,
+    onGoToFirstPage,
+    onGoToLastPage,
+  }: Props = $props();
 
   function goToPage(page: number) {
     if (page < 1 || page > totalPages || page === currentPage || disabled) return;
-    dispatch('goToPage', { page });
+    onGoToPage(page);
   }
 
   function goToPreviousPage() {
     if (currentPage === 1 || disabled) return;
-    dispatch('goToPreviousPage', {});
+    onGoToPreviousPage();
   }
 
   function goToNextPage() {
     if (currentPage === totalPages || disabled) return;
-    dispatch('goToNextPage', {});
+    onGoToNextPage();
   }
 
   function goToFirstPage() {
     if (currentPage === 1 || disabled) return;
-    dispatch('goToFirstPage', {});
+    onGoToFirstPage();
   }
 
   function goToLastPage() {
     if (currentPage === totalPages || disabled) return;
-    dispatch('goToLastPage', {});
+    onGoToLastPage();
   }
 
-  $: visiblePages = (() => {
+  let visiblePages = $derived.by(() => {
     const pages: number[] = [];
     let start = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
     let end = Math.min(totalPages, start + maxVisiblePages - 1);
@@ -50,7 +59,7 @@
     }
     
     return pages;
-  })();
+  });
 </script>
 
 {#if totalPages > 1}

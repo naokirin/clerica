@@ -14,7 +14,6 @@
   import DeleteConfirmDialog from "./DeleteConfirmDialog.svelte";
   import BatchRenameModal from "./BatchRenameModal.svelte";
   import { deleteFiles, type DeleteResult } from "../../../api/files";
-  import { createEventDispatcher } from "svelte";
   import { viewMode, type ViewMode } from "../../../stores/common";
   import { List, Grid } from "@lucide/svelte";
   import Button from "../../parts/Button.svelte";
@@ -38,6 +37,7 @@
     onGoToFirstPage: () => Promise<void>;
     onGoToLastPage: () => Promise<void>;
     onSortChange: (options: SortOptions) => Promise<void>;
+    onOpenRenameModal?: (file: File) => void;
   }
 
   let {
@@ -59,10 +59,9 @@
     onGoToFirstPage,
     onGoToLastPage,
     onSortChange,
+    onOpenRenameModal,
   }: Props = $props();
 
-  // イベントディスパッチャー
-  const dispatch = createEventDispatcher();
 
   // 選択中のファイル数
   let selectedCount = $derived($selectedFileIds.size);
@@ -148,9 +147,9 @@
       const selectedFile = filesWithTags.find(
         (f) => f.file.id === selectedId,
       )?.file;
-      if (selectedFile) {
+      if (selectedFile && onOpenRenameModal) {
         selectedFileIds.update(() => new Set());
-        dispatch("open-rename-modal", selectedFile);
+        onOpenRenameModal(selectedFile);
       }
     } else {
       // 複数ファイルの場合はバッチリネームモーダルを使用
@@ -301,11 +300,11 @@
     <Pagination
       {currentPage}
       {totalPages}
-      on:goToPage={async (e) => await onGoToPage(e.detail.page)}
-      on:goToPreviousPage={async () => await onGoToPreviousPage()}
-      on:goToNextPage={async () => await onGoToNextPage()}
-      on:goToFirstPage={async () => await onGoToFirstPage()}
-      on:goToLastPage={async () => await onGoToLastPage()}
+      onGoToPage={(page) => onGoToPage(page)}
+      onGoToPreviousPage={() => onGoToPreviousPage()}
+      onGoToNextPage={() => onGoToNextPage()}
+      onGoToFirstPage={() => onGoToFirstPage()}
+      onGoToLastPage={() => onGoToLastPage()}
     />
     <div class="sort-section">
       <FileSortControl
