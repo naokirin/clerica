@@ -292,7 +292,10 @@
                   { value: "false", label: $t("common.buttons.no") }
                 ]}
                 value={displayValue}
-                on:change={(e) => handleValueChange(key, e.target.value)}
+                on:change={(e) => {
+                  const target = e.target as HTMLSelectElement;
+                  handleValueChange(key, target.value);
+                }}
                 className="inline-select"
               />
             {:else if key.data_type === "json"}

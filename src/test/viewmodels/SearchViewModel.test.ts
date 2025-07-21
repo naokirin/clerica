@@ -284,7 +284,7 @@ describe('SearchViewModel', () => {
       expect(mockSearchFilesPaginated).toHaveBeenCalledWith(
         'test',
         ['tag1'],
-        [{ field: 'size', operator: 'greater_than', value: '1000' }],
+        [{ keyId: 'size', keyName: 'size', displayName: 'Size', dataType: 'number', operator: 'greater_than', value: '1000' }],
         'AND',
         'all',
         { field: 'modified_at', order: 'desc' },

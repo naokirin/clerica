@@ -22,7 +22,7 @@ interface ErrorAggregationInfo {
   errorId: string;
   lastTimestamp: number;
   count: number;
-  timeoutId?: number;
+  timeoutId?: ReturnType<typeof setTimeout>;
 }
 
 const AGGREGATION_WINDOW_MS = 5000; // 5秒間のウィンドウで集約

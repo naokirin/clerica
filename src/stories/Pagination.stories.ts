@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/svelte';
 import Pagination from '../lib/components/parts/Pagination.svelte';
 
-const meta: Meta<typeof Pagination> = {
+const meta = {
   title: 'Components/Pagination',
   component: Pagination,
   parameters: {
@@ -44,27 +44,23 @@ const meta: Meta<typeof Pagination> = {
   tags: ['autodocs'],
   argTypes: {
     currentPage: {
-      control: { type: 'number', min: 1 },
+      control: 'number',
       description: 'Current active page number'
     },
     totalPages: {
-      control: { type: 'number', min: 1 },
+      control: 'number',
       description: 'Total number of pages'
     },
     maxVisiblePages: {
-      control: { type: 'number', min: 3 },
+      control: 'number',
       description: 'Maximum number of page buttons to show'
-    },
-    showFirstLast: {
-      control: 'boolean',
-      description: 'Whether to show first and last page buttons'
     },
     disabled: {
       control: 'boolean',
       description: 'Whether pagination is disabled'
     }
-  } as any
-} satisfies Meta<Pagination>;
+  }
+} satisfies Meta<typeof Pagination>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
@@ -74,9 +70,13 @@ export const Default: Story = {
     currentPage: 1,
     totalPages: 10,
     maxVisiblePages: 5,
-    showFirstLast: true,
-    disabled: false
-  } as any
+    disabled: false,
+    onGoToPage: (page: number) => console.log(`Go to page ${page}`),
+    onGoToPreviousPage: () => console.log('Go to previous page'),
+    onGoToNextPage: () => console.log('Go to next page'),
+    onGoToFirstPage: () => console.log('Go to first page'),
+    onGoToLastPage: () => console.log('Go to last page')
+  }
 };
 
 export const MiddlePage: Story = {
@@ -84,9 +84,13 @@ export const MiddlePage: Story = {
     currentPage: 5,
     totalPages: 10,
     maxVisiblePages: 5,
-    showFirstLast: true,
-    disabled: false
-  } as any
+    disabled: false,
+    onGoToPage: (page: number) => console.log(`Go to page ${page}`),
+    onGoToPreviousPage: () => console.log('Go to previous page'),
+    onGoToNextPage: () => console.log('Go to next page'),
+    onGoToFirstPage: () => console.log('Go to first page'),
+    onGoToLastPage: () => console.log('Go to last page')
+  }
 };
 
 export const LastPage: Story = {
@@ -94,9 +98,13 @@ export const LastPage: Story = {
     currentPage: 10,
     totalPages: 10,
     maxVisiblePages: 5,
-    showFirstLast: true,
-    disabled: false
-  } as any
+    disabled: false,
+    onGoToPage: (page: number) => console.log(`Go to page ${page}`),
+    onGoToPreviousPage: () => console.log('Go to previous page'),
+    onGoToNextPage: () => console.log('Go to next page'),
+    onGoToFirstPage: () => console.log('Go to first page'),
+    onGoToLastPage: () => console.log('Go to last page')
+  }
 };
 
 export const Disabled: Story = {
@@ -104,7 +112,11 @@ export const Disabled: Story = {
     currentPage: 5,
     totalPages: 10,
     maxVisiblePages: 5,
-    showFirstLast: true,
-    disabled: true
-  } as any
+    disabled: true,
+    onGoToPage: (page: number) => console.log(`Go to page ${page}`),
+    onGoToPreviousPage: () => console.log('Go to previous page'),
+    onGoToNextPage: () => console.log('Go to next page'),
+    onGoToFirstPage: () => console.log('Go to first page'),
+    onGoToLastPage: () => console.log('Go to last page')
+  }
 };

@@ -494,7 +494,8 @@
               ]}
               value={filter.keyId}
               on:change={(e) => {
-                const keyId = e.target.value || "";
+                const target = e.target as HTMLSelectElement;
+                const keyId = target.value || "";
                 const key = availableMetadataKeys.find((k) => k.id === keyId);
                 if (key) {
                   const operators = getOperatorsForDataType(key.data_type);
@@ -519,9 +520,10 @@
                 }))}
                 value={filter.operator}
                 on:change={(e) => {
+                  const target = e.target as HTMLSelectElement;
                   updateMetadataFilter(index, {
                     ...filter,
-                    operator: e.target.value as any,
+                    operator: target.value as any,
                   });
                 }}
                 className="metadata-operator-select"
@@ -536,9 +538,10 @@
                   ]}
                   value={filter.value}
                   on:change={(e) => {
+                    const target = e.target as HTMLSelectElement;
                     updateMetadataFilter(index, {
                       ...filter,
-                      value: e.target.value || "",
+                      value: target.value || "",
                     });
                   }}
                   className="metadata-value-input"
@@ -665,11 +668,11 @@
     <Pagination
       {currentPage}
       {totalPages}
-      on:goToPage={(e) => onGoToPage(e.detail.page)}
-      on:goToPreviousPage={onGoToPreviousPage}
-      on:goToNextPage={onGoToNextPage}
-      on:goToFirstPage={onGoToFirstPage}
-      on:goToLastPage={onGoToLastPage}
+      {onGoToPage}
+      {onGoToPreviousPage}
+      {onGoToNextPage}
+      {onGoToFirstPage}
+      {onGoToLastPage}
     />
     <div class="sort-section">
       <FileSortControl

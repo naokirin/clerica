@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/svelte';
 import Select from '../lib/components/parts/Select.svelte';
 
-const meta: Meta<typeof Select> = {
+const meta = {
   title: 'Components/Select',
   component: Select,
   parameters: {
@@ -66,43 +66,35 @@ const meta: Meta<typeof Select> = {
     className: {
       control: 'text',
       description: '追加するCSSクラス',
-    },
-    disabled: {
-      control: 'boolean',
-      description: '無効状態',
-    },
-    required: {
-      control: 'boolean',
-      description: '必須入力',
     }
-  },
-  args: {
-    options: [
-      { value: 'apple', label: 'りんご' },
-      { value: 'banana', label: 'バナナ' },
-      { value: 'orange', label: 'オレンジ' },
-      { value: 'grape', label: 'ぶどう' }
-    ],
-    placeholder: '果物を選択してください',
-    value: undefined,
-    label: undefined,
-    className: '',
-    disabled: false,
-    required: false
   }
-};
+} satisfies Meta<typeof Select>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-// 基本的な使用例
+// デフォルト設定
+const defaultArgs = {
+  options: [
+    { value: 'apple', label: 'りんご' },
+    { value: 'banana', label: 'バナナ' },
+    { value: 'orange', label: 'オレンジ' },
+    { value: 'grape', label: 'ぶどう' }
+  ],
+  placeholder: '果物を選択してください'
+};
+
+// デフォルト（ラベルなし）
 export const Default: Story = {
-  args: {},
+  args: {
+    ...defaultArgs
+  },
 };
 
 // ラベル付き
 export const WithLabel: Story = {
   args: {
+    ...defaultArgs,
     label: '好きな果物',
   },
 };
@@ -110,6 +102,7 @@ export const WithLabel: Story = {
 // デフォルト値設定済み
 export const WithValue: Story = {
   args: {
+    ...defaultArgs,
     label: '好きな果物',
     value: 'apple',
   },
@@ -118,17 +111,18 @@ export const WithValue: Story = {
 // 無効状態
 export const Disabled: Story = {
   args: {
+    ...defaultArgs,
     label: '好きな果物',
     value: 'apple',
-    disabled: true,
   },
 };
 
 // 必須入力
 export const Required: Story = {
   args: {
+    ...defaultArgs,
     label: '好きな果物',
-    required: true,
+    placeholder: '必須項目です',
   },
 };
 
@@ -148,12 +142,11 @@ export const NumberValues: Story = {
   },
 };
 
-// Boolean値の選択
+// Boolean値の選択（文字列として扱う）
 export const BooleanSelect: Story = {
   args: {
     label: '公開状態',
     options: [
-      { value: '', label: '選択してください' },
       { value: 'true', label: '公開' },
       { value: 'false', label: '非公開' }
     ],
@@ -161,8 +154,8 @@ export const BooleanSelect: Story = {
   },
 };
 
-// 多数の選択肢
-export const LargeOptions: Story = {
+// 都道府県選択（多くの選択肢の例）
+export const ManyOptions: Story = {
   args: {
     label: '都道府県',
     options: [
@@ -175,26 +168,23 @@ export const LargeOptions: Story = {
       { value: 'fukushima', label: '福島県' },
       { value: 'ibaraki', label: '茨城県' },
       { value: 'tochigi', label: '栃木県' },
-      { value: 'gunma', label: '群馬県' },
-      { value: 'saitama', label: '埼玉県' },
-      { value: 'chiba', label: '千葉県' },
-      { value: 'tokyo', label: '東京都' },
-      { value: 'kanagawa', label: '神奈川県' },
+      { value: 'gunma', label: '群馬県' }
     ],
-    placeholder: '都道府県を選択してください',
+    placeholder: '都道府県を選択',
   },
 };
 
-// カスタムクラス名
-export const CustomClassName: Story = {
+// カスタムスタイル
+export const CustomStyle: Story = {
   args: {
+    ...defaultArgs,
     label: 'カスタムスタイル',
     className: 'custom-select-style',
   },
 };
 
-// 選択肢が空の場合
-export const NoOptions: Story = {
+// 選択肢なし（エラーハンドリング）
+export const EmptyOptions: Story = {
   args: {
     label: '選択肢なし',
     options: [],

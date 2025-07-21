@@ -229,17 +229,10 @@ export class SearchViewModel extends BaseViewModel {
       const itemsPerPage = this.getCurrentItemsPerPage();
       const offset = (currentPage - 1) * itemsPerPage;
 
-      // MetadataSearchFilterを API が期待する形式に変換
-      const convertedFilters = filters!.map(filter => ({
-        field: filter.keyId,
-        operator: filter.operator,
-        value: filter.value
-      }));
-
       return await searchFilesPaginated(
         query!,
         tags!,
-        convertedFilters,
+        filters!,
         logic!,
         directoryId!,
         currentSortOptions,

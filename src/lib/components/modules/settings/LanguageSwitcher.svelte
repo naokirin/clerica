@@ -23,7 +23,10 @@
       label: lang.name
     }))}
     value={$locale}
-    on:change={(e) => switchLanguage(e.target.value)}
+    on:change={(e) => {
+      const target = e.target as HTMLSelectElement;
+      switchLanguage(target.value);
+    }}
     id="language-select"
   />
 </div>
