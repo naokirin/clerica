@@ -17,13 +17,4 @@ test.describe('タグ管理機能', () => {
     // タグ管理のヘッダー確認
     await expect(page.getByRole('heading', { name: 'タグ管理' })).toBeVisible();
   });
-
-  test('タグ作成ボタンの表示', async ({ page }) => {
-    // サイドバーのタグ作成ボタンの確認
-    const createTagButton = page.locator('.sidebar .add-button').last();
-    await expect(createTagButton).toBeVisible();
-
-    // ボタンクリック（プロンプトが表示されるため、実際の操作はしない）
-    // await createTagButton.click();
-  });
 });

@@ -25,7 +25,7 @@ test.describe('Clerica アプリケーション', () => {
     await expect(sidebar).toBeVisible();
 
     // ディレクトリ追加ボタンの存在確認（サイドバー内のボタン）
-    const addButton = page.locator('.sidebar .add-button').first();
+    const addButton = page.locator('.sidebar #add-directory-btn').first();
     await expect(addButton).toBeVisible();
 
     // ボタンをクリックしてダイアログが開くことを確認
@@ -118,10 +118,7 @@ test.describe('Clerica アプリケーション', () => {
 
     // ディレクトリセクションの確認
     await expect(page.locator('.sidebar h3').first()).toBeVisible();
-    await expect(page.locator('.sidebar .add-button').first()).toBeVisible();
-
-    // タグセクションの確認
-    await expect(page.locator('.sidebar .add-button').last()).toBeVisible();
+    await expect(page.locator('.sidebar #add-directory-btn').first()).toBeVisible();
   });
 
 });

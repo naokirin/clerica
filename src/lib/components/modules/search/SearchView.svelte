@@ -376,6 +376,7 @@
       bind:value={searchQuery}
     />
     <Button
+      id="search-button"
       onclick={onSearch}
       class="search-button"
       iconName="Search"
@@ -465,6 +466,7 @@
     <div class="metadata-search-header">
       <h3>{$t("common.search.metadataSearch")}</h3>
       <Button
+        id="add-metadata-filter-btn"
         onclick={addMetadataFilter}
         class="add-filter-btn"
         iconName="Plus"
@@ -604,6 +606,7 @@
       <div class="selection-info">
         <span class="selection-count">{selectedCount}件のファイルを選択中</span>
         <Button
+          id="clear-selection-btn"
           variant="neutral"
           size="small"
           text="選択を解除"
@@ -612,6 +615,7 @@
       </div>
       <div class="selection-actions">
         <Button
+          id="rename-selected-btn"
           variant="success"
           size="small"
           text="リネーム"
@@ -621,6 +625,7 @@
             : `${selectedCount}件のファイルをバッチリネーム` } as any)}
         />
         <Button
+          id="delete-selected-btn"
           variant="danger"
           size="small"
           text="削除"
@@ -631,6 +636,7 @@
   {:else}
     <div class="bulk-actions">
       <Button
+        id="select-all-btn"
         variant="neutral"
         size="small"
         text="すべて選択"

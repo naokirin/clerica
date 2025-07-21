@@ -44,6 +44,7 @@
     <div class="section-header">
       <h3>{$t("common.sidebar.directories")}</h3>
       <Button
+        id="add-directory-btn"
         onclick={onAddDirectory}
         {disabled}
         iconName="Plus"

@@ -126,24 +126,28 @@
   
   <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;">
     <Button 
+      id="success-message-btn"
       variant="primary" 
       text="Success Message" 
       iconName="CheckCircle"
       onclick={showSuccess}
     />
     <Button 
+      id="info-message-btn"
       variant="secondary" 
       text="Info Message" 
       iconName="Info"
       onclick={showInfo}
     />
     <Button 
+      id="warning-message-btn"
       variant="danger" 
       text="Warning Message" 
       iconName="AlertTriangle"
       onclick={showWarning}
     />
     <Button 
+      id="error-message-btn"
       variant="danger" 
       text="Error Message" 
       iconName="AlertCircle"
@@ -153,6 +157,7 @@
 
   <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;">
     <Button 
+      id="clear-all-snackbar-btn"
       variant="secondary" 
       text="Clear All" 
       onclick={clearAll}

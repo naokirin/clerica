@@ -161,6 +161,7 @@
   <div class="section-header">
     <h3>シェルフ</h3>
     <Button
+      id="create-shelf-btn"
       onclick={() => (showCreateForm = !showCreateForm)}
       disabled={loading}
       iconName="Plus"

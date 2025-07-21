@@ -78,24 +78,28 @@
   
   <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;">
     <Button 
+      id="success-wrapper-btn"
       variant="primary" 
       text="Success Message" 
       {...({ icon: successIcon } as any)}
       onclick={showSuccess}
     />
     <Button 
+      id="info-wrapper-btn"
       variant="secondary" 
       text="Info Message" 
       {...({ icon: infoIcon } as any)}
       onclick={showInfo}
     />
     <Button 
+      id="warning-wrapper-btn"
       variant="danger" 
       text="Warning Message" 
       {...({ icon: warningIcon } as any)}
       onclick={showWarning}
     />
     <Button 
+      id="error-wrapper-btn"
       variant="danger" 
       text="Error Message" 
       {...({ icon: errorIcon } as any)}
@@ -105,16 +109,19 @@
 
   <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;">
     <Button 
+      id="long-message-btn"
       variant="secondary" 
       text="Long Message" 
       onclick={showLongMessage}
     />
     <Button 
+      id="multiple-messages-btn"
       variant="secondary" 
       text="Multiple Messages" 
       onclick={showMultipleMessages}
     />
     <Button 
+      id="clear-all-wrapper-btn"
       variant="secondary" 
       text="Clear All" 
       onclick={clearAll}

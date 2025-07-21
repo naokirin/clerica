@@ -85,6 +85,7 @@ type Story = StoryObj<typeof meta>;
 // プライマリボタン（アイコン + テキスト）
 export const Primary: Story = {
   args: {
+    id: 'primary-button',
     variant: 'primary',
     size: 'medium',
     disabled: false,
@@ -97,6 +98,7 @@ export const Primary: Story = {
 // セカンダリボタン（アイコン + テキスト）
 export const Secondary: Story = {
   args: {
+    id: 'secondary-button',
     variant: 'secondary',
     size: 'medium',
     disabled: false,
@@ -109,6 +111,7 @@ export const Secondary: Story = {
 // 危険なボタン（アイコン + テキスト）
 export const Danger: Story = {
   args: {
+    id: 'danger-button',
     variant: 'danger',
     size: 'medium',
     disabled: false,
@@ -121,6 +124,7 @@ export const Danger: Story = {
 // 無効化されたボタン
 export const Disabled: Story = {
   args: {
+    id: 'disabled-button',
     variant: 'primary',
     size: 'medium',
     disabled: true,
@@ -133,6 +137,7 @@ export const Disabled: Story = {
 // テキストのみのボタン
 export const TextOnly: Story = {
   args: {
+    id: 'text-only-button',
     variant: 'primary',
     size: 'medium',
     disabled: false,
@@ -143,6 +148,7 @@ export const TextOnly: Story = {
 // アイコンのみのボタン
 export const IconOnly: Story = {
   args: {
+    id: 'icon-only-button',
     variant: 'secondary',
     size: 'medium',
     disabled: false,
@@ -154,6 +160,7 @@ export const IconOnly: Story = {
 // 小さいボタン
 export const Small: Story = {
   args: {
+    id: 'small-button',
     variant: 'primary',
     size: 'small',
     disabled: false,
@@ -166,6 +173,7 @@ export const Small: Story = {
 // 大きいボタン
 export const Large: Story = {
   args: {
+    id: 'large-button',
     variant: 'primary',
     size: 'large',
     disabled: false,
@@ -178,6 +186,7 @@ export const Large: Story = {
 // リンクボタン
 export const LinkButton: Story = {
   args: {
+    id: 'link-button',
     variant: 'primary',
     size: 'medium',
     disabled: false,

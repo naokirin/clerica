@@ -232,6 +232,7 @@
   <div class="header">
     <h3>{$t("common.metadata.keyManagement")}</h3>
     <Button
+      id="create-custom-metadata-key-btn"
       class="create-button"
       onclick={startCreate}
       iconName="Plus"

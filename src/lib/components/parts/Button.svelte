@@ -6,6 +6,7 @@
   type Size = "small" | "medium" | "large";
 
   interface Props {
+    id: string;
     variant?: Variant;
     size?: Size;
     disabled?: boolean;
@@ -22,6 +23,7 @@
   }
 
   let {
+    id,
     variant = "primary",
     size = "medium",
     disabled = false,
@@ -45,6 +47,7 @@
 
 {#if href}
   <a
+    {id}
     {href}
     class="btn {variant} {size} {className}"
     class:disabled
@@ -73,6 +76,7 @@
   </a>
 {:else}
   <button
+    {id}
     {type}
     {disabled}
     class="btn {variant} {size} {className}"
