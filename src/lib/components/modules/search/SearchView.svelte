@@ -3,6 +3,7 @@
   import Button from "../../parts/Button.svelte";
   import TextInput from "../../parts/TextInput.svelte";
   import NumberInput from "../../parts/NumberInput.svelte";
+  import DateInput from "../../parts/DateInput.svelte";
   import RadioButtonGroup from "../../parts/RadioButtonGroup.svelte";
   import type {
     SearchResult,
@@ -540,8 +541,8 @@
                   <option value="false">{$t("common.search.no")}</option>
                 </select>
               {:else if filter.dataType === "date"}
-                <input
-                  type="date"
+                <DateInput
+                  id="metadata-filter-date-{index}"
                   value={filter.value}
                   oninput={(e) => {
                     updateMetadataFilter(index, {
