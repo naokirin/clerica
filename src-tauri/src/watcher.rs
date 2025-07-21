@@ -34,12 +34,17 @@ impl FileWatcher {
         // 除外パターンを読み込み
         let settings_pool = pools.get_settings_pool().clone();
         tokio::spawn(async move {
-            if let Err(e) = exclusion_manager_clone.refresh_patterns(&settings_pool).await {
+            if let Err(e) = exclusion_manager_clone
+                .refresh_patterns(&settings_pool)
+                .await
+            {
                 eprintln!("除外パターンの初期化エラー: {e}");
             } else {
                 #[cfg(debug_assertions)]
-                println!("除外パターンマネージャーが初期化されました（パターン数: {}）", 
-                    exclusion_manager_clone.pattern_count());
+                println!(
+                    "除外パターンマネージャーが初期化されました（パターン数: {}）",
+                    exclusion_manager_clone.pattern_count()
+                );
             }
         });
 
@@ -63,8 +68,9 @@ impl FileWatcher {
                 }
 
                 // キューが満杯の場合は強制的に処理
-                let should_process = !event_queue.is_empty() && 
-                    (last_event_time.elapsed() > debounce_duration || event_queue.len() >= MAX_QUEUE_SIZE);
+                let should_process = !event_queue.is_empty()
+                    && (last_event_time.elapsed() > debounce_duration
+                        || event_queue.len() >= MAX_QUEUE_SIZE);
 
                 if should_process {
                     // イベントの重複を排除
@@ -85,19 +91,25 @@ impl FileWatcher {
                     const BATCH_SIZE: usize = 50;
                     let batches: Vec<_> = unique_events.chunks(BATCH_SIZE).collect();
                     let batch_count = batches.len();
-                    
+
                     for batch in batches {
                         // 各バッチを元の順序に戻して処理
                         for event in batch.iter().rev() {
                             // データベースロック競合を避けるため、各イベント間に少し待機
                             if let Err(e) = rt.block_on(async {
                                 tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
-                                handle_file_event(&pools_clone, event.clone(), app_handle.clone(), &exclusion_manager_for_thread).await
+                                handle_file_event(
+                                    &pools_clone,
+                                    event.clone(),
+                                    app_handle.clone(),
+                                    &exclusion_manager_for_thread,
+                                )
+                                .await
                             }) {
                                 eprintln!("ファイルイベント処理エラー: {e}");
                             }
                         }
-                        
+
                         // バッチ間にも少し待機
                         if batch_count > 1 {
                             thread::sleep(Duration::from_millis(100));
@@ -209,21 +221,21 @@ async fn handle_create_event(
 
     for path in paths {
         let path_str = path.to_string_lossy();
-        
+
         // 除外パターンチェック
         if exclusion_manager.should_exclude(&path_str) {
             #[cfg(debug_assertions)]
             println!("ファイルが除外パターンにマッチしたためスキップしました: {path_str}");
             continue;
         }
-        
+
         match fs::metadata(path) {
             Ok(metadata) => {
                 let data_pool = pools.get_active_data_pool().map_err(|e| e.to_string())?;
                 match find_directory_id_for_path(&data_pool, path).await {
                     Ok(directory_id) => {
                         let file = create_file_from_metadata(path, &metadata, &directory_id);
-                        
+
                         match db.add_file(&data_pool, &file).await {
                             Ok(()) => {
                                 notify_ui(app_handle, "file_created", &file.path);
@@ -255,12 +267,12 @@ async fn handle_remove_event(
 
     for path in paths {
         let path_str = path.to_string_lossy().to_string();
-        
+
         // 除外パターンチェック（削除イベントでもチェックして一貫性を保つ）
         if exclusion_manager.should_exclude(&path_str) {
             continue;
         }
-        
+
         let data_pool = pools.get_active_data_pool().map_err(|e| e.to_string())?;
         match db.remove_file_by_path(&data_pool, &path_str).await {
             Ok(()) => {
@@ -281,12 +293,12 @@ async fn handle_modify_event(
 ) -> Result<(), String> {
     for path in paths {
         let path_str = path.to_string_lossy();
-        
+
         // 除外パターンチェック
         if exclusion_manager.should_exclude(&path_str) {
             continue;
         }
-        
+
         match fs::metadata(path) {
             Ok(metadata) => {
                 handle_modify_with_metadata(pools, path, &metadata, app_handle).await?;
@@ -307,7 +319,7 @@ async fn handle_modify_with_metadata(
     app_handle: &Option<AppHandle>,
 ) -> Result<(), String> {
     use std::os::unix::fs::MetadataExt;
-    
+
     let db = Database;
     let path_str = path.to_string_lossy().to_string();
     let inode = metadata.ino() as i64;
@@ -320,7 +332,10 @@ async fn handle_modify_with_metadata(
             if exists {
                 handle_existing_file_update(pools, &path_str, metadata, app_handle).await
             } else {
-                handle_non_existing_file(pools, path, &path_str, inode, device_id, metadata, app_handle).await
+                handle_non_existing_file(
+                    pools, path, &path_str, inode, device_id, metadata, app_handle,
+                )
+                .await
             }
         }
         Err(e) => {
@@ -338,8 +353,11 @@ async fn handle_existing_file_update(
 ) -> Result<(), String> {
     let db = Database;
     let data_pool = pools.get_active_data_pool().map_err(|e| e.to_string())?;
-    
-    match db.update_file_metadata(&data_pool, path_str, metadata).await {
+
+    match db
+        .update_file_metadata(&data_pool, path_str, metadata)
+        .await
+    {
         Ok(()) => {
             notify_ui(app_handle, "file_modified", path_str);
         }
@@ -366,9 +384,7 @@ async fn handle_non_existing_file(
         Ok(Some(existing_file)) => {
             handle_file_rename(pools, path, path_str, &existing_file, app_handle).await
         }
-        Ok(None) => {
-            handle_new_file_from_move(pools, path, metadata, app_handle).await
-        }
+        Ok(None) => handle_new_file_from_move(pools, path, metadata, app_handle).await,
         Err(e) => {
             eprintln!("inode検索エラー: {} (パス: {})", e, path.display());
             handle_new_file_from_move(pools, path, metadata, app_handle).await
@@ -384,7 +400,7 @@ async fn handle_file_rename(
     app_handle: &Option<AppHandle>,
 ) -> Result<(), String> {
     let db = Database;
-    
+
     let new_name = path
         .file_name()
         .and_then(|n| n.to_str())
@@ -392,7 +408,10 @@ async fn handle_file_rename(
         .to_string();
 
     let data_pool = pools.get_active_data_pool().map_err(|e| e.to_string())?;
-    match db.update_file_path(&data_pool, &existing_file.id, path_str, &new_name).await {
+    match db
+        .update_file_path(&data_pool, &existing_file.id, path_str, &new_name)
+        .await
+    {
         Ok(()) => {
             notify_ui(app_handle, "file_renamed", path_str);
         }
@@ -416,7 +435,7 @@ async fn handle_new_file_from_move(
     match find_directory_id_for_path(&data_pool, path).await {
         Ok(directory_id) => {
             let file = create_file_from_metadata(path, metadata, &directory_id);
-            
+
             match db.add_file(&data_pool, &file).await {
                 Ok(()) => {
                     notify_ui(app_handle, "file_created", &file.path);
@@ -427,7 +446,11 @@ async fn handle_new_file_from_move(
             }
         }
         Err(e) => {
-            eprintln!("移動ファイルのディレクトリID特定エラー: {} (パス: {})", e, path.display());
+            eprintln!(
+                "移動ファイルのディレクトリID特定エラー: {} (パス: {})",
+                e,
+                path.display()
+            );
         }
     }
 
@@ -441,10 +464,13 @@ async fn handle_file_update_fallback(
     app_handle: &Option<AppHandle>,
 ) -> Result<(), String> {
     let db = Database;
-    
+
     let data_pool = pools.get_active_data_pool().map_err(|e| e.to_string())?;
     // エラーの場合は更新を試行
-    match db.update_file_metadata(&data_pool, path_str, metadata).await {
+    match db
+        .update_file_metadata(&data_pool, path_str, metadata)
+        .await
+    {
         Ok(()) => {
             notify_ui(app_handle, "file_modified", path_str);
         }
@@ -464,7 +490,6 @@ async fn handle_modify_without_metadata(
 ) -> Result<(), String> {
     let db = Database;
     let path_str = path.to_string_lossy().to_string();
-    
 
     let data_pool = pools.get_active_data_pool().map_err(|e| e.to_string())?;
     // データベースから該当ファイルを削除
@@ -570,14 +595,14 @@ mod tests {
 
     async fn create_test_settings_pool() -> SqlitePool {
         let pool = SqlitePool::connect(":memory:").await.unwrap();
-        
+
         // 必要なテーブルを作成
         sqlx::query(
             "CREATE TABLE IF NOT EXISTS shelves (
                 id TEXT PRIMARY KEY,
                 name TEXT NOT NULL,
                 created_at TEXT NOT NULL
-            )"
+            )",
         )
         .execute(&pool)
         .await
@@ -587,7 +612,7 @@ mod tests {
             "CREATE TABLE IF NOT EXISTS active_shelf (
                 id INTEGER PRIMARY KEY CHECK (id = 1),
                 shelf_id TEXT NOT NULL
-            )"
+            )",
         )
         .execute(&pool)
         .await

@@ -1,5 +1,5 @@
 #[cfg(test)]
-mod tests {
+mod search_tests {
     use crate::database::{Database, DatabaseTrait, File, Tag};
     use crate::database::tests::TestDatabase;
     use crate::search::SearchResult;
