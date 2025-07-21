@@ -83,8 +83,12 @@
     if (!newShelfName.trim()) return;
 
     try {
-      await shelvesApi.createShelf({ name: newShelfName.trim() });
+      const newShelf = await shelvesApi.createShelf({
+        name: newShelfName.trim(),
+      });
       await loadShelves();
+      // 作成した新しいシェルフに自動切り替え
+      await switchShelf(newShelf.id);
       newShelfName = "";
       showCreateForm = false;
     } catch (error) {
@@ -170,7 +174,9 @@
         id="new-shelf-name-input"
         placeholder="シェルフ名を入力"
         bind:value={newShelfName}
-        {...({ onkeydown: (e: KeyboardEvent) => e.key === "Enter" && createShelf() } as any)}
+        {...{
+          onkeydown: (e: KeyboardEvent) => e.key === "Enter" && createShelf(),
+        } as any}
       />
       <div class="form-actions">
         <button class="btn-save" onclick={createShelf}>作成</button>
@@ -202,12 +208,14 @@
             <TextInput
               id="edit-shelf-name-input"
               bind:value={editingShelfName}
-              {...({ onkeydown: (e: KeyboardEvent) => e.key === "Enter" && saveEdit() } as any)}
+              {...{
+                onkeydown: (e: KeyboardEvent) =>
+                  e.key === "Enter" && saveEdit(),
+              } as any}
             />
             <div class="edit-actions">
               <button class="btn-save" onclick={saveEdit}>保存</button>
-              <button class="btn-cancel" onclick={cancelEdit}
-                >キャンセル</button
+              <button class="btn-cancel" onclick={cancelEdit}>キャンセル</button
               >
             </div>
           </div>
@@ -301,11 +309,11 @@
     margin-bottom: 0.75rem;
   }
 
-
   .form-actions,
   .edit-actions {
     display: flex;
     gap: 0.5rem;
+    margin-top: 0.5rem;
   }
 
   .shelf-list {
