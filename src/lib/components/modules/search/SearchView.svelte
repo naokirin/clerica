@@ -7,7 +7,6 @@
   import type {
     SearchResult,
     FileCategory,
-    FileCategoryInfo,
     MetadataSearchFilter,
     CustomMetadataKey,
     SortOptions,

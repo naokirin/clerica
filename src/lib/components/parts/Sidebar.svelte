@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { FolderPlus, Tag, RefreshCw, X, PlusIcon } from "@lucide/svelte";
+  import { RefreshCw, X } from "@lucide/svelte";
   import type { Directory, Tag as TagType } from "../../types";
   import { t } from "$lib/i18n";
   import ShelfManager from "../modules/settings/ShelfManager.svelte";

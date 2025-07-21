@@ -10,7 +10,6 @@
     isArchiveFile,
     getImageUrl,
   } from "../../../utils";
-  import { onMount } from "svelte";
   import { errorStore } from "../../../stores/error";
   import { selectedFileIds } from "../../../stores/files";
   import Checkbox from "../../parts/Checkbox.svelte";

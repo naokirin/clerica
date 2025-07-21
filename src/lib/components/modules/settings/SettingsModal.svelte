@@ -4,7 +4,6 @@
   import { getSettings, updateSettingBool, updateSettingInt, updateSettingString, getLanguageSetting } from "../../../api/settings";
   import { errorStore } from "../../../stores/error";
   import { t, locale } from "$lib/i18n";
-  import LanguageSwitcher from "./LanguageSwitcher.svelte";
   import ExclusionPatternsManager from "./ExclusionPatternsManager.svelte";
   import Checkbox from "../../parts/Checkbox.svelte";
 

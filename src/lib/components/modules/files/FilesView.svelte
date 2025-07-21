@@ -3,7 +3,6 @@
     File,
     FileWithTags,
     FileCategory,
-    FileCategoryInfo,
     SortOptions,
   } from "../../../types";
   import FileList from "./FileList.svelte";

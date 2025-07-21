@@ -1,9 +1,7 @@
 <script lang="ts">
-  import { Save, X, Edit3, Trash2 } from "@lucide/svelte";
   import {
     getCustomMetadataValuesByFile,
     setCustomMetadataValue,
-    deleteCustomMetadataValue,
   } from "../../../api/metadata";
   import type {
     CustomMetadataKey,
