@@ -193,7 +193,12 @@ impl ShelfManager {
 
         // 新しい接続プールを作成
         let db_path = self.get_data_db_path(shelf_id);
-        let db_url = format!("sqlite:{db_path}");
+        let db_url = if cfg!(test) {
+            // テストモード: メモリDBを直接使用
+            ":memory:".to_string()
+        } else {
+            format!("sqlite:{db_path}")
+        };
 
         let connect_options = sqlx::sqlite::SqliteConnectOptions::from_str(&db_url)?
             .create_if_missing(true)
@@ -219,7 +224,10 @@ impl ShelfManager {
     }
 
     fn get_data_db_path(&self, shelf_id: &str) -> String {
-        if cfg!(debug_assertions) {
+        if cfg!(test) {
+            // テストモード: メモリDBを使用
+            ":memory:".to_string()
+        } else if cfg!(debug_assertions) {
             format!("../db/data_{shelf_id}.db")
         } else {
             let home = env::var("HOME").unwrap_or_else(|_| ".".to_string());

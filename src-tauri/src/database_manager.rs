@@ -12,7 +12,10 @@ pub struct DatabaseManager {
 
 impl DatabaseManager {
     pub async fn new() -> Result<Self, Box<dyn std::error::Error>> {
-        let (settings_url, settings_path) = if cfg!(debug_assertions) {
+        let (settings_url, settings_path) = if cfg!(test) {
+            // テストモード: メモリDBを使用
+            (":memory:".to_string(), "".to_string())
+        } else if cfg!(debug_assertions) {
             std::fs::create_dir_all("../db").unwrap_or_else(|_| {
                 eprintln!("プロジェクトルートに設定ディレクトリを作成できません: ../db");
             });
@@ -31,12 +34,14 @@ impl DatabaseManager {
             (format!("sqlite:{settings_path}"), settings_path)
         };
 
-        // データベースファイルの存在確認
-        let settings_exists = Path::new(&settings_path).exists();
+        // データベースファイルの存在確認（テスト時はスキップ）
+        if !cfg!(test) {
+            let settings_exists = Path::new(&settings_path).exists();
 
-        if !settings_exists {
-            #[cfg(debug_assertions)]
-            println!("設定データベースファイルが存在しません。新規作成します: {settings_path}");
+            if !settings_exists {
+                #[cfg(debug_assertions)]
+                println!("設定データベースファイルが存在しません。新規作成します: {settings_path}");
+            }
         }
 
         // 設定用データベース接続

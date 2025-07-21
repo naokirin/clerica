@@ -1,18 +1,17 @@
 #[cfg(test)]
 mod tests {
     use crate::database::{Database, DatabaseTrait, File, Tag};
+    use crate::database::tests::TestDatabase;
     use crate::search::SearchResult;
-    use sqlx::SqlitePool;
     use chrono::Utc;
-    
 
     #[tokio::test]
-    async fn test_database_operations() {
-        let pool = SqlitePool::connect(":memory:").await.unwrap();
+    async fn test_database_operations_error_handling() {
+        let test_db = TestDatabase::new_empty().await;
         let db = Database;
         
         // テーブルが存在しない場合のエラーハンドリングをテスト
-        let result = db.get_all_tags(&pool).await;
+        let result = db.get_all_tags(&test_db.pool).await;
         assert!(result.is_err());
     }
 

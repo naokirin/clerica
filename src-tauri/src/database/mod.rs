@@ -1562,86 +1562,111 @@ fn build_category_where_clause(category: &str) -> String {
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use super::*;
     use chrono::Utc;
     use sqlx::SqlitePool;
+    use std::path::PathBuf;
+    use std::mem;
+    use uuid::Uuid;
+
+    /// テスト用の一時DBファイルを管理する構造体
+    /// Dropが呼ばれた際に自動的にDBファイルを削除する
+    pub struct TestDatabase {
+        pub pool: SqlitePool,
+        pub file_path: Option<PathBuf>,
+    }
+
+    impl TestDatabase {
+        /// Poolを取得してTestDatabaseを消費する
+        /// ファイルパスを無効化してからPoolを返す
+        pub fn into_pool(mut self) -> SqlitePool {
+            // ファイルパスを取得してDrop時の削除対象から外す
+            let file_path = self.file_path.take();
+            
+            // 手動でファイル削除（必要な場合）
+            if let Some(path) = file_path {
+                if path.exists() {
+                    let _ = std::fs::remove_file(path);
+                }
+            }
+            
+            // Dropを回避してPoolを安全に取り出す
+            let pool = unsafe {
+                std::ptr::read(&self.pool)
+            };
+            mem::forget(self); // Dropを防ぐ
+            
+            pool
+        }
+
+        
+        /// インメモリDBを作成（削除処理なし）
+        pub async fn new_in_memory() -> Self {
+            let pool = SqlitePool::connect(":memory:").await.unwrap();
+            
+            // マイグレーションを適用
+            sqlx::migrate!("./data_migrations")
+                .run(&pool)
+                .await
+                .unwrap();
+
+            Self {
+                pool,
+                file_path: None,
+            }
+        }
+
+        /// 一時ファイルDBを作成（テスト終了時に自動削除）
+        pub async fn new_temp_file() -> Self {
+            let temp_dir = std::env::temp_dir();
+            let file_name = format!("test_clerica_{}.db", Uuid::new_v4());
+            let file_path = temp_dir.join(file_name);
+            
+            // ディレクトリが存在することを確認
+            if let Some(parent) = file_path.parent() {
+                std::fs::create_dir_all(parent).unwrap();
+            }
+            
+            let connection_string = format!("sqlite:{}?mode=rwc", file_path.display());
+            let pool = SqlitePool::connect(&connection_string).await.unwrap();
+            
+            // マイグレーションを適用
+            sqlx::migrate!("./data_migrations")
+                .run(&pool)
+                .await
+                .unwrap();
+
+            Self {
+                pool,
+                file_path: Some(file_path),
+            }
+        }
+
+        /// エラーハンドリングテスト用の空DB（テーブル未作成）
+        pub async fn new_empty() -> Self {
+            Self {
+                pool: SqlitePool::connect(":memory:").await.unwrap(),
+                file_path: None,
+            }
+        }
+    }
+
+    impl Drop for TestDatabase {
+        fn drop(&mut self) {
+            if let Some(file_path) = &self.file_path {
+                if file_path.exists() {
+                    let _ = std::fs::remove_file(file_path);
+                }
+            }
+        }
+    }
 
     async fn setup_test_db() -> SqlitePool {
-        let pool = SqlitePool::connect(":memory:").await.unwrap();
-
-        // テスト用のテーブル作成
-        sqlx::query(
-            "CREATE TABLE directories (
-                id TEXT PRIMARY KEY,
-                path TEXT NOT NULL UNIQUE,
-                name TEXT NOT NULL,
-                created_at TIMESTAMP NOT NULL,
-                updated_at TIMESTAMP NOT NULL
-            )",
-        )
-        .execute(&pool)
-        .await
-        .unwrap();
-
-        sqlx::query(
-            "CREATE TABLE files (
-                id TEXT PRIMARY KEY,
-                path TEXT NOT NULL UNIQUE,
-                name TEXT NOT NULL,
-                directory_id TEXT NOT NULL,
-                size INTEGER NOT NULL,
-                file_type TEXT,
-                created_at TIMESTAMP,
-                modified_at TIMESTAMP,
-                birth_time TIMESTAMP,
-                inode INTEGER,
-                is_directory BOOLEAN NOT NULL DEFAULT 0,
-                created_at_db TIMESTAMP NOT NULL,
-                updated_at_db TIMESTAMP NOT NULL,
-                file_size INTEGER,
-                mime_type TEXT,
-                permissions TEXT,
-                owner_uid INTEGER,
-                group_gid INTEGER,
-                hard_links INTEGER,
-                device_id INTEGER,
-                last_accessed TIMESTAMP,
-                metadata TEXT DEFAULT '{}',
-                FOREIGN KEY (directory_id) REFERENCES directories (id) ON DELETE CASCADE
-            )",
-        )
-        .execute(&pool)
-        .await
-        .unwrap();
-
-        sqlx::query(
-            "CREATE TABLE tags (
-                id TEXT PRIMARY KEY,
-                name TEXT NOT NULL UNIQUE,
-                color TEXT NOT NULL,
-                created_at TIMESTAMP NOT NULL
-            )",
-        )
-        .execute(&pool)
-        .await
-        .unwrap();
-
-        sqlx::query(
-            "CREATE TABLE file_tags (
-                file_id TEXT NOT NULL,
-                tag_id TEXT NOT NULL,
-                PRIMARY KEY (file_id, tag_id),
-                FOREIGN KEY (file_id) REFERENCES files (id) ON DELETE CASCADE,
-                FOREIGN KEY (tag_id) REFERENCES tags (id) ON DELETE CASCADE
-            )",
-        )
-        .execute(&pool)
-        .await
-        .unwrap();
-
-        pool
+        let test_db = TestDatabase::new_in_memory().await;
+        test_db.into_pool()
     }
+
 
     #[tokio::test]
     async fn test_add_directory() {
@@ -1654,6 +1679,22 @@ mod tests {
         let directory = result.unwrap();
         assert_eq!(directory.path, "/test/path");
         assert_eq!(directory.name, "test_dir");
+    }
+
+    #[tokio::test]
+    async fn test_add_directory_with_temp_file() {
+        // 一時ファイルDBを使用したテスト（自動削除確認）
+        let test_db = TestDatabase::new_temp_file().await;
+        let db = Database;
+
+        let result = db.add_directory(&test_db.pool, "/test/path", "test_dir").await;
+        assert!(result.is_ok());
+
+        let directory = result.unwrap();
+        assert_eq!(directory.path, "/test/path");
+        assert_eq!(directory.name, "test_dir");
+
+        // test_db がDropされる際に一時ファイルが自動削除される
     }
 
     #[tokio::test]
