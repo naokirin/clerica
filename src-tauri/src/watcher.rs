@@ -162,7 +162,7 @@ pub async fn start_watching(
     path: String,
 ) -> Result<(), String> {
     // ディレクトリスキャンを実行
-    crate::file_manager::scan_directory(&pools, &directory_id, &path)
+    crate::file_manager::directories::scan_directory(&pools, &directory_id, &path)
         .await
         .map_err(|e| e.to_string())?;
 
