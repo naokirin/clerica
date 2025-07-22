@@ -85,7 +85,7 @@ export interface DeleteResult {
   failed_files: Array<[string, string]>; // [file_path, error_message]
 }
 
-export async function deleteFiles(fileIds: number[]): Promise<DeleteResult> {
+export async function deleteFiles(fileIds: string[]): Promise<DeleteResult> {
   return await invoke("delete_files", { fileIds });
 }
 

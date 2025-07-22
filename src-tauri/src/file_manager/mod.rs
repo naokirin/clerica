@@ -403,7 +403,7 @@ pub struct BatchRenameResult {
 #[tauri::command]
 pub async fn delete_files(
     pools: State<'_, ShelfManager>,
-    file_ids: Vec<i64>,
+    file_ids: Vec<String>,
 ) -> Result<DeleteResult, String> {
     let data_pool = pools.get_active_data_pool().map_err(|e| e.to_string())?;
     
@@ -411,7 +411,7 @@ pub async fn delete_files(
     let mut file_paths = Vec::new();
     for file_id in file_ids {
         let result = sqlx::query_scalar::<_, String>("SELECT path FROM files WHERE id = ?")
-            .bind(file_id)
+            .bind(&file_id)
             .fetch_optional(&data_pool)
             .await
             .map_err(|e| format!("ファイル情報取得エラー: {e}"))?;

@@ -97,7 +97,13 @@
   const confirmDelete = async () => {
     if (!hasSelection) return;
 
-    const selectedIds = Array.from($selectedFileIds).map(id => Number(id));
+    const selectedIds = Array.from($selectedFileIds)
+      .filter(id => id && id.trim().length > 0);
+    
+    if (selectedIds.length === 0) {
+      console.error("有効なファイルIDが選択されていません");
+      return;
+    }
 
     try {
       const result: DeleteResult = await deleteFiles(selectedIds);
